@@ -56,9 +56,6 @@ node_modules/
 *.njsproj
 *.sln
 *.sw?
-# Environment variables
-.env.local
-.env.production
 
 # Cursor settings with potential secrets
 .cursor/mcp.json
