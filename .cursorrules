@@ -1,84 +1,170 @@
-# Goodreads for Jigsaw Puzzles - Cursor Rules
+# Goodreads for Jigsaw Puzzles - Optimized Cursor Rules
 
 ## Project Context
-This is a social platform for jigsaw puzzle enthusiasts built with Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, Supabase (with Storage), and OpenAI. Key features include puzzle discovery, user-generated puzzle uploads, puzzle logging with media, brand browsing, and AI-powered recommendations.
+This is a social platform for jigsaw puzzle enthusiasts built with Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui, Supabase (PostgreSQL + Storage), Clerk authentication, and OpenAI integration. 
 
-## Code Quality
+Key features: puzzle discovery, user-generated content, puzzle logging with media uploads, brand browsing, AI-powered recommendations, social activity feeds, and community features.
+
+## Architecture Guidelines
+- **Full-stack Next.js 14** with App Router (frontend + backend in one project)
+- **API routes** in `src/app/api/` for backend functionality
+- **Page components** in `src/app/` following App Router conventions
+- **Reusable components** in `src/components/` organized by feature
+- **Database interactions** via Supabase client in `src/lib/`
+- **Type safety** with TypeScript throughout
+
+## Code Quality Standards
 - Use TypeScript for all new code with strict type checking
-- Use meaningful, descriptive variable and function names
-- Keep functions under 50 lines, components under 150 lines
-- Use early returns to reduce nesting
-- Prefer composition over inheritance
-- Always handle loading, error, and success states
+- Prefer descriptive names over comments
+- Keep functions focused and under 50 lines
+- Components should be under 200 lines (split if larger)
+- Use early returns to reduce nesting depth
+- Handle loading, error, and success states explicitly
+- Implement proper error boundaries for robustness
 
-## React/Next.js Guidelines
-- Use functional components with hooks
-- Server components by default, add 'use client' only when needed
-- Destructure props at the beginning of components
-- Use custom hooks for reusable logic
-- Implement proper error boundaries
-- Use Next.js built-in optimizations (Image, Link, etc.)
-
-## UI/UX Standards
-- Mobile-first responsive design using Tailwind breakpoints
-- Use shadcn/ui components as base, customize with Tailwind
-- Consistent spacing scale: 4, 8, 12, 16, 20, 24px (space-1 to space-6)
-- Minimum 44px tap targets for mobile (min-h-11, min-w-11)
-- Include loading states, error states, and empty states for all components
-- Use semantic HTML elements (button, nav, main, article, etc.)
-- Ensure WCAG AA contrast ratios
-- Electric blue (#0EA5E9) for primary actions and accents
-
-## Puzzle App Specific
-- Always include alt text for puzzle images and media
-- Use consistent puzzle card layouts across the app
-- Implement proper image/video lazy loading and optimization
-- Include meaningful empty states with helpful CTAs
-- Use optimistic updates for list management and puzzle logging
-- Debounce search inputs to prevent excessive API calls
-- Display consistent star ratings using the same component
-- Show loading skeletons that match actual content structure
-- Handle media uploads with proper validation and feedback
-- Support dual CTAs: "Find Your Next Puzzle" and "Log Your Puzzle"
-- Ensure brand browsing is prominent and accessible
-- Display puzzle logs with rich media in activity feeds
-
-## Media & File Handling
-- Use Supabase Storage for all image and video uploads
-- Implement proper file validation (size, type, dimensions)
-- Provide upload progress indicators
-- Handle upload errors gracefully with retry options
-- Optimize images for different display contexts (thumbnails, full-size)
-- Support drag-and-drop and mobile file selection
+## React/Next.js Best Practices
+- **Server Components by default** - only add 'use client' when needed
+- Use functional components with hooks exclusively
+- Destructure props at component start for clarity
+- Create custom hooks for reusable stateful logic
+- Leverage Next.js optimizations (Image, Link, metadata, etc.)
+- Use Suspense boundaries for loading states
+- Implement proper SEO with metadata API
 
 ## Database & API Integration
-- Use proper TypeScript types for all API responses and database entities
-- Implement optimistic updates for user actions (logging, uploads, lists)
+- Use Supabase client for all database operations
+- Implement proper TypeScript types for database entities
+- Use optimistic updates for better UX (lists, logs, uploads)
 - Handle offline scenarios gracefully
-- Use proper pagination for large datasets
-- Cache frequently accessed data appropriately
+- Implement proper pagination for large datasets
 - Validate data on both client and server sides
+- Use proper error handling for API calls
+
+## UI/UX Excellence
+- **Mobile-first responsive design** using Tailwind breakpoints
+- Use shadcn/ui components as foundation, customize as needed
+- Maintain consistent spacing with Tailwind scale
+- Ensure 44px minimum tap targets for mobile accessibility
+- Include meaningful loading states and error feedback
+- Use semantic HTML for better accessibility
+- Implement proper WCAG AA contrast ratios
+- Create engaging empty states with helpful CTAs
+
+## Puzzle App Specific Features
+- **Dual homepage CTAs**: "Find Your Next Puzzle" + "Log Your Puzzle"
+- **Brand-first navigation**: Make manufacturer browsing prominent
+- **Rich media handling**: Photos/videos in logs and activity feeds
+- **Smart lists**: Trending, most solved, brand collections
+- **Social features**: Following, activity feeds, puzzle stats
+- **AI integration**: Chat-based discovery and recommendations
+- **Review metadata**: Fit quality, false fits, pick test results
+- **Community stats**: Solve counts, average times, user galleries
+
+## Media & File Management
+- Use Supabase Storage for all user-uploaded content
+- Implement proper file validation (size, type, resolution)
+- Provide upload progress indicators and error handling
+- Support drag-and-drop and mobile file selection
+- Optimize images for different display contexts
+- Handle media privacy settings appropriately
+- Create responsive image galleries and lightboxes
+
+## Performance Optimization
+- Optimize images with Next.js Image component
+- Use React.lazy() for code splitting large components
+- Implement proper caching strategies for API calls
+- Minimize bundle size with tree shaking
+- Use loading skeletons that match actual content
+- Implement infinite scrolling for large lists
+- Debounce search inputs and expensive operations
+
+## Security & Privacy
+- Validate and sanitize all user inputs
+- Use environment variables for sensitive data
+- Implement proper authentication checks
+- Handle user permissions and roles correctly
+- Never expose sensitive data in client code
+- Use HTTPS for all production environments
+- Implement rate limiting for API endpoints
 
 ## File Organization
-- Use kebab-case for file names (puzzle-card.tsx, brand-page.tsx)
-- Group related components in feature folders (puzzle/, brands/, media/)
+- Use kebab-case for all file names
+- Group related components in feature folders
 - Export components from index files for clean imports
-- Co-locate related files (component + test + styles)
-- Use absolute imports with @ alias for src directory
+- Co-locate related files (component + types + hooks)
+- Use absolute imports with @ alias consistently
+- Keep utility functions in dedicated files
 
-## Performance & Security
-- Optimize images with Next.js Image component
-- Use React.lazy() for code splitting when appropriate
-- Implement proper caching strategies
-- Validate and sanitize all user inputs
-- Use environment variables for API keys and secrets
-- Never expose sensitive data in client code
+## Component Architecture
+```
+src/components/
+├── ui/              ← shadcn/ui components
+├── puzzle/          ← PuzzleCard, PuzzleDetail, PuzzleGrid
+├── brands/          ← BrandBrowser, BrandCard, BrandProfile
+├── lists/           ← ListManager, ListCard, SmartLists
+├── media/           ← ImageUpload, VideoPlayer, Gallery
+├── chat/            ← AIChat, ChatInterface
+├── profile/         ← UserProfile, ActivityFeed
+├── auth/            ← LoginForm, SignupFlow
+└── layout/          ← Navigation, Header, Footer
+```
 
-## Error Handling
+## Error Handling Strategy
 - Wrap async operations in try-catch blocks
 - Provide meaningful error messages to users
-- Implement graceful fallbacks for failed requests
-- Use React Error Boundaries for component-level errors
-- Log errors for debugging without exposing internals
+- Implement graceful fallbacks for failed operations
+- Use React Error Boundaries for component crashes
+- Log errors properly without exposing sensitive data
+- Create user-friendly error pages (404, 500, etc.)
 
-Refer to the documents in the /docs folder for detailed requirements, user flows, database schema, and technical specifications.
+## Testing Approach
+- Write unit tests for utility functions
+- Test API endpoints with proper mocking
+- Use React Testing Library for component tests
+- Implement integration tests for critical user flows
+- Test responsive design across different screen sizes
+- Validate accessibility with automated tools
+
+## Accessibility Standards
+- Use proper ARIA labels and roles
+- Ensure keyboard navigation works everywhere
+- Provide alt text for all images and media
+- Maintain proper heading hierarchy
+- Use semantic HTML elements appropriately
+- Test with screen readers regularly
+- Implement proper focus management
+
+## State Management
+- Use React's built-in state for component-level state
+- Implement Context API for app-wide state when needed
+- Use React Query/SWR for server state management
+- Keep state as close to where it's used as possible
+- Implement proper loading and error states
+- Use optimistic updates for better perceived performance
+
+## API Design Principles
+- Follow RESTful conventions for API endpoints
+- Use proper HTTP methods (GET, POST, PATCH, DELETE)
+- Implement consistent error response formats
+- Use proper status codes (200, 201, 400, 401, 404, 500)
+- Include proper request/response typing
+- Implement rate limiting and authentication middleware
+
+## Development Workflow
+- Use Git with meaningful commit messages
+- Create feature branches for new functionality
+- Implement proper code review process
+- Use TypeScript strict mode throughout
+- Run ESLint and Prettier for code consistency
+- Test functionality before committing
+- Document complex business logic
+
+## Documentation Standards
+- Include JSDoc comments for public functions
+- Maintain up-to-date README with setup instructions
+- Document API endpoints with examples
+- Keep component props documented
+- Update documentation when changing functionality
+- Include troubleshooting guides for common issues
+
+Remember: Refer to the documents in /docs folder for detailed requirements, user flows, database schema, and technical specifications. Always prioritize user experience and maintain code quality standards.

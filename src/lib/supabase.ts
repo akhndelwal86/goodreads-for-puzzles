@@ -43,3 +43,37 @@ try {
 } catch (error) {
   console.error("[ Server ] Error fetching puzzles:", error); // Should log the real error
 }
+
+// Add this function to your existing supabase.ts file
+
+export const getPuzzleWithAggregates = async (puzzleId: string) => {
+  const [puzzleResult, aggregatesResult] = await Promise.all([
+    supabase
+      .from('puzzles')
+      .select(`
+        *,
+        brand:brands(*),
+        tags:puzzle_tags(tag:tags(*))
+      `)
+      .eq('id', puzzleId)
+      .eq('approval_status', 'approved')
+      .single(),
+    
+    supabase
+      .from('puzzle_aggregates')
+      .select('*')
+      .eq('id', puzzleId)
+      .single()
+  ])
+
+  if (puzzleResult.error) throw puzzleResult.error
+
+  const puzzle = puzzleResult.data
+  const aggregates = aggregatesResult.data
+
+  return {
+    ...puzzle,
+    tags: puzzle.tags?.map((pt: any) => pt.tag).filter(Boolean) || [],
+    aggregates
+  }
+}
