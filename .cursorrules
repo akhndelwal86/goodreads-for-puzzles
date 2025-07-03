@@ -1,0 +1,84 @@
+# Goodreads for Jigsaw Puzzles - Cursor Rules
+
+## Project Context
+This is a social platform for jigsaw puzzle enthusiasts built with Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, Supabase (with Storage), and OpenAI. Key features include puzzle discovery, user-generated puzzle uploads, puzzle logging with media, brand browsing, and AI-powered recommendations.
+
+## Code Quality
+- Use TypeScript for all new code with strict type checking
+- Use meaningful, descriptive variable and function names
+- Keep functions under 50 lines, components under 150 lines
+- Use early returns to reduce nesting
+- Prefer composition over inheritance
+- Always handle loading, error, and success states
+
+## React/Next.js Guidelines
+- Use functional components with hooks
+- Server components by default, add 'use client' only when needed
+- Destructure props at the beginning of components
+- Use custom hooks for reusable logic
+- Implement proper error boundaries
+- Use Next.js built-in optimizations (Image, Link, etc.)
+
+## UI/UX Standards
+- Mobile-first responsive design using Tailwind breakpoints
+- Use shadcn/ui components as base, customize with Tailwind
+- Consistent spacing scale: 4, 8, 12, 16, 20, 24px (space-1 to space-6)
+- Minimum 44px tap targets for mobile (min-h-11, min-w-11)
+- Include loading states, error states, and empty states for all components
+- Use semantic HTML elements (button, nav, main, article, etc.)
+- Ensure WCAG AA contrast ratios
+- Electric blue (#0EA5E9) for primary actions and accents
+
+## Puzzle App Specific
+- Always include alt text for puzzle images and media
+- Use consistent puzzle card layouts across the app
+- Implement proper image/video lazy loading and optimization
+- Include meaningful empty states with helpful CTAs
+- Use optimistic updates for list management and puzzle logging
+- Debounce search inputs to prevent excessive API calls
+- Display consistent star ratings using the same component
+- Show loading skeletons that match actual content structure
+- Handle media uploads with proper validation and feedback
+- Support dual CTAs: "Find Your Next Puzzle" and "Log Your Puzzle"
+- Ensure brand browsing is prominent and accessible
+- Display puzzle logs with rich media in activity feeds
+
+## Media & File Handling
+- Use Supabase Storage for all image and video uploads
+- Implement proper file validation (size, type, dimensions)
+- Provide upload progress indicators
+- Handle upload errors gracefully with retry options
+- Optimize images for different display contexts (thumbnails, full-size)
+- Support drag-and-drop and mobile file selection
+
+## Database & API Integration
+- Use proper TypeScript types for all API responses and database entities
+- Implement optimistic updates for user actions (logging, uploads, lists)
+- Handle offline scenarios gracefully
+- Use proper pagination for large datasets
+- Cache frequently accessed data appropriately
+- Validate data on both client and server sides
+
+## File Organization
+- Use kebab-case for file names (puzzle-card.tsx, brand-page.tsx)
+- Group related components in feature folders (puzzle/, brands/, media/)
+- Export components from index files for clean imports
+- Co-locate related files (component + test + styles)
+- Use absolute imports with @ alias for src directory
+
+## Performance & Security
+- Optimize images with Next.js Image component
+- Use React.lazy() for code splitting when appropriate
+- Implement proper caching strategies
+- Validate and sanitize all user inputs
+- Use environment variables for API keys and secrets
+- Never expose sensitive data in client code
+
+## Error Handling
+- Wrap async operations in try-catch blocks
+- Provide meaningful error messages to users
+- Implement graceful fallbacks for failed requests
+- Use React Error Boundaries for component-level errors
+- Log errors for debugging without exposing internals
+
+Refer to the documents in the /docs folder for detailed requirements, user flows, database schema, and technical specifications.
