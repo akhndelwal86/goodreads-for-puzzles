@@ -56,6 +56,16 @@ node_modules/
 *.njsproj
 *.sln
 *.sw?
+# Environment variables
+.env.local
+.env.production
+
+# Cursor settings with potential secrets
+.cursor/mcp.json
+
+# API keys and secrets
+*.key
+*.pem
 # OS specific
 
 # Task files
