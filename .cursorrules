@@ -167,4 +167,18 @@ src/components/
 - Update documentation when changing functionality
 - Include troubleshooting guides for common issues
 
+# Tailwind CSS Guidelines for Cursor
+- ONLY use Tailwind classes that exist in the current build
+- Use cn() utility for conditional classes: cn("base-class", condition && "conditional-class")
+- Prefer semantic color variables: bg-background, text-foreground, border-border
+- Use shadcn/ui color system: primary, secondary, muted, accent
+- For responsive design: mobile-first with sm:, md:, lg:, xl: prefixes
+- Common spacing: p-4, p-6, p-8 (avoid arbitrary values like p-[20px])
+- Use flexbox utilities: flex, items-center, justify-between, gap-4
+- For grids: grid, grid-cols-1, md:grid-cols-2, lg:grid-cols-3
+- Animations: animate-fade-in, transition-all, duration-200, ease-in-out
+- Never use custom CSS classes unless absolutely necessary
+- If styles don't work, check if the class exists in Tailwind docs
+- Use the cn() utility from @/lib/utils for all className combinations
+
 Remember: Refer to the documents in /docs folder for detailed requirements, user flows, database schema, and technical specifications. Always prioritize user experience and maintain code quality standards.

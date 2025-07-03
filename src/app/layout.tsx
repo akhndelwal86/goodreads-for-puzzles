@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { NavigationBar } from '@/components/layout/navigation-bar'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Goodreads for Jigsaw Puzzles',
-  description: 'A social platform for puzzle enthusiasts',
+  title: 'PuzzleBase - Goodreads for Jigsaw Puzzles',
+  description: 'A social platform for puzzle enthusiasts to discover, track, and share their jigsaw puzzle journey',
 }
 
 export default function RootLayout({
@@ -18,7 +19,12 @@ export default function RootLayout({
   return (
   <ClerkProvider>
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <NavigationBar />
+        <main className="pt-16">
+          {children}
+        </main>
+      </body>
     </html>
   </ClerkProvider>
   )

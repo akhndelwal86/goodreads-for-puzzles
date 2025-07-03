@@ -73,7 +73,7 @@ export const getPuzzleWithAggregates = async (puzzleId: string) => {
 
   return {
     ...puzzle,
-    tags: puzzle.tags?.map((pt: any) => pt.tag).filter(Boolean) || [],
+    tags: puzzle.tags?.map((pt: { tag: unknown }) => pt.tag).filter(Boolean) || [],
     aggregates
   }
 }

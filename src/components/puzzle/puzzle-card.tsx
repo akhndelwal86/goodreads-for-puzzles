@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Heart, Plus, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import type { Puzzle } from '@/types/database'
 
 interface PuzzleCardProps {
@@ -33,92 +32,79 @@ export function PuzzleCard({
     onToggleFavorite?.(puzzle.id)
   }
 
+  const getDifficultyClass = (pieceCount: number | null) => {
+    if (!pieceCount) return 'bg-slate-100 text-slate-600'
+    if (pieceCount <= 500) return 'bg-emerald-100 text-emerald-700'
+    if (pieceCount <= 1000) return 'bg-amber-100 text-amber-700'
+    if (pieceCount <= 2000) return 'bg-orange-100 text-orange-700'
+    return 'bg-red-100 text-red-700'
+  }
+
   return (
-    <Card className="group hover:shadow-lg transition-shadow duration-200">
-      <Link href={`/puzzles/${puzzle.id}`}>
-        <div className="relative aspect-square overflow-hidden rounded-t-lg">
-          {puzzle.image_url ? (
-            <Image
-              src={puzzle.image_url}
-              alt={puzzle.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No Image</span>
-            </div>
-          )}
+    <Link href={`/puzzles/${puzzle.id}`}>
+      <div className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group hover:scale-105">
+        <div className="relative aspect-square overflow-hidden">
+          <Image
+            src={puzzle.image_url || '/placeholder-puzzle.jpg'}
+            alt={puzzle.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
+          />
           
-          {/* Overlay actions */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
+          {/* Hover Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           
-          {/* Favorite button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/80 hover:bg-white"
-            onClick={handleToggleFavorite}
-          >
-            <Heart className={`h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-          </Button>
-        </div>
-      </Link>
-
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          {/* Title and Brand */}
-          <div>
-            <h3 className="font-semibold text-sm leading-tight line-clamp-2">
-              {puzzle.title}
-            </h3>
-            {puzzle.brand && (
-              <p className="text-xs text-gray-600">{puzzle.brand.name}</p>
+          {/* Action Buttons */}
+          <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {onToggleFavorite && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
+                onClick={handleToggleFavorite}
+              >
+                <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
+              </Button>
+            )}
+            {showAddToList && onAddToList && (
+              <Button
+                size="sm"
+                className="w-8 h-8 p-0 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+                onClick={handleAddToList}
+              >
+                <Plus className="w-4 h-4 text-white" />
+              </Button>
             )}
           </div>
+        </div>
 
-          {/* Piece count and rating */}
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{puzzle.piece_count} pieces</span>
-            {puzzle.stats?.avg_rating && (
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                <span>{puzzle.stats.avg_rating.toFixed(1)}</span>
-              </div>
-            )}
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-900 group-hover:text-violet-600 transition-colors duration-300 truncate">
+                {puzzle.title}
+              </h3>
+              <p className="text-sm text-slate-600 mt-1 truncate">
+                {puzzle.brand?.name || 'Unknown Brand'}
+              </p>
+            </div>
+            <Badge className={`ml-2 text-xs px-2 py-1 ${getDifficultyClass(puzzle.piece_count)}`}>
+              {puzzle.piece_count || 'Unknown'} pieces
+            </Badge>
           </div>
 
-          {/* Tags */}
-          {puzzle.tags && puzzle.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {puzzle.tags.slice(0, 2).map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-              {puzzle.tags.length > 2 && (
-                <Badge variant="outline" className="text-xs">
-                  +{puzzle.tags.length - 2}
-                </Badge>
-              )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 text-amber-400 fill-current" />
+              <span className="text-sm font-medium text-slate-700">4.8</span>
+              <span className="text-xs text-slate-500 ml-1">(24)</span>
             </div>
-          )}
-
-          {/* Add to list button */}
-          {showAddToList && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-              onClick={handleAddToList}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add to List
-            </Button>
-          )}
+            <div className="flex items-center gap-1 text-xs text-slate-500">
+              <span>156 solves</span>
+            </div>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Link>
   )
 }
