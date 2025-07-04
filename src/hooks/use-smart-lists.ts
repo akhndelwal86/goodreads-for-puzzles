@@ -1,0 +1,59 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { 
+  getMostCompletedPuzzles, 
+  getTrendingPuzzles, 
+  getRecentlyAddedPuzzles,
+  type SmartListPuzzle 
+} from '@/lib/supabase'
+
+interface UseQueryResult<T> {
+  data: T | undefined
+  isLoading: boolean
+  error: Error | null
+}
+
+function useAsyncData<T>(fn: () => Promise<T>, deps: any[] = []): UseQueryResult<T> {
+  const [data, setData] = useState<T | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    setIsLoading(true)
+    setError(null)
+    
+    fn()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setIsLoading(false))
+  }, deps)
+
+  return { data, isLoading, error }
+}
+
+export function useMostCompleted(limit = 3): UseQueryResult<SmartListPuzzle[]> {
+  return useAsyncData(() => getMostCompletedPuzzles(limit), [limit])
+}
+
+export function useTrending(limit = 3): UseQueryResult<SmartListPuzzle[]> {
+  return useAsyncData(() => getTrendingPuzzles(limit), [limit])
+}
+
+export function useRecentlyAdded(limit = 3): UseQueryResult<SmartListPuzzle[]> {
+  return useAsyncData(() => getRecentlyAddedPuzzles(limit), [limit])
+}
+
+export function useSmartLists() {
+  const trending = useTrending(3)
+  const mostCompleted = useMostCompleted(3)
+  const recentlyAdded = useRecentlyAdded(3)
+
+  return {
+    trending,
+    mostCompleted,
+    recentlyAdded,
+    isLoading: trending.isLoading || mostCompleted.isLoading || recentlyAdded.isLoading,
+    error: trending.error || mostCompleted.error || recentlyAdded.error
+  }
+} 

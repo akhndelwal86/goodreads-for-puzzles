@@ -2,18 +2,28 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
 
 export function NavigationBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { isSignedIn, user } = useUser()
 
-  const menuItems = [
+  const publicMenuItems = [
+    { href: '/discover', label: 'Discover' },
+    { href: '/chat', label: 'Ask Puzzlee' },
+    { href: '/community', label: 'Community' },
+  ]
+
+  const privateMenuItems = [
     { href: '/discover', label: 'Discover' },
     { href: '/my-puzzles', label: 'My Puzzles' },
     { href: '/chat', label: 'Ask Puzzlee' },
     { href: '/community', label: 'Community' },
   ]
+
+  const menuItems = isSignedIn ? privateMenuItems : publicMenuItems
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-lg">
@@ -41,16 +51,55 @@ export function NavigationBar() {
               </Link>
             ))}
             
-            <Button 
-              asChild 
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Link href="/log">Log Puzzle</Link>
-            </Button>
+            {/* Authentication Section */}
+            {isSignedIn ? (
+              <div className="flex items-center space-x-4">
+                <Button 
+                  asChild 
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Link href="/log">Log Puzzle</Link>
+                </Button>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8"
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <SignInButton mode="modal">
+                  <Button 
+                    variant="outline" 
+                    className="text-violet-600 border-violet-600 hover:bg-violet-50 font-medium"
+                  >
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button 
+                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    Sign Up
+                  </Button>
+                </SignUpButton>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            {isSignedIn && (
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8"
+                  }
+                }}
+              />
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -76,16 +125,40 @@ export function NavigationBar() {
                   {item.label}
                 </Link>
               ))}
-              <div className="px-3 py-2">
-                <Button 
-                  asChild 
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg"
-                >
-                  <Link href="/log" onClick={() => setIsMobileMenuOpen(false)}>
-                    Log Puzzle
-                  </Link>
-                </Button>
-              </div>
+              
+              {/* Mobile Authentication */}
+              {isSignedIn ? (
+                <div className="px-3 py-2">
+                  <Button 
+                    asChild 
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg"
+                  >
+                    <Link href="/log" onClick={() => setIsMobileMenuOpen(false)}>
+                      Log Puzzle
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="px-3 py-2 space-y-2">
+                  <SignInButton mode="modal">
+                    <Button 
+                      variant="outline" 
+                      className="w-full text-violet-600 border-violet-600 hover:bg-violet-50 font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Button>
+                  </SignUpButton>
+                </div>
+              )}
             </div>
           </div>
         )}
