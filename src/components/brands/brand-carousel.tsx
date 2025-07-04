@@ -7,9 +7,10 @@ interface BrandCarouselProps {
     logo?: string
     puzzleCount?: number
   }>
+  onBrandClick?: (brandId: string) => void
 }
 
-export function BrandCarousel({ brands = [] }: BrandCarouselProps) {
+export function BrandCarousel({ brands = [], onBrandClick }: BrandCarouselProps) {
   return (
     <section className="mb-8">
       <div className="flex items-center gap-3 mb-6">
@@ -25,11 +26,25 @@ export function BrandCarousel({ brands = [] }: BrandCarouselProps) {
             <div
               key={brand.id}
               className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer"
+              onClick={() => onBrandClick?.(brand.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onBrandClick?.(brand.id)
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Browse ${brand.name} puzzles`}
             >
               <div className="w-12 h-12 rounded-full bg-gray-100 mb-2"></div>
-              <h3 className="font-medium text-gray-900 text-center text-sm">{brand.name}</h3>
+              <h3 className="font-medium text-gray-900 text-center text-sm">
+                {brand.name}
+              </h3>
               {brand.puzzleCount && (
-                <p className="text-xs text-gray-500">{brand.puzzleCount} puzzles</p>
+                <p className="text-xs text-gray-500">
+                  {brand.puzzleCount} puzzles
+                </p>
               )}
             </div>
           ))

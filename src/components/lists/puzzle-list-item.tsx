@@ -23,6 +23,15 @@ export function PuzzleListItem({ puzzle, rank, onClick, className }: PuzzleListI
         className
       )}
       onClick={() => onClick?.(puzzle.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.(puzzle.id)
+        }
+      }}
+      tabIndex={onClick ? 0 : -1}
+      role="button"
+      aria-label={`View details for ${puzzle.title} puzzle`}
     >
       {/* Rank */}
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-semibold text-sm">
@@ -30,10 +39,16 @@ export function PuzzleListItem({ puzzle, rank, onClick, className }: PuzzleListI
       </div>
 
       {/* Puzzle Image */}
+      {/* Puzzle Image */}
       <img 
         src={puzzle.image} 
-        alt={puzzle.title}
+        alt={`${puzzle.title} puzzle by ${puzzle.brand}`}
         className="w-12 h-12 rounded-lg object-cover"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement
+          target.src = '/placeholder-puzzle.jpg' // Add fallback image
+        }}
+        loading="lazy"
       />
 
       {/* Puzzle Info */}

@@ -25,8 +25,14 @@ export function TrendingList({
   const content = (
     <>
       {error && (
-        <div className="text-sm text-red-600 text-center py-4">
-          Failed to load trending puzzles
+        <div className="text-sm text-red-600 text-center py-4" role="alert">
+          <p>Failed to load trending puzzles</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs underline mt-1 hover:no-underline"
+          >
+            Try again
+          </button>
         </div>
       )}
       {puzzles && puzzles.length > 0 ? (
@@ -39,7 +45,11 @@ export function TrendingList({
           />
         ))
       ) : !isLoading && (
-        <div className="text-sm text-gray-500 text-center py-8">
+        <div
+          className="text-sm text-gray-500 text-center py-8"
+          role="status"
+          aria-live="polite"
+        >
           No trending puzzles found
         </div>
       )}

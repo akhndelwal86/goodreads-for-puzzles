@@ -1,9 +1,18 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-
 import { Heart, MessageCircle, Share2, Clock, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+
+// Helper function to create URL-friendly slugs
+const slugify = (text: string) => {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+    .replace(/--+/g, '-')     // Collapse multiple hyphens
+    .trim()
+}
 
 export function ActivityFeed() {
   // Mock data - in real app this would come from API
@@ -186,20 +195,30 @@ export function ActivityFeed() {
                 {/* Actions */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors">
+                    <button 
+                      className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                      aria-label={`Like (${activity.likes} likes)`}
+                    >
                       <Heart className="w-4 h-4" />
                       <span className="text-xs">{activity.likes}</span>
                     </button>
-                    <button className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors">
+                    <button 
+                      className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors"
+                      aria-label={`Comment (${activity.comments} comments)`}
+                    >
                       <MessageCircle className="w-4 h-4" />
                       <span className="text-xs">{activity.comments}</span>
                     </button>
-                    <button className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors">
+                    <button 
+                      className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors"
+                      aria-label="Share"
+                    >
                       <Share2 className="w-4 h-4" />
                     </button>
                   </div>
+
                   <Link 
-                    href={`/puzzles/${activity.puzzle.title.toLowerCase().replace(/\s+/g, '-')}`}
+                    href={`/puzzles/${slugify(activity.puzzle.title)}`}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                   >
                     View Puzzle

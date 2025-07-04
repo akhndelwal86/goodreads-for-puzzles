@@ -106,7 +106,6 @@ export async function POST(req: NextRequest) {
     try {
       const { id } = evt.data
 
-      // Delete user from Supabase (or mark as deleted)
       const { error } = await supabase
         .from('users')
         .delete()

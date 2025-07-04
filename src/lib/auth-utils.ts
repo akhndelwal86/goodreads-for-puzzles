@@ -1,49 +1,59 @@
 import { useUser } from '@clerk/nextjs'
-import { supabase } from '@/lib/supabase'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-// Client-side user sync utility (temporary solution)
+// Client-side user sync utility (calls server-side endpoint)
 export function useUserSync() {
   const { user, isLoaded } = useUser()
+  const [syncStatus, setSyncStatus] = useState<'pending' | 'syncing' | 'synced' | 'error'>('pending')
   
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return
-    if (!isLoaded || !user) return
+    if (!isLoaded || !user) {
+      setSyncStatus('pending')
+      return
+    }
 
     const syncUser = async () => {
+      setSyncStatus('syncing')
+      console.log('🔄 Starting user sync for Clerk ID:', user.id)
+      
       try {
-        // Check if user exists in Supabase
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('clerk_id', user.id)
-          .single()
+        // Call server-side sync endpoint
+        const response = await fetch('/api/user-sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userData: {
+              emailAddresses: user.emailAddresses,
+              primaryEmailAddress: user.primaryEmailAddress,
+              username: user.username,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              imageUrl: user.imageUrl,
+            }
+          })
+        })
 
-        if (!existingUser) {
-          // Create user if doesn't exist
-          const { error } = await supabase
-            .from('users')
-            .insert({
-              clerk_id: user.id,
-              email: user.emailAddresses[0]?.emailAddress || '',
-              username: user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || null,
-              avatar_url: user.imageUrl || null,
-            })
+        const result = await response.json()
 
-          if (error) {
-            console.error('Error creating user:', error)
-          } else {
-            console.log('User created successfully')
-          }
+        if (response.ok) {
+          console.log(`✅ User sync successful (${result.action}):`, result.user.id)
+          setSyncStatus('synced')
+        } else {
+          console.error('❌ User sync failed:', result)
+          setSyncStatus('error')
         }
       } catch (error) {
-        console.error('Error syncing user:', error)
+        console.error('❌ Unexpected error during user sync:', error)
+        setSyncStatus('error')
       }
     }
 
     syncUser()
   }, [user, isLoaded])
 
-  return { user, isLoaded }
+  return { user, isLoaded, syncStatus }
 } 

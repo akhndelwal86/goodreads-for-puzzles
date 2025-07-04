@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { logger } from './utils'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -83,7 +84,7 @@ export type SmartListPuzzle = {
 // Get trending puzzles based on recent activity (last 7 days)
 export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPuzzle[]> => {
   try {
-    console.log('🔍 Fetching trending puzzles...')
+    logger.debug('Fetching trending puzzles...')
     
     // Get activities from the last 7 days (extended range for future dates)
     const sevenDaysAgo = new Date()
@@ -108,7 +109,7 @@ export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPu
     ])
 
     if (logsResult.error || reviewsResult.error) {
-      console.error('❌ Trending puzzles activity error:', logsResult.error || reviewsResult.error)
+      logger.error('Trending puzzles activity error:', logsResult.error || reviewsResult.error)
       // Fallback to highest rated puzzles
       return getHighestRatedPuzzles(limit)
     }
@@ -127,7 +128,7 @@ export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPu
 
     
     if (Object.keys(activityCounts).length === 0) {
-      console.log('📝 No recent activity, falling back to highest rated puzzles')
+      logger.info('No recent activity, falling back to highest rated puzzles')
       return getHighestRatedPuzzles(limit)
     }
 
@@ -150,11 +151,11 @@ export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPu
       .in('id', topPuzzleIds)
 
     if (error) {
-      console.error('❌ Trending puzzles query error:', error)
+      logger.error('Trending puzzles query error:', error)
       return []
     }
 
-    console.log(`✅ Retrieved ${data?.length || 0} trending puzzles`)
+    logger.success(`Retrieved ${data?.length || 0} trending puzzles`)
     return (data || []).map(puzzle => ({
       id: puzzle.id,
       title: puzzle.title,
@@ -164,7 +165,7 @@ export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPu
       metric: `${activityCounts[puzzle.id]} activities`
     }))
   } catch (error) {
-    console.error('💥 Error fetching trending puzzles:', error)
+    logger.error('Error fetching trending puzzles:', error)
     return []
   }
 }
@@ -172,7 +173,7 @@ export const getTrendingPuzzles = async (limit: number = 3): Promise<SmartListPu
 // Get most completed puzzles by counting puzzle_logs
 export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartListPuzzle[]> => {
   try {
-    console.log('🏆 Fetching most completed puzzles...')
+    logger.debug('Fetching most completed puzzles...')
     
     // Get puzzle logs with puzzle info in one query
     const { data: puzzleData, error: puzzleError } = await supabase
@@ -187,11 +188,11 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
       .eq('approval_status', 'approved')
 
     if (puzzleError) {
-      console.error('❌ Most completed puzzles error:', puzzleError)
+      logger.error('Most completed puzzles error:', puzzleError)
       return getRecentlyAddedPuzzles(limit)
     }
 
-    console.log(`📝 Found ${puzzleData?.length || 0} approved puzzles`)
+    logger.debug(`Found ${puzzleData?.length || 0} approved puzzles`)
 
     // Get all puzzle logs
     const { data: logCounts, error: countError } = await supabase
@@ -199,11 +200,11 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
       .select('puzzle_id')
 
     if (countError) {
-      console.error('❌ Most completed logs error:', countError)
+      logger.error('Most completed logs error:', countError)
       return getRecentlyAddedPuzzles(limit)
     }
 
-    console.log(`📊 Found ${logCounts?.length || 0} total puzzle logs`)
+    logger.debug(`Found ${logCounts?.length || 0} total puzzle logs`)
 
     // Count completions for each puzzle
     const completionCounts = (logCounts || []).reduce((acc: Record<string, number>, log) => {
@@ -211,7 +212,7 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
       return acc
     }, {})
 
-    console.log('📊 Completion counts by puzzle:', completionCounts)
+    logger.debug('Completion counts by puzzle:', completionCounts)
 
     // Create results with completion counts, sort by count
     const puzzlesWithCounts = (puzzleData || []).map(puzzle => ({
@@ -225,7 +226,7 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
       .slice(0, limit)
 
     if (sortedPuzzles.length === 0) {
-      console.log('📝 No puzzles found, returning recently added')
+      logger.info('No puzzles found, returning recently added')
       return getRecentlyAddedPuzzles(limit)
     }
 
@@ -238,7 +239,7 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
       metric: `${puzzle.completionCount} completed`
     }))
   } catch (error) {
-    console.error('💥 Error fetching most completed puzzles:', error)
+    logger.error('Error fetching most completed puzzles:', error)
     return getRecentlyAddedPuzzles(limit)
   }
 }
@@ -246,7 +247,7 @@ export const getMostCompletedPuzzles = async (limit: number = 3): Promise<SmartL
 // Get highest rated puzzles (fallback for trending)
 export const getHighestRatedPuzzles = async (limit: number = 3): Promise<SmartListPuzzle[]> => {
   try {
-    console.log('⭐ Fetching highest rated puzzles...')
+    logger.debug('Fetching highest rated puzzles...')
     
     // Now we can use the puzzle_aggregates table with proper JOIN!
     const { data, error } = await supabase
@@ -265,16 +266,16 @@ export const getHighestRatedPuzzles = async (limit: number = 3): Promise<SmartLi
       .limit(limit)
 
     if (error) {
-      console.error('❌ Highest rated puzzles error:', error)
+      logger.error('Highest rated puzzles error:', error)
       return getRecentlyAddedPuzzles(limit)
     }
 
     if (!data || data.length === 0) {
-      console.log('📝 No rated puzzles, falling back to recently added')
+      logger.info('No rated puzzles, falling back to recently added')
       return getRecentlyAddedPuzzles(limit)
     }
 
-    console.log(`✅ Retrieved ${data.length} highest rated puzzles`)
+    logger.success(`Retrieved ${data.length} highest rated puzzles`)
     return data.map(puzzle => ({
       id: puzzle.id,
       title: puzzle.title,
@@ -284,7 +285,7 @@ export const getHighestRatedPuzzles = async (limit: number = 3): Promise<SmartLi
       metric: `⭐ ${Number((puzzle.puzzle_aggregates as any)?.avg_rating || 0).toFixed(1)} (${(puzzle.puzzle_aggregates as any)?.review_count || 0} reviews)`
     }))
   } catch (error) {
-    console.error('💥 Error fetching highest rated puzzles:', error)
+    logger.error('Error fetching highest rated puzzles:', error)
     return getRecentlyAddedPuzzles(limit)
   }
 }
@@ -292,7 +293,7 @@ export const getHighestRatedPuzzles = async (limit: number = 3): Promise<SmartLi
 // Get recently added puzzles (last 7 days, fallback to last 3 puzzles)
 export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartListPuzzle[]> => {
   try {
-    console.log('🆕 Fetching recently added puzzles...')
+    logger.debug('Fetching recently added puzzles...')
     
     // First try to get puzzles from last 7 days (but with wider range due to future dates)
     const sevenDaysAgo = new Date()
@@ -319,13 +320,13 @@ export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartL
       .limit(limit)
 
     if (recentError) {
-      console.error('❌ Recently added puzzles error:', recentError)
+      logger.error('Recently added puzzles error:', recentError)
       return []
     }
 
     // If we have puzzles from this range, return them
     if (recentData && recentData.length > 0) {
-      console.log(`✅ Retrieved ${recentData.length} recently added puzzles`)
+      logger.success(`Retrieved ${recentData.length} recently added puzzles`)
       return recentData.map(puzzle => {
         const createdDate = new Date(puzzle.created_at)
         const now = new Date()
@@ -359,7 +360,7 @@ export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartL
     }
 
     // Fallback: get last 3 puzzles regardless of date
-    console.log('📝 No puzzles in recent range, falling back to last 3 puzzles')
+    logger.info('No puzzles in recent range, falling back to last 3 puzzles')
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('puzzles')
       .select(`
@@ -375,11 +376,11 @@ export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartL
       .limit(limit)
 
     if (fallbackError) {
-      console.error('❌ Fallback recently added puzzles error:', fallbackError)
+      logger.error('Fallback recently added puzzles error:', fallbackError)
       return []
     }
 
-    console.log(`✅ Retrieved ${fallbackData?.length || 0} fallback puzzles`)
+    logger.success(`Retrieved ${fallbackData?.length || 0} fallback puzzles`)
     return (fallbackData || []).map(puzzle => {
       const createdDate = new Date(puzzle.created_at)
       const now = new Date()
@@ -411,7 +412,7 @@ export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartL
       }
     })
   } catch (error) {
-    console.error('💥 Error fetching recently added puzzles:', error)
+    logger.error('Error fetching recently added puzzles:', error)
     return []
   }
 }
@@ -419,7 +420,7 @@ export const getRecentlyAddedPuzzles = async (limit: number = 3): Promise<SmartL
 // Get all smart lists data
 export const getSmartListsData = async () => {
   try {
-    console.log('📋 Fetching all smart lists data...')
+    logger.debug('Fetching all smart lists data...')
     
     const [trending, mostCompleted, recentlyAdded] = await Promise.all([
       getTrendingPuzzles(3),
@@ -427,7 +428,7 @@ export const getSmartListsData = async () => {
       getRecentlyAddedPuzzles(3)
     ])
 
-    console.log('✅ Smart lists data fetched successfully:', {
+    logger.success('Smart lists data fetched successfully:', {
       trending: trending.length,
       mostCompleted: mostCompleted.length,
       recentlyAdded: recentlyAdded.length
@@ -439,7 +440,7 @@ export const getSmartListsData = async () => {
       recentlyAdded
     }
   } catch (error) {
-    console.error('💥 Error fetching smart lists data:', error)
+    logger.error('Error fetching smart lists data:', error)
     return {
       trending: [],
       mostCompleted: [],
@@ -465,9 +466,13 @@ export type UserPuzzle = {
   startedAt?: string
   timeSpent?: number // in seconds
   notes?: string
-  rating?: number
+  rating?: number // 1-5 stars (user's puzzle rating)
   photos?: string[]
-  difficulty?: number
+  difficulty?: number // 1-5 stars (user's difficulty rating)
+  progressPercentage?: number // 0-100 (completion percentage)
+  private?: boolean // whether this log is private
+  createdAt?: string // when the log was created
+  updatedAt?: string // when the log was last updated
 }
 
 export type UserPuzzleStats = {
@@ -479,10 +484,67 @@ export type UserPuzzleStats = {
   favoriteBrand: string
 }
 
+// Types for creating and updating puzzle logs
+export type CreatePuzzleLogRequest = {
+  puzzleId: string
+  status: UserPuzzleStatus
+  startedAt?: string
+  completedAt?: string
+  timeSpent?: number
+  notes?: string
+  rating?: number
+  difficulty?: number
+  photos?: string[]
+  progressPercentage?: number
+  private?: boolean
+}
+
+export type UpdatePuzzleLogRequest = {
+  status?: UserPuzzleStatus
+  startedAt?: string
+  completedAt?: string
+  timeSpent?: number
+  notes?: string
+  rating?: number
+  difficulty?: number
+  photos?: string[]
+  progressPercentage?: number
+  private?: boolean
+}
+
+// Types for creating new puzzles
+export type CreatePuzzleRequest = {
+  title: string
+  brandId?: string
+  pieceCount?: number
+  imageUrl?: string
+  theme?: string
+  material?: string
+  description?: string
+  year?: number
+}
+
+export type Puzzle = {
+  id: string
+  title: string
+  brand?: {
+    id: string
+    name: string
+  }
+  imageUrl?: string
+  pieceCount?: number
+  theme?: string
+  material?: string
+  description?: string
+  year?: number
+  createdAt: string
+  updatedAt: string
+}
+
 // Get user's puzzle collection with status
 export const getUserPuzzles = async (userId: string, status?: UserPuzzleStatus): Promise<UserPuzzle[]> => {
   try {
-    console.log('🔍 Fetching user puzzles...', { userId, status })
+    logger.debug('Fetching user puzzles...', { userId, status })
     
     const results: UserPuzzle[] = []
 

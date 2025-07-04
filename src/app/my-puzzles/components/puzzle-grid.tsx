@@ -43,6 +43,15 @@ export function PuzzleGrid({ puzzles, onPuzzleClick }: PuzzleGridProps) {
           key={puzzle.id}
           className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-white/20"
           onClick={() => onPuzzleClick(puzzle)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onPuzzleClick(puzzle)
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          aria-label={`View details for ${puzzle.title}`}
         >
           <CardContent className="p-0">
             {/* Puzzle Image */}
@@ -101,7 +110,7 @@ export function PuzzleGrid({ puzzles, onPuzzleClick }: PuzzleGridProps) {
                         <span
                           key={star}
                           className={`text-xs ${
-                            star <= puzzle.difficulty! ? 'text-yellow-400' : 'text-gray-300'
+                            star <= (puzzle.difficulty || 0) ? 'text-yellow-400' : 'text-gray-300'
                           }`}
                         >
                           ★

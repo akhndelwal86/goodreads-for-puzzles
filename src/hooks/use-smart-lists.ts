@@ -20,13 +20,24 @@ function useAsyncData<T>(fn: () => Promise<T>, deps: any[] = []): UseQueryResult
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
+    let isMounted = true
     setIsLoading(true)
     setError(null)
-    
+
     fn()
-      .then(setData)
-      .catch(setError)
-      .finally(() => setIsLoading(false))
+      .then((result) => {
+        if (isMounted) setData(result)
+      })
+      .catch((err) => {
+        if (isMounted) setError(err)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, deps)
 
   return { data, isLoading, error }

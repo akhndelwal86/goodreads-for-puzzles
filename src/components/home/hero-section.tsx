@@ -46,7 +46,7 @@ export function HeroSection() {
             size="lg" 
             className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
-            <Link href="/log" className="flex items-center gap-2">
+            <Link href="/puzzles/add" className="flex items-center gap-2">
               <Upload className="w-5 h-5" />
               Log Your Puzzle
             </Link>

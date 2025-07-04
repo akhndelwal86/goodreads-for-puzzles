@@ -58,7 +58,7 @@ export function NavigationBar() {
                   asChild 
                   className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <Link href="/log">Log Puzzle</Link>
+                  <Link href="/puzzles/add">Log Puzzle</Link>
                 </Button>
                 <UserButton 
                   appearance={{
@@ -133,7 +133,7 @@ export function NavigationBar() {
                     asChild 
                     className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg"
                   >
-                    <Link href="/log" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href="/puzzles/add" onClick={() => setIsMobileMenuOpen(false)}>
                       Log Puzzle
                     </Link>
                   </Button>

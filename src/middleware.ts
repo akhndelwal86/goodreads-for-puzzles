@@ -27,7 +27,13 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   // If the route is protected and user is not authenticated, redirect to sign-in
   if (isProtectedRoute(req)) {
-    await auth.protect()
+    try {
+      await auth.protect()
+    } catch (error) {
+      console.error('Authentication error:', error)
+      // Handle authentication failure explicitly
+      return Response.redirect(new URL('/sign-in', req.url))
+    }
   }
 })
 

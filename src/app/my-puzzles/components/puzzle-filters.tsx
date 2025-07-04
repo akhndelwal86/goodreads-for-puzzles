@@ -5,13 +5,15 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 
+type SortOption = 'recent' | 'title' | 'brand' | 'pieces'
+
 interface PuzzleFiltersProps {
   searchTerm: string
   onSearchChange: (term: string) => void
   brandFilter: string
   onBrandChange: (brand: string) => void
-  sortBy: 'recent' | 'title' | 'brand' | 'pieces'
-  onSortChange: (sort: 'recent' | 'title' | 'brand' | 'pieces') => void
+  sortBy: SortOption
+  onSortChange: (sort: SortOption) => void
   availableBrands: string[]
 }
 
@@ -60,7 +62,11 @@ export function PuzzleFilters({
 
           {/* Sort */}
           <div className="w-full sm:w-40">
-            <Select value={sortBy} onValueChange={(value) => onSortChange(value as 'recent' | 'title' | 'brand' | 'pieces')}>
+            <Select value={sortBy} onValueChange={(value) => {
+              if (['recent', 'title', 'brand', 'pieces'].includes(value)) {
+                onSortChange(value as SortOption)
+              }
+            }}>
               <SelectTrigger className="bg-white border-gray-200">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>

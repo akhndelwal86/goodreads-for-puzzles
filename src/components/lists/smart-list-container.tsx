@@ -22,18 +22,23 @@ export function SmartListContainer({
   return (
     <div className={cn("bg-white rounded-xl shadow-sm border border-gray-200 p-6", className)}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <header className="flex items-center gap-3 mb-6">
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-100">
           {icon}
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-      </div>
+        <h2
+          className="text-xl font-semibold text-gray-900"
+          id={`smart-list-${title.toLowerCase().replace(/\s+/g, '-')}`}
+        >
+          {title}
+        </h2>
+      </header>
 
       {/* Content */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-4" role="status" aria-label="Loading content">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
+            <div key={i} className="animate-pulse" aria-hidden="true">
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
                 <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
@@ -45,6 +50,7 @@ export function SmartListContainer({
               </div>
             </div>
           ))}
+          <span className="sr-only">Loading...</span>
         </div>
       ) : (
         <div className="space-y-4">
@@ -59,6 +65,7 @@ export function SmartListContainer({
             variant="ghost" 
             onClick={onViewAll}
             className="w-full justify-center gap-2 text-gray-600 hover:text-gray-900"
+            aria-label={`View all ${title.toLowerCase()}`}
           >
             View All
             <ArrowRight className="w-4 h-4" />
