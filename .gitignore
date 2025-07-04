@@ -70,3 +70,24 @@ node_modules/
 # tasks/ 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Next.js cache files
+.next/
+.turbo/
+.vercel/
+.swc/
+out/
+
+# Cache directories
+node_modules/.cache/
+.npm/
+.eslintcache
+
+# System cache
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/

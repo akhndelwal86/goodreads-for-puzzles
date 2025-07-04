@@ -181,4 +181,12 @@ src/components/
 - If styles don't work, check if the class exists in Tailwind docs
 - Use the cn() utility from @/lib/utils for all className combinations
 
+# Next.js Development Guidelines
+- Always stop the dev server before making config changes
+- Never modify next.config.js, tailwind.config.ts, and package.json simultaneously
+- After package installations, always restart the dev server
+- Use 'npm run fresh' when experiencing cache issues
+- Disable Turbopack in development to prevent cache corruption
+- Test builds regularly with 'npm run build'
+
 Remember: Refer to the documents in /docs folder for detailed requirements, user flows, database schema, and technical specifications. Always prioritize user experience and maintain code quality standards.
