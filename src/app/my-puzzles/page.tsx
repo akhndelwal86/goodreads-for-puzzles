@@ -8,7 +8,7 @@ import { StatsHeader } from './components/stats-header'
 import { StatusTabs } from './components/status-tabs'
 import { PuzzleFilters } from './components/puzzle-filters'
 import { PuzzleGrid } from './components/puzzle-grid'
-import { PuzzleModal } from './components/puzzle-modal'
+import { PuzzleLoggingModal } from './components/puzzle-logging-modal'
 import { EmptyState } from './components/empty-state'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 
@@ -20,7 +20,7 @@ export default function MyPuzzlesPage() {
   const [puzzles, setPuzzles] = useState<UserPuzzle[]>([])
   const [stats, setStats] = useState<UserPuzzleStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<UserPuzzleStatus | 'all'>('all')
+  const [activeTab, setActiveTab] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [brandFilter, setBrandFilter] = useState('all')
   const [sortBy, setSortBy] = useState<'recent' | 'title' | 'brand' | 'pieces'>('recent')
@@ -126,6 +126,96 @@ export default function MyPuzzlesPage() {
     setIsModalOpen(true)
   }
 
+  // Handle log progress modal
+  const handleLogProgress = (puzzle: UserPuzzle) => {
+    setSelectedPuzzle(puzzle)
+    setIsModalOpen(true)
+  }
+
+  // Handle successful logging
+  const handleLoggingSuccess = () => {
+    // Refresh the puzzles data
+    loadUserData()
+    
+    // Close modal
+    setIsModalOpen(false)
+    setSelectedPuzzle(null)
+  }
+
+  // Handle status change - CLEAN ARCHITECTURE VERSION
+  const handleStatusChange = async (puzzleId: string, newStatus: string, completionTime?: number) => {
+    console.log('🔄 Status change requested (clean architecture):', { puzzleId, newStatus, completionTime })
+    
+    // Find the current puzzle to get its current status (outside try block for error handling)
+    const currentPuzzle = puzzles.find(p => p.id === puzzleId)
+    const currentStatus = currentPuzzle?.status
+    
+    try {
+      console.log('🔄 Current puzzle status:', currentStatus, '→', newStatus)
+      console.log('🔄 Puzzle details:', currentPuzzle?.title)
+
+      // Optimistically update the UI first
+      setPuzzles(prevPuzzles => 
+        prevPuzzles.map(p => 
+          p.id === puzzleId 
+            ? { ...p, status: newStatus as any }
+            : p
+        )
+      )
+
+      // Call the new clean API endpoint
+      const requestBody = {
+        puzzleId,
+        newStatus,
+        completionTime
+      }
+      
+      console.log('🔄 Request body (clean API):', requestBody)
+
+      const response = await fetch('/api/puzzle-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      })
+
+      console.log('🔄 PATCH response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Status change failed:', errorData)
+        
+        // Revert optimistic update
+        setPuzzles(prevPuzzles => 
+          prevPuzzles.map(p => 
+            p.id === puzzleId 
+              ? { ...p, status: currentStatus as any }
+              : p
+          )
+        )
+        
+        throw new Error(errorData.error || 'Failed to update puzzle status')
+      }
+
+      const result = await response.json()
+      console.log('✅ Status change successful (clean architecture):', result)
+      
+      // Force a full refresh to ensure consistency
+      await loadUserData()
+      
+    } catch (error) {
+      console.error('❌ Error changing puzzle status:', error)
+      
+      // Revert optimistic update on error
+      setPuzzles(prevPuzzles => 
+        prevPuzzles.map(p => 
+          p.id === puzzleId 
+            ? { ...p, status: (currentPuzzle?.status || 'wishlist') as any }
+            : p
+        )
+      )
+    }
+  }
+
   // Load data when component mounts
   useEffect(() => {
     loadUserData()
@@ -188,6 +278,8 @@ export default function MyPuzzlesPage() {
           <PuzzleGrid
             puzzles={filteredPuzzles}
             onPuzzleClick={handlePuzzleClick}
+            onStatusChange={handleStatusChange}
+            onLogProgress={handleLogProgress}
           />
         ) : (
           <EmptyState 
@@ -201,14 +293,15 @@ export default function MyPuzzlesPage() {
           />
         )}
 
-        {/* Puzzle Detail Modal */}
-        <PuzzleModal
+        {/* Puzzle Logging Modal */}
+        <PuzzleLoggingModal
           puzzle={selectedPuzzle}
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false)
             setSelectedPuzzle(null)
           }}
+          onSuccess={handleLoggingSuccess}
         />
       </div>
     </div>

@@ -4,31 +4,35 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { UserPuzzle, UserPuzzleStatus } from '@/lib/supabase'
 
 interface StatusTabsProps {
-  activeTab: UserPuzzleStatus | 'all'
-  onTabChange: (tab: UserPuzzleStatus | 'all') => void
+  activeTab: string
+  onTabChange: (tab: string) => void
   puzzles: UserPuzzle[]
 }
 
 export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps) {
-  // Count puzzles by status
+  // Count puzzles by status - CLEAN ARCHITECTURE VERSION
   const counts = {
     all: puzzles.length,
-    completed: puzzles.filter(p => p.status === 'completed').length,
-    'want-to-do': puzzles.filter(p => p.status === 'want-to-do').length,
+    'wishlist': puzzles.filter(p => p.status === 'wishlist').length,
+    'library': puzzles.filter(p => p.status === 'library').length,
     'in-progress': puzzles.filter(p => p.status === 'in-progress').length,
+    completed: puzzles.filter(p => p.status === 'completed').length,
+    abandoned: puzzles.filter(p => p.status === 'abandoned').length,
   }
 
   const tabs = [
-    { key: 'all' as const, label: 'All Puzzles', emoji: '🧩', count: counts.all },
-    { key: 'completed' as const, label: 'Completed', emoji: '✅', count: counts.completed },
-    { key: 'want-to-do' as const, label: 'Want to Do', emoji: '🎯', count: counts['want-to-do'] },
-    { key: 'in-progress' as const, label: 'In Progress', emoji: '⏳', count: counts['in-progress'] },
+    { key: 'all', label: 'All Puzzles', emoji: '🧩', count: counts.all },
+    { key: 'wishlist', label: 'Wishlist', emoji: '💝', count: counts['wishlist'] },
+    { key: 'library', label: 'My Library', emoji: '📚', count: counts['library'] },
+    { key: 'in-progress', label: 'In Progress', emoji: '⏳', count: counts['in-progress'] },
+    { key: 'completed', label: 'Completed', emoji: '✅', count: counts.completed },
+    { key: 'abandoned', label: 'Abandoned', emoji: '❌', count: counts.abandoned },
   ]
 
   return (
     <div className="mb-6">
-      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as UserPuzzleStatus | 'all')} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4 bg-white/50 p-1">
+      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as string)} className="w-full">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6 bg-white/50 p-1">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab.key}

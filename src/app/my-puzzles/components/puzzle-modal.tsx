@@ -21,12 +21,12 @@ export function PuzzleModal({ puzzle, isOpen, onClose }: PuzzleModalProps) {
     switch (status) {
       case 'completed':
         return <Badge className="bg-green-100 text-green-800">✅ Completed</Badge>
-      case 'in-progress':
+      case 'in_progress':
         return <Badge className="bg-blue-100 text-blue-800">⏳ In Progress</Badge>
-      case 'want-to-do':
-        return <Badge className="bg-purple-100 text-purple-800">🎯 Want to Do</Badge>
-      case 'abandoned':
-        return <Badge className="bg-gray-100 text-gray-800">❌ Abandoned</Badge>
+      case 'want_to_buy':
+        return <Badge className="bg-purple-100 text-purple-800">🛒 Want to Buy</Badge>
+      case 'backlog':
+        return <Badge className="bg-amber-100 text-amber-800">📚 Backlog</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }

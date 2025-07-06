@@ -12,8 +12,8 @@ export default function CreatePuzzlePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createdPuzzleId, setCreatedPuzzleId] = useState<string | null>(null)
 
-  const handleSuccess = (puzzleId: string) => {
-    setCreatedPuzzleId(puzzleId)
+  const handleSuccess = (puzzle: any) => {
+    setCreatedPuzzleId(puzzle.id)
     setIsSubmitting(false)
   }
 

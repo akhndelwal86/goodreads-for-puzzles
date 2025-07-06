@@ -5,13 +5,12 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { StatusSelector, type PuzzleStatus } from './status-selector'
 import { StarRating } from './star-rating'
 import { ProgressSlider } from './progress-slider'
 import { PhotoUploader } from './photo-uploader'
 import { ProgressPhotoUploader } from './logging/progress-photo-uploader'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { Puzzle, UserPuzzle, CreatePuzzleLogRequest, UpdatePuzzleLogRequest } from '@/lib/supabase'
+import { Puzzle, UserPuzzle, CreatePuzzleLogRequest, UpdatePuzzleLogRequest, UserPuzzleStatus } from '@/lib/supabase'
 import { uploadPhotos } from '@/lib/storage'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,14 +24,15 @@ interface PuzzleLogFormProps {
   className?: string
 }
 
-interface FormData {
+interface PuzzleLogFormData {
   puzzle_id: string
-  status: PuzzleStatus
+  status: UserPuzzleStatus
   progress_percentage: number
   difficulty_rating: number
-  user_rating: number
+  rating: number
   private: boolean
-  notes: string
+  note: string
+  time_spent: number // Change to number for seconds
   photos: File[]
 }
 
@@ -44,35 +44,74 @@ export function PuzzleLogForm({
   onCancel,
   className
 }: PuzzleLogFormProps) {
-  const [formData, setFormData] = useState<FormData>({
-    puzzle_id: puzzle?.id || existingLog?.id || '',
-    status: existingLog?.status as PuzzleStatus || 'want-to-do',
+  const [formData, setFormData] = useState<PuzzleLogFormData>({
+    puzzle_id: puzzle?.id || '',
+    status: existingLog?.status as UserPuzzleStatus || 'want_to_buy',
     progress_percentage: existingLog?.progressPercentage || 0,
-    difficulty_rating: existingLog?.difficulty || 0,
-    user_rating: existingLog?.rating || 0,
+    difficulty_rating: existingLog?.difficulty || 0, // 0 means no rating selected
+    rating: existingLog?.rating || 0, // 0 means no rating selected  
     private: existingLog?.private || false,
-    notes: existingLog?.notes || '',
+    note: existingLog?.notes || '',
+    time_spent: (existingLog as any)?.timeSpent || 0, // Get from existing log if available
     photos: []
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [showTimeInput, setShowTimeInput] = useState(false)
 
-  // Auto-adjust progress based on status
+  // Show time input for completed puzzles or if time already exists
   useEffect(() => {
-    if (formData.status === 'want-to-do' && formData.progress_percentage > 0) {
-      setFormData(prev => ({ ...prev, progress_percentage: 0 }))
-    } else if (formData.status === 'completed' && formData.progress_percentage < 100) {
-      setFormData(prev => ({ ...prev, progress_percentage: 100 }))
-    }
-  }, [formData.status, formData.progress_percentage])
+    const shouldShowTime = formData.progress_percentage === 100 || formData.time_spent > 0
+    setShowTimeInput(shouldShowTime)
+  }, [formData.progress_percentage, formData.time_spent])
 
-  const updateFormData = <K extends keyof FormData>(key: K, value: FormData[K]) => {
+  // Auto-adjust progress based on status (removed since status is not in form anymore)
+  // Progress is now freely editable in the logging form
+
+  const updateFormData = <K extends keyof PuzzleLogFormData>(key: K, value: PuzzleLogFormData[K]) => {
     setFormData(prev => ({ ...prev, [key]: value }))
     // Clear error when user starts typing
     if (errors[key]) {
       setErrors(prev => ({ ...prev, [key]: '' }))
     }
+  }
+
+  const formatTimeForDisplay = (seconds: number): string => {
+    if (seconds === 0) return ''
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  }
+
+  const parseTimeInput = (timeStr: string): number => {
+    if (!timeStr.trim()) return 0
+    
+    // Parse formats like "2h 30m", "90m", "1.5h", etc.
+    const hourMatch = timeStr.match(/(\d+(?:\.\d+)?)\s*h/i)
+    const minuteMatch = timeStr.match(/(\d+)\s*m/i)
+    
+    let totalMinutes = 0
+    
+    if (hourMatch) {
+      totalMinutes += parseFloat(hourMatch[1]) * 60
+    }
+    if (minuteMatch) {
+      totalMinutes += parseInt(minuteMatch[1])
+    }
+    
+    // If no matches, assume it's just minutes
+    if (!hourMatch && !minuteMatch) {
+      const num = parseFloat(timeStr)
+      if (!isNaN(num)) {
+        totalMinutes = num
+      }
+    }
+    
+    return Math.round(totalMinutes * 60) // Convert to seconds
   }
 
   const validateForm = (): boolean => {
@@ -82,13 +121,7 @@ export function PuzzleLogForm({
       newErrors.puzzle_id = 'Please select or create a puzzle'
     }
 
-    if (formData.status === 'completed' && formData.progress_percentage < 100) {
-      newErrors.progress_percentage = 'Completed puzzles should be at 100%'
-    }
-
-    if (formData.status === 'want-to-do' && formData.progress_percentage > 0) {
-      newErrors.progress_percentage = 'Want-to-do puzzles should be at 0%'
-    }
+    // Remove status-based validation since status is managed by list actions
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -98,6 +131,11 @@ export function PuzzleLogForm({
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
+
+    console.log('🚀 Form submit - Mode:', mode)
+    console.log('🚀 Form submit - ExistingLog:', existingLog)
+    console.log('🚀 Form submit - Puzzle ID:', formData.puzzle_id)
+    console.log('🚀 Form submit - Form Data:', formData)
 
     try {
       let uploadedPhotoUrls: string[] = []
@@ -112,11 +150,12 @@ export function PuzzleLogForm({
         puzzleId: formData.puzzle_id,
         status: formData.status,
         progressPercentage: formData.progress_percentage,
-        difficulty: formData.difficulty_rating,
-        rating: formData.user_rating,
-        notes: formData.notes,
+        difficulty: formData.difficulty_rating === 0 ? null : formData.difficulty_rating, // Convert 0 to null
+        rating: formData.rating === 0 ? null : formData.rating, // Convert 0 to null
+        notes: formData.note,
         private: formData.private,
-        photos: uploadedPhotoUrls
+        photos: uploadedPhotoUrls,
+        timeSpent: formData.time_spent // Add timeSpent to the request
       }
 
       let response: Response
@@ -129,9 +168,15 @@ export function PuzzleLogForm({
           body: JSON.stringify(requestData)
         })
       } else {
-        // Update existing puzzle log
-        const { puzzleId, ...updateData } = requestData
-        response = await fetch(`/api/puzzle-logs/${existingLog?.id}`, {
+        // Update existing puzzle log - use the log ID from existingLog
+        const { puzzleId, status, ...updateData } = requestData
+        const logId = (existingLog as any)?.logId // Use logId from the modal
+        
+        if (!logId) {
+          throw new Error('No log ID found for update operation')
+        }
+        
+        response = await fetch(`/api/puzzle-logs/${logId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData)
@@ -155,7 +200,7 @@ export function PuzzleLogForm({
         status: savedLog.status,
         progressPercentage: savedLog.progress_percentage,
         difficulty: savedLog.difficulty_rating,
-        rating: savedLog.user_rating,
+        rating: savedLog.rating,
         notes: savedLog.notes,
         private: savedLog.private,
         photos: savedLog.photo_urls || uploadedPhotoUrls,
@@ -171,8 +216,6 @@ export function PuzzleLogForm({
       setIsSubmitting(false)
     }
   }
-
-  const progressDisabled = formData.status === 'want-to-do' || formData.status === 'completed'
 
   return (
     <Card className={cn('w-full max-w-2xl mx-auto', className)}>
@@ -205,23 +248,38 @@ export function PuzzleLogForm({
             </div>
           )}
 
-          {/* Status Selection */}
-          <StatusSelector
-            value={formData.status}
-            onChange={(status) => updateFormData('status', status)}
-          />
-          {errors.status && (
-            <p className="text-sm text-red-600">{errors.status}</p>
-          )}
+          {/* Status is managed by list actions, not in logging form */}
 
           {/* Progress Slider */}
           <ProgressSlider
             value={formData.progress_percentage}
             onChange={(value) => updateFormData('progress_percentage', value)}
-            disabled={progressDisabled}
+            disabled={false}
           />
           {errors.progress_percentage && (
             <p className="text-sm text-red-600">{errors.progress_percentage}</p>
+          )}
+
+          {/* Completion Time - Show when progress is 100% or time already exists */}
+          {showTimeInput && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Time to Complete
+              </label>
+              <Input
+                type="text"
+                value={formatTimeForDisplay(formData.time_spent)}
+                onChange={(e) => {
+                  const seconds = parseTimeInput(e.target.value)
+                  updateFormData('time_spent', seconds)
+                }}
+                placeholder="e.g., 2h 30m, 90m, or 1.5h"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                How long did it take to complete? (e.g., "2h 30m" or "90m")
+              </p>
+            </div>
           )}
 
           {/* Ratings */}
@@ -234,8 +292,8 @@ export function PuzzleLogForm({
             />
             
             <StarRating
-              value={formData.user_rating}
-              onChange={(rating) => updateFormData('user_rating', rating)}
+              value={formData.rating}
+              onChange={(rating) => updateFormData('rating', rating)}
               label="Quality Rating"
               description="How much did you enjoy it?"
             />
@@ -253,8 +311,8 @@ export function PuzzleLogForm({
               Notes
             </label>
             <Textarea
-              value={formData.notes}
-              onChange={(e) => updateFormData('notes', e.target.value)}
+              value={formData.note}
+              onChange={(e) => updateFormData('note', e.target.value)}
               placeholder="Share your thoughts, tips, or memories about this puzzle..."
               rows={3}
               className="resize-none"

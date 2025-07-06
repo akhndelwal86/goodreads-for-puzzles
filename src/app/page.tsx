@@ -55,7 +55,11 @@ export default function HomePage() {
       </div>
 
       {/* Featured Puzzles - Database-driven puzzle grid */}
-      <FeaturedPuzzles puzzles={featuredPuzzles} />
+      <div className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <FeaturedPuzzles />
+        </div>
+      </div>
 
       {/* Popular Categories - Browse by interest with filters */}
       <PopularCategories />

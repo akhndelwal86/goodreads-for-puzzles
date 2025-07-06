@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Puzzle not found' }, { status: 404 })
     }
 
-    // Check if user already has a log for this puzzle
-    const { data: existingLog, error: existingError } = await supabase
+    // Check if log already exists - if it does, update it instead of creating new one
+    const { data: existingLog } = await supabase
       .from('puzzle_logs')
       .select('id')
       .eq('user_id', userData.id)
@@ -73,10 +73,31 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingLog) {
-      return NextResponse.json(
-        { error: 'Log already exists for this puzzle. Use PATCH to update.' },
-        { status: 409 }
-      )
+      // Update existing log instead of creating new one
+      const { data: updatedLog, error: updateError } = await supabase
+        .from('puzzle_logs')
+        .update({
+          solve_time_seconds: timeSpent,
+          note: notes,
+          photo_urls: photos,
+          video_urls: [],
+          progress_percentage: progressPercentage || (status === 'completed' ? 100 : 0),
+          user_rating: rating,
+          difficulty_rating: difficulty,
+          is_private: isPrivate,
+          logged_at: status === 'completed' ? (completedAt || new Date().toISOString()) : null
+        })
+        .eq('id', existingLog.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.log('❌ Error updating puzzle log:', updateError)
+        return NextResponse.json({ error: 'Failed to update puzzle log' }, { status: 500 })
+      }
+
+      console.log('✅ Updated existing puzzle log:', updatedLog.id)
+      return NextResponse.json({ success: true, log: updatedLog }, { status: 200 })
     }
 
     // Prepare the puzzle log data - using only existing columns for now
@@ -85,9 +106,13 @@ export async function POST(request: NextRequest) {
       puzzle_id: puzzleId,
       logged_at: status === 'completed' ? (completedAt || new Date().toISOString()) : null,
       solve_time_seconds: timeSpent,
-      note: notes,
+      note: notes, // Fixed: using 'note' column instead of 'notes'
       photo_urls: photos,
-      video_urls: [] // Empty for now
+      video_urls: [], // Empty for now
+      progress_percentage: progressPercentage || (status === 'completed' ? 100 : 0),
+      user_rating: rating,
+      difficulty_rating: difficulty,
+      is_private: isPrivate
     }
 
     // Create the puzzle log

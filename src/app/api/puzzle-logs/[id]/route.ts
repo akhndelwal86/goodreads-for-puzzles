@@ -95,14 +95,14 @@ export async function PATCH(
     const { data: updatedLog, error } = await supabase
       .from('puzzle_logs')
       .update({
-        status: body.status,
+        note: body.notes,
+        solve_time_seconds: body.timeSpent,
+        photo_urls: body.photos || [],
         progress_percentage: body.progressPercentage,
-        difficulty_rating: body.difficulty,
         user_rating: body.rating,
-        notes: body.notes,
-        private: body.private,
-        photo_urls: body.photos,
-        updated_at: new Date().toISOString()
+        difficulty_rating: body.difficulty,
+        is_private: body.private,
+        logged_at: body.status === 'completed' ? (body.completedAt || new Date().toISOString()) : null
       })
       .eq('id', logId)
       .eq('user_id', user.id)

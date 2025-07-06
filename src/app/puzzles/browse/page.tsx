@@ -1,259 +1,288 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Star, Plus, BookOpen, Search, Filter } from 'lucide-react'
-import Link from 'next/link'
-import Image from 'next/image'
+import { Search, Filter, Grid, List, ChevronDown } from 'lucide-react'
+import { BrowsePuzzleCard } from '@/components/puzzle/browse-puzzle-card'
+import { BrowseFilterSidebar } from '@/components/puzzle/browse-filter-sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+interface FilterState {
+  search: string
+  brands: string[]
+  pieceCountMin: number
+  pieceCountMax: number
+  difficultyMin: number
+  difficultyMax: number
+  ratingMin: number
+  status: string[]
+  ratedOnly: boolean
+}
 
 interface Puzzle {
   id: string
   title: string
-  brand: string
-  piece_count: number
-  main_image_url?: string
+  brand?: {
+    id: string
+    name: string
+  }
+  imageUrl?: string
+  pieceCount: number
+  theme?: string
+  material?: string
   description?: string
-  difficulty_level?: string
-  average_rating?: number
-  total_ratings?: number
-  created_at: string
+  year?: number
+  createdAt: string
+  updatedAt: string
+  avgRating?: number
+  reviewCount?: number
 }
 
-export default function PuzzleBrowsePage() {
+interface Brand {
+  id: string
+  name: string
+  count: number
+}
+
+export default function BrowsePuzzlesPage() {
+  const { user } = useUser()
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
+  const [availableBrands, setAvailableBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [totalPuzzles, setTotalPuzzles] = useState(0)
+  const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rating'>('recent')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  useEffect(() => {
-    fetchPuzzles()
-  }, [])
+  // Sort options for the dropdown
+  const sortOptions = [
+    { value: 'recent', label: 'Recently Added', order: 'desc' },
+    { value: 'popular', label: 'Most Popular', order: 'desc' },
+    { value: 'rating', label: 'Highest Rated', order: 'desc' },
+  ]
 
-  const fetchPuzzles = async () => {
+  const currentSortLabel = sortOptions.find(opt => opt.value === sortBy)?.label || 'Recently Added'
+  
+  // Fetch puzzles with filters
+  const fetchPuzzles = useCallback(async (filters: FilterState, currentSortBy?: string, currentSortOrder?: string) => {
+    setLoading(true)
     try {
-      const response = await fetch('/api/puzzles')
-      if (response.ok) {
-        const data = await response.json()
-        setPuzzles(data.puzzles || [])
+      const params = new URLSearchParams()
+      
+      // Add filter parameters
+      if (filters.search) params.set('search', filters.search)
+      if (filters.brands.length > 0) params.set('brands', filters.brands.join(','))
+      if (filters.pieceCountMin > 0) params.set('pieceMin', filters.pieceCountMin.toString())
+      if (filters.pieceCountMax < 5000) params.set('pieceMax', filters.pieceCountMax.toString())
+      if (filters.difficultyMin > 1) params.set('diffMin', filters.difficultyMin.toString())
+      if (filters.difficultyMax < 5) params.set('diffMax', filters.difficultyMax.toString())
+      if (filters.ratingMin > 1) params.set('ratingMin', filters.ratingMin.toString())
+      if (filters.status.length > 0) params.set('status', filters.status.join(','))
+      if (filters.ratedOnly) params.set('ratedOnly', 'true')
+      
+      // Add sorting parameters from local state (not from filters)
+      params.set('sortBy', currentSortBy || sortBy)
+      params.set('sortOrder', currentSortOrder || sortOrder)
+      
+      const response = await fetch(`/api/puzzles?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch puzzles')
+      }
+      
+      const data = await response.json()
+      setPuzzles(data.puzzles || [])
+      setTotalPuzzles(data.total || data.puzzles?.length || 0)
+      
+      // Extract unique brands with counts for filtering
+      if (data.brands) {
+        setAvailableBrands(data.brands)
       }
     } catch (error) {
       console.error('Error fetching puzzles:', error)
+      setPuzzles([])
+      setTotalPuzzles(0)
     } finally {
       setLoading(false)
     }
-  }
+  }, [sortBy, sortOrder])
 
-  const handleQuickRating = (puzzleId: string, rating: number) => {
-    console.log(`Quick rating: Puzzle ${puzzleId} rated ${rating} stars`)
-    // TODO: Implement quick rating API call
-  }
+  // Handle filter changes
+  const handleFiltersChange = useCallback((filters: FilterState) => {
+    setCurrentFilters(filters)
+    fetchPuzzles(filters)
+  }, [fetchPuzzles])
 
-  const handleAddToList = (puzzleId: string, listType: 'want-to-solve' | 'wishlist') => {
-    console.log(`Add to list: Puzzle ${puzzleId} added to ${listType}`)
-    // TODO: Implement add to list functionality
-  }
+  // Handle sort changes
+  const handleSortChange = useCallback((newSortBy: string) => {
+    const newSortOrder = sortOptions.find(opt => opt.value === newSortBy)?.order || 'desc'
+    setSortBy(newSortBy as any)
+    setSortOrder(newSortOrder as any)
+    
+    // Refetch with new sorting if we have filters
+    if (currentFilters) {
+      fetchPuzzles(currentFilters, newSortBy, newSortOrder)
+    }
+  }, [currentFilters, fetchPuzzles, sortOptions])
 
-  const handleFullLogging = (puzzleId: string) => {
-    console.log(`Full logging: Redirect to log puzzle ${puzzleId}`)
-    // TODO: Route to detailed logging flow
-  }
-
-  const filteredPuzzles = puzzles.filter(puzzle =>
-    puzzle.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    puzzle.brand.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading puzzles...</p>
-        </div>
-      </div>
-    )
-  }
+  // Load initial data
+  useEffect(() => {
+    // Initial load with default filters will be handled by the sidebar
+    // when it loads filters from URL params
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">Browse Puzzles</h1>
-              <p className="text-slate-600">Discover your next puzzle adventure</p>
+              <h1 className="text-2xl font-bold text-gray-900">Browse Puzzles</h1>
+              <p className="text-gray-600 mt-1">
+                Discover your next favorite jigsaw puzzle
+              </p>
             </div>
-            <Link href="/puzzles/add">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Puzzle
-              </Button>
-            </Link>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search puzzles by name or brand..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filters
-            </Button>
-          </div>
-        </div>
-
-        {/* Puzzles Grid */}
-        {filteredPuzzles.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No puzzles found</h3>
-            <p className="text-slate-600 mb-6">Try adjusting your search or add a new puzzle to get started.</p>
-            <Link href="/puzzles/create">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Puzzle
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredPuzzles.map((puzzle) => (
-              <PuzzleCard
-                key={puzzle.id}
-                puzzle={puzzle}
-                onQuickRating={handleQuickRating}
-                onAddToList={handleAddToList}
-                onFullLogging={handleFullLogging}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface PuzzleCardProps {
-  puzzle: Puzzle
-  onQuickRating: (puzzleId: string, rating: number) => void
-  onAddToList: (puzzleId: string, listType: 'want-to-solve' | 'wishlist') => void
-  onFullLogging: (puzzleId: string) => void
-}
-
-function PuzzleCard({ puzzle, onQuickRating, onAddToList, onFullLogging }: PuzzleCardProps) {
-  const [hoveredStar, setHoveredStar] = useState(0)
-  const [userRating, setUserRating] = useState(0)
-
-  const handleStarClick = (rating: number) => {
-    setUserRating(rating)
-    onQuickRating(puzzle.id, rating)
-  }
-
-  return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border-slate-200 hover:border-slate-300">
-      <CardHeader className="p-4">
-        {/* Puzzle Image */}
-        <div className="aspect-square bg-slate-100 rounded-lg mb-3 overflow-hidden">
-          {puzzle.main_image_url ? (
-            <Image
-              src={puzzle.main_image_url}
-              alt={puzzle.title}
-              width={300}
-              height={300}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-slate-400 text-center">
-                <Search className="w-8 h-8 mx-auto mb-2" />
-                <p className="text-sm">No image</p>
+            
+            {/* Controls */}
+            <div className="flex items-center gap-4">
+              {/* Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <span className="text-sm">Sort: {currentSortLabel}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {sortOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => handleSortChange(option.value)}
+                      className={sortBy === option.value ? 'bg-blue-50 text-blue-700' : ''}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* View Toggle */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Puzzle Info */}
-        <div>
-          <div className="flex items-start justify-between mb-2">
-            <CardTitle className="text-sm font-semibold text-slate-900 line-clamp-2 leading-tight">
-              {puzzle.title}
-            </CardTitle>
-          </div>
-          
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="secondary" className="text-xs">
-              {puzzle.brand}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {puzzle.piece_count} pieces
-            </Badge>
+        {/* Main Content */}
+        <div className="flex">
+          {/* Sidebar */}
+          <div className="w-80 bg-white border-r">
+            <BrowseFilterSidebar
+              onFiltersChange={handleFiltersChange}
+              availableBrands={availableBrands}
+              totalPuzzles={totalPuzzles}
+              isLoading={loading}
+            />
           </div>
 
-          {/* Quick Rating */}
-          <div className="flex items-center gap-1 mb-3">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => handleStarClick(star)}
-                onMouseEnter={() => setHoveredStar(star)}
-                onMouseLeave={() => setHoveredStar(0)}
-                className="p-0.5 hover:scale-110 transition-transform"
-              >
-                <Star
-                  className={`w-4 h-4 ${
-                    star <= (hoveredStar || userRating)
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-slate-300'
-                  }`}
-                />
-              </button>
-            ))}
-            {puzzle.total_ratings && (
-              <span className="text-xs text-slate-500 ml-1">
-                ({puzzle.total_ratings})
-              </span>
+          {/* Content */}
+          <div className="flex-1 p-6">
+            {loading ? (
+              <div className="space-y-6">
+                {/* Loading State */}
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading puzzles...</p>
+                </div>
+                
+                {/* Loading Skeleton */}
+                <div className={`grid gap-6 ${
+                  viewMode === 'grid' 
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                    : 'grid-cols-1'
+                }`}>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-lg border p-4">
+                      <div className="aspect-square bg-gray-200 rounded-lg animate-pulse mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : puzzles.length === 0 ? (
+              /* Empty State */
+              <div className="text-center py-12">
+                <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Search className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No puzzles found</h3>
+                <p className="text-gray-600 mb-4">
+                  Try adjusting your filters or search terms to find more puzzles.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // This will trigger a filter reset via the sidebar
+                    window.location.href = '/puzzles/browse'
+                  }}
+                >
+                  Clear All Filters
+                </Button>
+              </div>
+            ) : (
+              /* Puzzle Grid */
+              <div className={`grid gap-6 ${
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                  : 'grid-cols-1 max-w-4xl'
+              }`}>
+                {puzzles.map((puzzle) => (
+                  <BrowsePuzzleCard
+                    key={puzzle.id}
+                    puzzle={puzzle}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Load More Button (for future pagination) */}
+            {!loading && puzzles.length > 0 && puzzles.length < totalPuzzles && (
+              <div className="mt-8 text-center">
+                <Button variant="outline" size="lg">
+                  Load More Puzzles
+                </Button>
+              </div>
             )}
           </div>
         </div>
-      </CardHeader>
-
-      <CardContent className="p-4 pt-0">
-        {/* Progressive Engagement Actions */}
-        <div className="space-y-2">
-          {/* Add to List - Medium Commitment */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAddToList(puzzle.id, 'want-to-solve')}
-            className="w-full text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Want to Solve
-          </Button>
-
-          {/* Full Logging - High Commitment */}
-          <Button
-            size="sm"
-            onClick={() => onFullLogging(puzzle.id)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Log Progress
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 } 

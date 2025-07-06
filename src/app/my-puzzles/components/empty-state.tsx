@@ -2,10 +2,10 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import type { UserPuzzleStatus } from '@/lib/supabase'
+import { PlusCircle, Search, Filter } from 'lucide-react'
 
 interface EmptyStateProps {
-  activeTab: UserPuzzleStatus | 'all'
+  activeTab: string
   hasSearchTerm: boolean
   onClearFilters: () => void
 }
@@ -14,41 +14,88 @@ export function EmptyState({ activeTab, hasSearchTerm, onClearFilters }: EmptySt
   const getEmptyStateContent = () => {
     if (hasSearchTerm) {
       return {
-        emoji: '🔍',
+        icon: <Search className="w-16 h-16 text-gray-400" />,
         title: 'No puzzles found',
-        description: 'Try adjusting your search terms or filters to find what you\'re looking for.',
-        actionText: 'Clear Filters'
+        description: 'Try adjusting your search terms or filters.',
+        action: {
+          label: 'Clear Filters',
+          onClick: onClearFilters,
+          icon: <Filter className="w-4 h-4" />
+        }
       }
     }
 
     switch (activeTab) {
-      case 'completed':
+      case 'wishlist':
         return {
-          emoji: '🧩',
-          title: 'No completed puzzles yet',
-          description: 'Start solving some puzzles to see them here! Every puzzle completed is a victory worth celebrating.',
-          actionText: 'Browse All Puzzles'
-        }
-      case 'want-to-do':
-        return {
-          emoji: '🎯',
+          icon: <PlusCircle className="w-16 h-16 text-purple-400" />,
           title: 'No puzzles in your wishlist',
-          description: 'Discover exciting puzzles and add them to your want-to-do list for future solving sessions.',
-          actionText: 'Discover Puzzles'
+          description: 'Start building your collection by adding puzzles you want to buy.',
+          action: {
+            label: 'Browse Puzzles',
+            onClick: () => window.location.href = '/puzzles/browse',
+            icon: <Search className="w-4 h-4" />
+          }
         }
+      
+      case 'library':
+        return {
+          icon: <PlusCircle className="w-16 h-16 text-blue-400" />,
+          title: 'No puzzles in your library',
+          description: 'Add puzzles you own but haven\'t started solving yet.',
+          action: {
+            label: 'Browse Puzzles',
+            onClick: () => window.location.href = '/puzzles/browse',
+            icon: <Search className="w-4 h-4" />
+          }
+        }
+      
       case 'in-progress':
         return {
-          emoji: '⏳',
+          icon: <PlusCircle className="w-16 h-16 text-yellow-400" />,
           title: 'No puzzles in progress',
-          description: 'Ready to start a new puzzle adventure? Pick one from your collection and begin solving!',
-          actionText: 'Start a Puzzle'
+          description: 'Start working on a puzzle from your library.',
+          action: {
+            label: 'View Library',
+            onClick: () => onClearFilters(),
+            icon: <PlusCircle className="w-4 h-4" />
+          }
         }
+      
+      case 'completed':
+        return {
+          icon: <PlusCircle className="w-16 h-16 text-green-400" />,
+          title: 'No completed puzzles yet',
+          description: 'Complete your first puzzle to see it here.',
+          action: {
+            label: 'Browse Puzzles',
+            onClick: () => window.location.href = '/puzzles/browse',
+            icon: <Search className="w-4 h-4" />
+          }
+        }
+      
+      case 'abandoned':
+        return {
+          icon: <PlusCircle className="w-16 h-16 text-red-400" />,
+          title: 'No abandoned puzzles',
+          description: 'Puzzles you\'ve given up on will appear here.',
+          action: {
+            label: 'Browse Puzzles',
+            onClick: () => window.location.href = '/puzzles/browse',
+            icon: <Search className="w-4 h-4" />
+          }
+        }
+      
       default:
         return {
-          emoji: '🧩',
-          title: 'Your puzzle collection is empty',
-          description: 'Start building your personal puzzle library by discovering and logging puzzles you love.',
-          actionText: 'Discover Puzzles'
+          icon: <PlusCircle className="w-16 h-16 text-gray-400" />,
+          title: 'No puzzles in your collection',
+          description: 'Start building your puzzle collection by adding puzzles you want to solve.',
+          action: {
+            label: 'Browse Puzzles',
+            onClick: () => window.location.href = '/puzzles/browse',
+            icon: <Search className="w-4 h-4" />
+          }
         }
     }
   }
@@ -56,24 +103,19 @@ export function EmptyState({ activeTab, hasSearchTerm, onClearFilters }: EmptySt
   const content = getEmptyStateContent()
 
   return (
-    <div className="flex justify-center items-center min-h-[400px]">
-      <Card className="max-w-md w-full bg-white/50 backdrop-blur-sm border-white/20">
-        <CardContent className="p-8 text-center">
-          <div className="text-6xl mb-4">{content.emoji}</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            {content.title}
-          </h3>
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            {content.description}
-          </p>
-          <Button 
-            onClick={onClearFilters}
-            className="bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            {content.actionText}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="border-dashed border-2 border-gray-200">
+      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        {content.icon}
+        <h3 className="mt-6 text-xl font-semibold text-gray-900">{content.title}</h3>
+        <p className="mt-2 text-gray-600 max-w-sm">{content.description}</p>
+        <Button 
+          className="mt-6 flex items-center gap-2"
+          onClick={content.action.onClick}
+        >
+          {content.action.icon}
+          {content.action.label}
+        </Button>
+      </CardContent>
+    </Card>
   )
 } 

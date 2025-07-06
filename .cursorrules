@@ -189,4 +189,19 @@ src/components/
 - Disable Turbopack in development to prevent cache corruption
 - Test builds regularly with 'npm run build'
 
+# CRITICAL: Authentication with Clerk + Supabase
+- Always use users.clerk_id to link Clerk authentication to your users table
+- Never use Supabase auth fields (encrypted_password, email_confirmed_at, etc.)
+- Get current user: auth().userId (Clerk) → supabase.from('users').eq('clerk_id', userId)
+- All user queries MUST use clerk_id, not email or other fields
+
+# Database Schema Rules
+- ALWAYS refer to docs/supabase-schema.md for exact column names
+- photo_urls and video_urls are JSONB arrays (not single text fields)
+- Always filter puzzles by approval_status = 'approved' for public display
+- Use puzzle_aggregates table for statistics, never compute live
+- puzzle_logs.status has specific values: want-to-do/in-progress/completed/abandoned
+- All UUIDs use uuid_generate_v4() default
+- All tables have created_at with now() default
+
 Remember: Refer to the documents in /docs folder for detailed requirements, user flows, database schema, and technical specifications. Always prioritize user experience and maintain code quality standards.

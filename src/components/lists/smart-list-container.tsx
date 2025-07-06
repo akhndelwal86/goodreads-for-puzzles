@@ -35,22 +35,22 @@ export function SmartListContainer({
       </header>
 
       {/* Content */}
-      {isLoading ? (
-        <div className="space-y-4" role="status" aria-label="Loading content">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse" aria-hidden="true">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-                <div className="w-16 h-6 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-          <span className="sr-only">Loading...</span>
+{isLoading ? (
+  <div className="space-y-4" role="status" aria-label="Loading content">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <div key={i} className="animate-pulse" aria-hidden="true">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+          <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+          <div className="flex-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="w-16 h-6 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    ))}
+    <span className="sr-only">Loading...</span>
         </div>
       ) : (
         <div className="space-y-4">

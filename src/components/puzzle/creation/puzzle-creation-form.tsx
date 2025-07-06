@@ -26,8 +26,11 @@ interface PuzzleCreationData {
 }
 
 interface PuzzleCreationFormProps {
-  onSuccess: (puzzle: any) => void
-  onCancel: () => void
+  onSuccess: (puzzle: { id: string; [key: string]: any }) => void
+  onCancel?: () => void
+  onSubmitStart?: () => void
+  onError?: () => void
+  isSubmitting?: boolean
   className?: string
   initialData?: Partial<PuzzleCreationData>
 }
@@ -48,6 +51,9 @@ const PIECE_COUNT_OPTIONS = [
 export function PuzzleCreationForm({
   onSuccess,
   onCancel,
+  onSubmitStart,
+  onError,
+  isSubmitting: externalIsSubmitting,
   className,
   initialData = {}
 }: PuzzleCreationFormProps) {
@@ -63,6 +69,7 @@ export function PuzzleCreationForm({
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const finalIsSubmitting = externalIsSubmitting ?? isSubmitting
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showOptionalFields, setShowOptionalFields] = useState(false)
 
@@ -94,6 +101,7 @@ export function PuzzleCreationForm({
     
     if (!validateForm()) return
 
+    onSubmitStart?.()
     setIsSubmitting(true)
     setErrors({})
 
@@ -150,6 +158,7 @@ export function PuzzleCreationForm({
       setErrors({ 
         submit: error instanceof Error ? error.message : 'Failed to create puzzle'
       })
+      onError?.()
     } finally {
       setIsSubmitting(false)
     }
@@ -329,16 +338,16 @@ export function PuzzleCreationForm({
               onClick={onCancel}
               variant="outline"
               className="flex-1"
-              disabled={isSubmitting}
+              disabled={finalIsSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1"
-              disabled={isSubmitting}
+              disabled={finalIsSubmitting}
             >
-              {isSubmitting ? (
+              {finalIsSubmitting ? (
                 <>
                   <LoadingSpinner className="w-4 h-4 mr-2" />
                   Creating Puzzle...

@@ -453,7 +453,7 @@ export const getSmartListsData = async () => {
 // USER PUZZLES DATABASE FUNCTIONS
 // ============================
 
-export type UserPuzzleStatus = 'completed' | 'want-to-do' | 'in-progress' | 'abandoned'
+export type UserPuzzleStatus = 'wishlist' | 'library' | 'in-progress' | 'completed' | 'abandoned'
 
 export type UserPuzzle = {
   id: string
@@ -541,142 +541,70 @@ export type Puzzle = {
   updatedAt: string
 }
 
-// Get user's puzzle collection with status
-export const getUserPuzzles = async (userId: string, status?: UserPuzzleStatus): Promise<UserPuzzle[]> => {
+// Get user's puzzle collection with status - CLEAN ARCHITECTURE VERSION
+export const getUserPuzzles = async (userId: string, status?: UserPuzzleStatus, client = supabase): Promise<UserPuzzle[]> => {
   try {
-    logger.debug('Fetching user puzzles...', { userId, status })
+    logger.debug('Fetching user puzzles (clean architecture)...', { userId, status })
     
-    const results: UserPuzzle[] = []
+    // Build the query - single source of truth from puzzle_logs
+    let query = client
+      .from('puzzle_logs')
+      .select(`
+        *,
+        puzzle:puzzles!inner(
+          id,
+          title,
+          piece_count,
+          image_url,
+          brand:brands(name)
+        )
+      `)
+      .eq('user_id', userId)
 
-    // Get puzzles from puzzle_logs (completed and in-progress)
-    if (!status || status === 'completed' || status === 'in-progress') {
-      let logQuery = supabase
-        .from('puzzle_logs')
-        .select(`
-          *,
-          puzzle:puzzles!inner(
-            id,
-            title,
-            piece_count,
-            image_url,
-            brand:brands(name)
-          )
-        `)
-        .eq('user_id', userId)
-
-      if (status === 'completed') {
-        logQuery = logQuery.not('logged_at', 'is', null)
-      } else if (status === 'in-progress') {
-        logQuery = logQuery.is('logged_at', null)
-      }
-
-      const { data: logData, error: logError } = await logQuery.order('logged_at', { ascending: false })
-
-      if (logError) {
-        console.error('❌ Error fetching puzzle logs:', logError)
-      } else {
-        // Group logs by puzzle ID and keep only the most recent log for each puzzle
-        const puzzleMap = new Map()
-        
-        ;(logData || []).forEach(log => {
-          const puzzleId = log.puzzle.id
-          const existingLog = puzzleMap.get(puzzleId)
-          
-          // Keep the most recent log (first one due to our ordering)
-          if (!existingLog) {
-            puzzleMap.set(puzzleId, {
-              id: log.puzzle.id,
-              title: log.puzzle.title,
-              brand: log.puzzle.brand?.name || 'Unknown',
-              pieces: log.puzzle.piece_count,
-              image: log.puzzle.image_url || '/placeholder-puzzle.svg',
-              status: log.logged_at ? 'completed' as UserPuzzleStatus : 'in-progress' as UserPuzzleStatus,
-              completedAt: log.logged_at,
-              timeSpent: log.solve_time_seconds,
-              notes: log.note,
-              photos: log.photo_urls || []
-            })
-          }
-        })
-        
-        results.push(...Array.from(puzzleMap.values()))
-      }
+    // Filter by status if specified
+    if (status) {
+      query = query.eq('status', status)
     }
 
-    // Get want-to-do puzzles from lists
-    if (!status || status === 'want-to-do') {
-      console.log('🎯 Fetching want-to-do puzzles for user:', userId)
+    const { data: logData, error } = await query
+
+    if (error) {
+      logger.error('Error fetching user puzzles:', error)
+      throw error
+    }
+
+    logger.debug('Puzzle logs retrieved:', { count: logData?.length || 0 })
+
+    // Transform the data to UserPuzzle format with correct field mapping
+    const puzzles: UserPuzzle[] = (logData || []).map(log => {
+      const puzzle = log.puzzle as any
       
-      // Fixed query with correct Supabase JOIN syntax
-      const { data: wishlistData, error: wishlistError } = await supabase
-        .from('list_items')
-        .select(`
-          puzzle_id,
-          list:lists!inner(
-            user_id,
-            name
-          )
-        `)
-        .eq('list.user_id', userId)
-        .eq('list.name', 'Want to Do Next')
-
-      console.log('🎯 Wishlist query result:', { wishlistData, wishlistError })
-
-      if (wishlistError) {
-        console.error('❌ Error fetching wishlist puzzles:', wishlistError)
-      } else if (wishlistData && wishlistData.length > 0) {
-        // Get puzzle details for the wishlist items
-        const puzzleIds = wishlistData.map(item => item.puzzle_id)
-        console.log('🎯 Found puzzle IDs in wishlist:', puzzleIds)
-        
-        const { data: puzzleDetails, error: puzzleError } = await supabase
-          .from('puzzles')
-          .select(`
-            id,
-            title,
-            piece_count,
-            image_url,
-            brand:brands(name)
-          `)
-          .in('id', puzzleIds)
-
-        console.log('🎯 Puzzle details query result:', { puzzleDetails, puzzleError })
-
-        if (puzzleError) {
-          console.error('❌ Error fetching puzzle details:', puzzleError)
-        } else {
-          const wishlistPuzzles = (puzzleDetails || [])
-            // Filter out puzzles that are already in puzzle_logs
-            .filter(puzzle => !results.some(r => r.id === puzzle.id))
-            .map(puzzle => ({
-              id: puzzle.id,
-              title: puzzle.title,
-              brand: (puzzle.brand as any)?.name || 'Unknown',
-              pieces: puzzle.piece_count,
-              image: puzzle.image_url || '/placeholder-puzzle.svg',
-              status: 'want-to-do' as UserPuzzleStatus,
-              photos: []
-            }))
-          
-          console.log('🎯 Processed wishlist puzzles:', wishlistPuzzles)
-          results.push(...wishlistPuzzles)
-        }
-      } else {
-        console.log('🎯 No wishlist data found')
+      return {
+        id: puzzle.id,
+        title: puzzle.title,
+        brand: puzzle.brand?.name || 'Unknown',
+        pieces: puzzle.piece_count, // Correct field mapping
+        image: puzzle.image_url,
+        status: log.status as UserPuzzleStatus,
+        completedAt: log.logged_at,
+        startedAt: log.started_at,
+        timeSpent: log.solve_time_seconds || 0,
+        notes: log.note || '', // Correct field mapping
+        rating: log.user_rating || 0, // Correct field mapping
+        photos: log.photo_urls || [],
+        difficulty: log.difficulty_rating || 0, // Correct field mapping
+        progressPercentage: log.status === 'completed' ? 100 : (log.progress_percentage || 0),
+        private: log.is_private || false,
+        createdAt: log.updated_at,
+        updatedAt: log.updated_at
       }
-    }
+    })
 
-    // Final deduplication based on puzzle ID (just in case)
-    const uniqueResults = results.filter((puzzle, index, self) => 
-      index === self.findIndex(p => p.id === puzzle.id)
-    )
-
-    console.log(`✅ Retrieved ${uniqueResults.length} user puzzles (status: ${status || 'all'}) - removed ${results.length - uniqueResults.length} duplicates`)
-    return uniqueResults
-    
+    logger.info(`Retrieved ${puzzles.length} user puzzles (clean architecture)`)
+    return puzzles
   } catch (error) {
-    console.error('💥 Error fetching user puzzles:', error)
-    return []
+    logger.error('Error in getUserPuzzles (clean architecture):', error)
+    throw error
   }
 }
 
@@ -824,7 +752,7 @@ export const searchUserPuzzles = async (
       brand: log.puzzle.brand?.name || 'Unknown',
       pieces: log.puzzle.piece_count,
       image: log.puzzle.image_url || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=200&fit=crop',
-      status: log.logged_at ? 'completed' : 'in-progress',
+      status: log.status as UserPuzzleStatus,
       completedAt: log.logged_at,
       timeSpent: log.solve_time_seconds,
       notes: log.note,

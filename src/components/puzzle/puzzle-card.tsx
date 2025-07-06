@@ -71,6 +71,8 @@ export function PuzzleCard({
                 size="sm"
                 className="w-8 h-8 p-0 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
                 onClick={handleAddToList}
+                aria-label="Add to List"
+                title="Add to List"
               >
                 <Plus className="w-4 h-4 text-white" />
               </Button>
