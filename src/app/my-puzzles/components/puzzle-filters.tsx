@@ -27,29 +27,35 @@ export function PuzzleFilters({
   availableBrands
 }: PuzzleFiltersProps) {
   return (
-    <Card className="bg-white/50 backdrop-blur-sm border-white/20">
-      <CardContent className="p-4">
+    <div className="glass-card border-white/30 rounded-xl p-4">
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-slate-700">Search & Filter</h3>
+        
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
+          {/* Premium Search */}
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search your puzzles..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 bg-white border-gray-200"
-              />
+            <div className="relative glass-card border-white/30 rounded-lg transition-all duration-300 focus-within:border-violet-300 focus-within:shadow-lg">
+              <div className="p-3 flex items-center gap-3">
+                <div className="p-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600">
+                  <Search className="h-4 w-4 text-white" />
+                </div>
+                <Input
+                  placeholder="Search your puzzles..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="border-0 bg-transparent text-slate-700 placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Brand Filter */}
+          {/* Premium Brand Filter */}
           <div className="w-full sm:w-48">
             <Select value={brandFilter} onValueChange={onBrandChange}>
-              <SelectTrigger className="bg-white border-gray-200">
+              <SelectTrigger className="glass-card border-white/30 bg-transparent text-slate-700 h-12 rounded-lg">
                 <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="glass-card border-white/40">
                 <SelectItem value="all">All Brands</SelectItem>
                 {availableBrands.map((brand) => (
                   <SelectItem key={brand} value={brand}>
@@ -60,17 +66,17 @@ export function PuzzleFilters({
             </Select>
           </div>
 
-          {/* Sort */}
+          {/* Premium Sort */}
           <div className="w-full sm:w-40">
             <Select value={sortBy} onValueChange={(value) => {
               if (['recent', 'title', 'brand', 'pieces'].includes(value)) {
                 onSortChange(value as SortOption)
               }
             }}>
-              <SelectTrigger className="bg-white border-gray-200">
+              <SelectTrigger className="glass-card border-white/30 bg-transparent text-slate-700 h-12 rounded-lg">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="glass-card border-white/40">
                 <SelectItem value="recent">Recent</SelectItem>
                 <SelectItem value="title">Title</SelectItem>
                 <SelectItem value="brand">Brand</SelectItem>
@@ -79,7 +85,7 @@ export function PuzzleFilters({
             </Select>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 } 

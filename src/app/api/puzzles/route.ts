@@ -161,8 +161,11 @@ export async function GET(request: NextRequest) {
     const pieceMax = parseInt(searchParams.get('pieceMax') || '999999')
     const diffMin = parseInt(searchParams.get('diffMin') || '1')
     const diffMax = parseInt(searchParams.get('diffMax') || '5')
-    const ratingMin = parseFloat(searchParams.get('ratingMin') || '1')
+    const ratingMin = parseFloat(searchParams.get('ratingMin') || '0')
     const status = searchParams.get('status')?.split(',').filter(Boolean) || []
+    const themes = searchParams.get('themes')?.split(',').filter(Boolean) || []
+    const difficulties = searchParams.get('difficulties')?.split(',').filter(Boolean) || []
+    const categories = searchParams.get('categories')?.split(',').filter(Boolean) || []
     const ratedOnly = searchParams.get('ratedOnly') === 'true'
     const sortBy = searchParams.get('sortBy') || 'recent'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
@@ -192,18 +195,18 @@ export async function GET(request: NextRequest) {
       `)
       .eq('approval_status', 'approved')
 
-    // Add user log join if user is authenticated
-    if (userInternalId) {
+    // Add user log join if user is authenticated and status filtering is needed
+    if (userInternalId && (status.length > 0 || status.includes('not-added'))) {
       baseQuery = supabase
         .from('puzzles')
         .select(`
           *,
           brand:brands(id, name),
           puzzle_aggregates(avg_rating, review_count),
-          user_log:puzzle_logs!left(status)
+          user_logs:puzzle_logs!left(id, status, user_id)
         `)
         .eq('approval_status', 'approved')
-        .eq('user_log.user_id', userInternalId)
+        .eq('user_logs.user_id', userInternalId)
     }
 
     // Apply search filter
@@ -211,12 +214,35 @@ export async function GET(request: NextRequest) {
       baseQuery = baseQuery.or(`title.ilike.%${search}%,description.ilike.%${search}%,theme.ilike.%${search}%`)
     }
 
-    // Apply brand filter
+    // Apply brand filter - handle both names and IDs
     if (brands.length > 0) {
-      baseQuery = baseQuery.in('brand_id', brands)
+      // Check if we're dealing with UUIDs (IDs) or names
+      const isUUID = brands[0]?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      
+      if (isUUID) {
+        // Filter by brand IDs directly
+        baseQuery = baseQuery.in('brand_id', brands)
+      } else {
+        // Convert brand names to IDs first
+        const { data: brandData } = await supabase
+          .from('brands')
+          .select('id')
+          .in('name', brands)
+        
+        const brandIds = brandData?.map(b => b.id) || []
+        if (brandIds.length > 0) {
+          baseQuery = baseQuery.in('brand_id', brandIds)
+        }
+      }
     }
 
-    // Apply piece count range - moved to SQL level for better performance
+    // Apply theme filter
+    if (themes.length > 0) {
+      const themeConditions = themes.map(theme => `theme.ilike.%${theme}%`).join(',')
+      baseQuery = baseQuery.or(themeConditions)
+    }
+
+    // Apply piece count range
     if (pieceMin > 0) {
       baseQuery = baseQuery.gte('piece_count', pieceMin)
     }
@@ -224,41 +250,43 @@ export async function GET(request: NextRequest) {
       baseQuery = baseQuery.lte('piece_count', pieceMax)
     }
 
-    // Apply difficulty range (based on piece count) - moved to SQL level
-    if (diffMin > 1 || diffMax < 5) {
+    // Apply difficulty filter using piece count ranges
+    if (difficulties.length > 0) {
       const difficultyRanges = {
-        1: [0, 300],      // Beginner
-        2: [301, 500],    // Easy
-        3: [501, 1000],   // Medium
-        4: [1001, 2000],  // Hard
-        5: [2001, 999999] // Expert
+        'easy': [0, 500],        // Easy: 0-500 pieces
+        'medium': [501, 1000],   // Medium: 501-1000 pieces  
+        'hard': [1001, 2000],    // Hard: 1001-2000 pieces
+        'expert': [2001, 999999] // Expert: 2000+ pieces
       }
       
-      const minPieces = difficultyRanges[diffMin as keyof typeof difficultyRanges]?.[0] || 0
-      const maxPieces = difficultyRanges[diffMax as keyof typeof difficultyRanges]?.[1] || 999999
+      let pieceRanges: number[][] = []
+      difficulties.forEach(diff => {
+        const range = difficultyRanges[diff as keyof typeof difficultyRanges]
+        if (range) {
+          pieceRanges.push(range)
+        }
+      })
       
-      // Only apply if it's more restrictive than the piece count filter
-      const effectiveMin = Math.max(minPieces, pieceMin)
-      const effectiveMax = Math.min(maxPieces, pieceMax)
-      
-      baseQuery = baseQuery.gte('piece_count', effectiveMin).lte('piece_count', effectiveMax)
+      if (pieceRanges.length > 0) {
+        // Create OR conditions for each difficulty range
+        const minPiece = Math.min(...pieceRanges.map(r => r[0]))
+        const maxPiece = Math.max(...pieceRanges.map(r => r[1]))
+        baseQuery = baseQuery.gte('piece_count', minPiece).lte('piece_count', maxPiece)
+      }
     }
 
-    // Apply sorting - FIX THE SYNTAX ERROR HERE
+    // Apply sorting
     let orderColumn: string
     let ascending = sortOrder === 'asc'
     
     switch (sortBy) {
       case 'popular':
-        // For sorting by aggregated data, we need to handle it differently
-        // We'll sort in JavaScript after fetching since Supabase joined sorting is complex
         orderColumn = 'created_at'
-        ascending = false // Default for now, will sort by review_count in JS
+        ascending = false // Will sort by review_count in JavaScript
         break
       case 'rating':
-        // Same for rating - sort in JavaScript
         orderColumn = 'created_at'
-        ascending = false // Default for now, will sort by avg_rating in JS
+        ascending = false // Will sort by avg_rating in JavaScript
         break
       case 'difficulty':
         orderColumn = 'piece_count'
@@ -272,7 +300,6 @@ export async function GET(request: NextRequest) {
         break
     }
     
-    // Apply the safe ordering
     baseQuery = baseQuery.order(orderColumn, { ascending })
 
     // Execute the query with pagination
@@ -287,16 +314,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Post-process filtering and sorting that can't be done efficiently in SQL
     let filteredPuzzles = puzzles || []
 
-    // Filter by rating if specified
+    // Filter by rating if specified (FIXED LOGIC)
     if (ratingMin > 0) {
       filteredPuzzles = filteredPuzzles.filter((puzzle: any) => {
         const rating = puzzle.puzzle_aggregates?.avg_rating
-        // Include unrated puzzles (NULL/undefined) OR puzzles that meet the rating requirement
-        // This way, unrated puzzles are shown, and only low-rated puzzles are filtered out
-        return rating === null || rating === undefined || rating >= ratingMin
+        // Only include puzzles that have a rating AND meet the minimum threshold
+        return rating !== null && rating !== undefined && rating >= ratingMin
       })
     }
 
@@ -305,20 +330,23 @@ export async function GET(request: NextRequest) {
       filteredPuzzles = filteredPuzzles.filter((puzzle: any) => {
         const rating = puzzle.puzzle_aggregates?.avg_rating
         const reviewCount = puzzle.puzzle_aggregates?.review_count || 0
-        // Only show puzzles that have actual reviews
         return rating !== null && rating !== undefined && reviewCount > 0
       })
     }
 
-    // Handle status filtering for authenticated users
+    // Handle status filtering for authenticated users (FIXED)
     if (userInternalId && status.length > 0) {
       if (status.includes('not-added')) {
-        const puzzlesWithoutLogs = filteredPuzzles.filter((p: any) => !p.user_log)
-        const otherStatuses = status.filter(s => s !== 'not-added')
+        // Show puzzles without logs
+        const puzzlesWithoutLogs = filteredPuzzles.filter((p: any) => 
+          !p.user_logs || p.user_logs.length === 0
+        )
         
+        const otherStatuses = status.filter(s => s !== 'not-added')
         if (otherStatuses.length > 0) {
           const puzzlesWithMatchingStatus = filteredPuzzles.filter((p: any) => 
-            p.user_log && otherStatuses.includes(p.user_log.status)
+            p.user_logs && p.user_logs.length > 0 && 
+            p.user_logs.some((log: any) => otherStatuses.includes(log.status))
           )
           filteredPuzzles = [...puzzlesWithoutLogs, ...puzzlesWithMatchingStatus]
         } else {
@@ -327,7 +355,8 @@ export async function GET(request: NextRequest) {
       } else {
         // Only show puzzles with matching status
         filteredPuzzles = filteredPuzzles.filter((p: any) => 
-          p.user_log && status.includes(p.user_log.status)
+          p.user_logs && p.user_logs.length > 0 &&
+          p.user_logs.some((log: any) => status.includes(log.status))
         )
       }
     }
@@ -381,7 +410,7 @@ export async function GET(request: NextRequest) {
       updatedAt: puzzle.updated_at,
       avgRating: puzzle.puzzle_aggregates?.avg_rating || null,
       reviewCount: puzzle.puzzle_aggregates?.review_count || 0,
-      userStatus: puzzle.user_log?.status || null
+      userStatus: puzzle.user_logs && puzzle.user_logs.length > 0 ? puzzle.user_logs[0].status : null
     }))
 
     const response = {
@@ -397,6 +426,9 @@ export async function GET(request: NextRequest) {
         diffMax,
         ratingMin,
         status,
+        themes,
+        difficulties,
+        categories,
         ratedOnly,
         sortBy,
         sortOrder

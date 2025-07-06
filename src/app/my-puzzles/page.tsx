@@ -224,9 +224,11 @@ export default function MyPuzzlesPage() {
   // Show loading state
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <LoadingSpinner />
+          <div className="glass-card border-white/30 rounded-2xl p-8 text-center">
+            <LoadingSpinner />
+          </div>
         </div>
       </div>
     )
@@ -235,26 +237,31 @@ export default function MyPuzzlesPage() {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign in to view your puzzles</h2>
-          <p className="text-gray-600">Please sign in to access your puzzle collection.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20 flex items-center justify-center">
+        <div className="glass-card border-white/30 rounded-2xl p-8 text-center max-w-md mx-4">
+          <h2 className="text-2xl font-semibold text-slate-800 mb-4">Sign in to view your puzzles</h2>
+          <p className="text-slate-600">Please sign in to access your puzzle collection.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-slate-800 mb-2">My Puzzles</h1>
+          <p className="text-slate-600">Track your puzzle collection and progress</p>
+        </div>
+        {/* Premium Stats Header */}
         <StatsHeader 
           user={user} 
           stats={stats} 
         />
 
-        {/* Filters and Search */}
-        <div className="mb-8">
+        {/* Glass Container for Filters and Content */}
+        <div className="glass-card border-white/30 rounded-2xl p-6 space-y-6">
+          {/* Filters and Search */}
           <PuzzleFilters
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -264,34 +271,39 @@ export default function MyPuzzlesPage() {
             onSortChange={setSortBy}
             availableBrands={availableBrands}
           />
-        </div>
 
-        {/* Status Tabs */}
-        <StatusTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          puzzles={puzzles}
-        />
-
-        {/* Puzzle Grid */}
-        {filteredPuzzles.length > 0 ? (
-          <PuzzleGrid
-            puzzles={filteredPuzzles}
-            onPuzzleClick={handlePuzzleClick}
-            onStatusChange={handleStatusChange}
-            onLogProgress={handleLogProgress}
-          />
-        ) : (
-          <EmptyState 
+          {/* Status Tabs */}
+          <StatusTabs
             activeTab={activeTab}
-            hasSearchTerm={!!searchTerm}
-            onClearFilters={() => {
-              setSearchTerm('')
-              setBrandFilter('all')
-              setActiveTab('all')
-            }}
+            onTabChange={setActiveTab}
+            puzzles={puzzles}
           />
-        )}
+
+          {/* Puzzle Grid */}
+          {filteredPuzzles.length > 0 ? (
+            <PuzzleGrid
+              puzzles={filteredPuzzles}
+              onPuzzleClick={handlePuzzleClick}
+              onStatusChange={handleStatusChange}
+              onLogProgress={handleLogProgress}
+            />
+          ) : (
+            <EmptyState 
+              status={searchTerm || brandFilter !== 'all' ? 'filtered' : activeTab}
+              onAction={() => {
+                if (searchTerm || brandFilter !== 'all') {
+                  // Clear filters
+                  setSearchTerm('')
+                  setBrandFilter('all')
+                  setActiveTab('all')
+                } else {
+                  // Navigate to browse puzzles
+                  window.location.href = '/puzzles/browse'
+                }
+              }}
+            />
+          )}
+        </div>
 
         {/* Puzzle Logging Modal */}
         <PuzzleLoggingModal

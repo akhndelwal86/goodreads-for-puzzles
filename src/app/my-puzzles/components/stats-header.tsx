@@ -2,6 +2,7 @@
 
 import type { UserPuzzleStats } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
+import { Trophy, Clock, Calendar, Award } from 'lucide-react'
 
 interface StatsHeaderProps {
   user: {
@@ -20,52 +21,64 @@ export function StatsHeader({ user, stats }: StatsHeaderProps) {
   }
 
   return (
-    <div className="mb-8">
-      {/* Welcome Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user.firstName || user.username || 'Puzzler'}! 👋
+    <div className="space-y-6">
+      {/* Premium Welcome Section */}
+      <div className="glass-card border-white/30 rounded-2xl p-8 text-center bg-gradient-to-br from-violet-50/50 to-emerald-50/50">
+        <h1 className="text-4xl md:text-5xl font-semibold text-slate-800 mb-3 leading-tight">
+          Welcome back, <span className="gradient-text">{user.firstName || user.username || 'Puzzler'}</span>! 👋
         </h1>
-        <p className="text-gray-600 text-lg">Your Puzzle Journey</p>
+        <p className="text-xl text-slate-600 font-normal">Your Premium Puzzle Journey</p>
       </div>
 
-      {/* Stats Row */}
+      {/* Premium Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600 mb-1">
-              🧩 {stats?.totalCompleted || 0}
+        <div className="glass-card hover-lift border border-white/40 group">
+          <div className="p-5 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+              <Trophy className="w-6 h-6 text-white" />
             </div>
-            <div className="text-sm text-gray-600">Completed</div>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">
+              {stats?.totalCompleted || 0}
+            </div>
+            <div className="text-sm text-slate-500 font-medium">Completed Puzzles</div>
+          </div>
+        </div>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-violet-600 mb-1">
-              ⏱️ {formatTime(stats?.totalTimeSpent || 0)}
+        <div className="glass-card hover-lift border border-white/40 group">
+          <div className="p-5 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-r from-violet-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+              <Clock className="w-6 h-6 text-white" />
             </div>
-            <div className="text-sm text-gray-600">Total Time</div>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-semibold text-slate-800 group-hover:text-violet-600 transition-colors">
+              {formatTime(stats?.totalTimeSpent || 0)}
+            </div>
+            <div className="text-sm text-slate-500 font-medium">Total Time</div>
+          </div>
+        </div>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-1">
-              🏆 {stats?.thisMonthCompleted || 0}
+        <div className="glass-card hover-lift border border-white/40 group">
+          <div className="p-5 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+              <Calendar className="w-6 h-6 text-white" />
             </div>
-            <div className="text-sm text-gray-600">This Month</div>
-          </CardContent>
-        </Card>
+            <div className="text-2xl font-semibold text-slate-800 group-hover:text-amber-600 transition-colors">
+              {stats?.thisMonthCompleted || 0}
+            </div>
+            <div className="text-sm text-slate-500 font-medium">This Month</div>
+          </div>
+        </div>
 
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-lg font-bold text-purple-600 mb-1">
-              ⭐ {stats?.favoriteBrand || 'None'}
+        <div className="glass-card hover-lift border border-white/40 group">
+          <div className="p-5 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/25">
+              <Award className="w-6 h-6 text-white" />
             </div>
-            <div className="text-sm text-gray-600">Favorite Brand</div>
-          </CardContent>
-        </Card>
+            <div className="text-lg font-semibold text-slate-800 group-hover:text-rose-600 transition-colors line-clamp-1">
+              {stats?.favoriteBrand || 'None'}
+            </div>
+            <div className="text-sm text-slate-500 font-medium">Favorite Brand</div>
+          </div>
+        </div>
       </div>
     </div>
   )

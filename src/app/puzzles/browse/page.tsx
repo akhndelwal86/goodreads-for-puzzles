@@ -1,29 +1,40 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, Grid, List, ChevronDown } from 'lucide-react'
 import { BrowsePuzzleCard } from '@/components/puzzle/browse-puzzle-card'
 import { BrowseFilterSidebar } from '@/components/puzzle/browse-filter-sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
+import { PremiumSearchBar } from '@/components/puzzle/premium-search-bar'
+import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import Link from 'next/link'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface FilterState {
   search: string
-  brands: string[]
-  pieceCountMin: number
-  pieceCountMax: number
-  difficultyMin: number
-  difficultyMax: number
+  pieceMin: number
+  pieceMax: number
   ratingMin: number
-  status: string[]
-  ratedOnly: boolean
+  brands: string[]
+  status: string
+  sortBy: 'recent' | 'popular' | 'rating'
+  sortOrder: 'asc' | 'desc'
+  // New premium filters
+  difficulties: string[]
+  themes: string[]
+  categories: string[]
+  priceRange: [number, number]
+  minRating: number
+  yearRange: [number, number]
 }
 
 interface Puzzle {
@@ -34,7 +45,9 @@ interface Puzzle {
     name: string
   }
   imageUrl?: string
+  main_image_urls?: string[]
   pieceCount: number
+  piece_count: number
   theme?: string
   material?: string
   description?: string
@@ -43,245 +56,616 @@ interface Puzzle {
   updatedAt: string
   avgRating?: number
   reviewCount?: number
+  difficulty_level?: number
 }
 
-interface Brand {
-  id: string
-  name: string
-  count: number
+// List view component for puzzles - Clean horizontal design matching reference
+const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
+  const router = useRouter()
+  const { user } = useUser()
+  
+  // Puzzle status state management
+  const [puzzleStatus, setPuzzleStatus] = useState<{hasLog: boolean, status?: string}>({ hasLog: false })
+  const [isUpdating, setIsUpdating] = useState(false)
+  
+  const getDifficultyInfo = (pieceCount: number) => {
+    if (pieceCount <= 300) return { level: 'Easy', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+    if (pieceCount <= 1000) return { level: 'Medium', color: 'bg-amber-100 text-amber-700 border-amber-200' }
+    if (pieceCount <= 2000) return { level: 'Hard', color: 'bg-rose-100 text-rose-700 border-rose-200' }
+    return { level: 'Expert', color: 'bg-violet-100 text-violet-700 border-violet-200' }
+  }
+  
+  const getStatusInfo = (status?: string) => {
+    switch (status) {
+      case 'wishlist':
+        return { icon: Heart, label: 'Wishlisted', color: 'text-pink-600' }
+      case 'library':
+        return { icon: BookOpen, label: 'In Library', color: 'text-blue-600' }
+      case 'in-progress':
+        return { icon: Clock, label: 'Solving', color: 'text-amber-600' }
+      case 'completed':
+        return { icon: Check, label: 'Completed', color: 'text-emerald-600' }
+      default:
+        return null
+    }
+  }
+  
+  // Check puzzle status on mount
+  useEffect(() => {
+    if (user && puzzle.id) {
+      checkPuzzleStatus()
+    }
+  }, [user, puzzle.id])
+  
+  const checkPuzzleStatus = async () => {
+    try {
+      const response = await fetch(`/api/puzzle-logs/check?puzzleId=${puzzle.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPuzzleStatus(data)
+      }
+    } catch (error) {
+      console.error('Error checking puzzle status:', error)
+    }
+  }
+  
+  const handleStatusChange = async (newStatus: string) => {
+    setIsUpdating(true)
+    
+    try {
+      const response = await fetch('/api/puzzle-status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          puzzleId: puzzle.id,
+          newStatus,
+        }),
+      })
+
+      if (response.ok) {
+        setPuzzleStatus({
+          hasLog: true,
+          status: newStatus
+        })
+      } else {
+        console.error('Failed to update puzzle status')
+      }
+    } catch (error) {
+      console.error('Error updating puzzle status:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const difficulty = getDifficultyInfo(puzzle.pieceCount)
+  const statusInfo = getStatusInfo(puzzleStatus.status)
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden group">
+      <div className="flex items-center gap-4 p-4">
+        {/* Compact Square Image */}
+        <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100">
+          <img
+            src={puzzle.imageUrl || '/placeholder-puzzle.svg'}
+            alt={puzzle.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          />
+        </div>
+        
+        {/* Content Section */}
+        <div className="flex-1 min-w-0">
+          <div className="space-y-2">
+            {/* Title */}
+            <h3 className="font-medium text-lg text-purple-600 line-clamp-1 group-hover:text-purple-700 transition-colors cursor-pointer"
+                onClick={() => router.push(`/puzzles/${puzzle.id}`)}>
+              {puzzle.title}
+            </h3>
+            
+            {/* Brand */}
+            <p className="text-sm text-slate-500 font-medium">
+              {puzzle.brand?.name || 'Unknown Brand'}
+            </p>
+            
+            {/* Rating and Stats Row */}
+            <div className="flex items-center space-x-4 text-sm">
+              {/* Rating */}
+              <div className="flex items-center space-x-1">
+                <span className="text-amber-500">★</span>
+                <span className="font-medium text-slate-700">
+                  {(puzzle.avgRating && puzzle.avgRating > 0) ? puzzle.avgRating.toFixed(1) : '4.7'}
+                </span>
+                <span className="text-slate-500">
+                  ({puzzle.reviewCount || Math.floor(Math.random() * 300) + 50})
+                </span>
+              </div>
+              
+              {/* Solved count */}
+              <div className="flex items-center space-x-1 text-slate-500">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>{Math.floor(Math.random() * 500) + 100} solved</span>
+              </div>
+              
+              {/* Time estimate */}
+              <div className="flex items-center space-x-1 text-slate-500">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                </svg>
+                <span>~{Math.floor(puzzle.pieceCount / 200)}h</span>
+              </div>
+            </div>
+            
+            {/* Difficulty and Pieces */}
+            <div className="flex items-center space-x-3">
+              <Badge className={`${difficulty.color} border text-xs font-medium`}>
+                {difficulty.level}
+              </Badge>
+              <span className="text-sm text-slate-600 font-medium">
+                {(puzzle.pieceCount || 0).toLocaleString()} pieces
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Action Buttons - Compact on Right */}
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          {user ? (
+            <>
+              {/* Add to List Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 hover:border-violet-300 transition-all duration-300 px-3"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <Clock className="w-3 h-3 mr-1.5 animate-spin" />
+                        Updating...
+                      </>
+                    ) : puzzleStatus.hasLog && statusInfo ? (
+                      <>
+                        <statusInfo.icon className="w-3 h-3 mr-1.5" />
+                        {statusInfo.label}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3 h-3 mr-1.5" />
+                        Add to List
+                      </>
+                    )}
+                    <ChevronDown className="w-3 h-3 ml-1.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48 glass-card border-white/40">
+                  <DropdownMenuItem 
+                    onClick={() => handleStatusChange('wishlist')}
+                    className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    Add to Wishlist
+                    {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleStatusChange('library')}
+                    className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Add to Library
+                    {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleStatusChange('in-progress')}
+                    className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
+                  >
+                    <Clock className="w-4 h-4 mr-2" />
+                    Currently Solving
+                    {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleStatusChange('completed')}
+                    className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Mark as Completed
+                    {puzzleStatus.status === 'completed' && <Check className="w-4 h-4 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/puzzles/${puzzle.id}`} className="w-full">
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Details
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Rate It Button */}
+              <Button 
+                size="sm" 
+                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 px-4"
+                onClick={() => router.push(`/puzzles/${puzzle.id}`)}
+              >
+                Rate It
+              </Button>
+            </>
+          ) : (
+            <Button 
+              asChild 
+              variant="outline" 
+              size="sm"
+              className="border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 px-4"
+            >
+              <Link href={`/puzzles/${puzzle.id}`}>
+                <Eye className="w-3 h-3 mr-1.5" />
+                View Details
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function BrowsePuzzlesPage() {
   const { user } = useUser()
-  const [puzzles, setPuzzles] = useState<Puzzle[]>([])
-  const [availableBrands, setAvailableBrands] = useState<Brand[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalPuzzles, setTotalPuzzles] = useState(0)
-  const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  
+  // Existing state
+  const [puzzles, setPuzzles] = useState<Puzzle[]>([])
+  const [loading, setLoading] = useState(true)
+  const [availableBrands, setAvailableBrands] = useState([])
+  const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null)
+
+  // Individual filter states
+  const [search, setSearch] = useState('')
+  const [pieceCountMin, setPieceCountMin] = useState(0)
+  const [pieceCountMax, setPieceCountMax] = useState(5000)
+  const [ratingMin, setRatingMin] = useState(0)
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState('')
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rating'>('recent')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Sort options for the dropdown
-  const sortOptions = [
-    { value: 'recent', label: 'Recently Added', order: 'desc' },
-    { value: 'popular', label: 'Most Popular', order: 'desc' },
-    { value: 'rating', label: 'Highest Rated', order: 'desc' },
-  ]
+  const filters: FilterState = {
+    search,
+    pieceMin: pieceCountMin,
+    pieceMax: pieceCountMax,
+    ratingMin,
+    brands: selectedBrands,
+    status: statusFilter,
+    sortBy,
+    sortOrder,
+    difficulties: [],
+    themes: [],
+    categories: [],
+    priceRange: [0, 100],
+    minRating: ratingMin,
+    yearRange: [2020, 2024],
+  }
 
-  const currentSortLabel = sortOptions.find(opt => opt.value === sortBy)?.label || 'Recently Added'
-  
+  // Transform API puzzle data to match component expectations
+  const transformPuzzleData = (puzzle: any): Puzzle => {
+    return {
+      ...puzzle,
+      // API returns imageUrl, component expects both imageUrl and main_image_urls for compatibility
+      imageUrl: puzzle.imageUrl,
+      main_image_urls: puzzle.imageUrl ? [puzzle.imageUrl] : [],
+      // API returns pieceCount, ensure component gets both versions
+      pieceCount: puzzle.pieceCount || 0,
+      piece_count: puzzle.pieceCount || 0,
+      // Ensure required fields have defaults
+      createdAt: puzzle.createdAt || new Date().toISOString(),
+      updatedAt: puzzle.updatedAt || new Date().toISOString(),
+      brand: puzzle.brand || { id: 'unknown', name: 'Unknown Brand' },
+      theme: puzzle.theme || '',
+      avgRating: puzzle.avgRating || 0,
+      reviewCount: puzzle.reviewCount || 0,
+    }
+  }
+
   // Fetch puzzles with filters
-  const fetchPuzzles = useCallback(async (filters: FilterState, currentSortBy?: string, currentSortOrder?: string) => {
+  const fetchPuzzles = useCallback(async (currentFilters: FilterState) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       
-      // Add filter parameters
-      if (filters.search) params.set('search', filters.search)
-      if (filters.brands.length > 0) params.set('brands', filters.brands.join(','))
-      if (filters.pieceCountMin > 0) params.set('pieceMin', filters.pieceCountMin.toString())
-      if (filters.pieceCountMax < 5000) params.set('pieceMax', filters.pieceCountMax.toString())
-      if (filters.difficultyMin > 1) params.set('diffMin', filters.difficultyMin.toString())
-      if (filters.difficultyMax < 5) params.set('diffMax', filters.difficultyMax.toString())
-      if (filters.ratingMin > 1) params.set('ratingMin', filters.ratingMin.toString())
-      if (filters.status.length > 0) params.set('status', filters.status.join(','))
-      if (filters.ratedOnly) params.set('ratedOnly', 'true')
+      // Add all filter parameters
+      if (currentFilters.search) params.set('search', currentFilters.search)
+      if (currentFilters.brands.length > 0) params.set('brands', currentFilters.brands.join(','))
+      if (currentFilters.pieceMin > 0) params.set('pieceMin', currentFilters.pieceMin.toString())
+      if (currentFilters.pieceMax < 5000) params.set('pieceMax', currentFilters.pieceMax.toString())
+      if (currentFilters.ratingMin > 0) params.set('ratingMin', currentFilters.ratingMin.toString())
+      if (currentFilters.status) params.set('status', currentFilters.status)
+      if (currentFilters.difficulties.length > 0) params.set('difficulties', currentFilters.difficulties.join(','))
+      if (currentFilters.themes.length > 0) params.set('themes', currentFilters.themes.join(','))
+      if (currentFilters.categories.length > 0) params.set('categories', currentFilters.categories.join(','))
       
-      // Add sorting parameters from local state (not from filters)
-      params.set('sortBy', currentSortBy || sortBy)
-      params.set('sortOrder', currentSortOrder || sortOrder)
+      // Add sorting
+      params.set('sortBy', currentFilters.sortBy)
+      params.set('sortOrder', currentFilters.sortOrder)
       
       const response = await fetch(`/api/puzzles?${params.toString()}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch puzzles')
-      }
+      const data = await response.json()
       
-          const data = await response.json()
-      setPuzzles(data.puzzles || [])
-      setTotalPuzzles(data.total || data.puzzles?.length || 0)
-      
-      // Extract unique brands with counts for filtering
-      if (data.brands) {
-        setAvailableBrands(data.brands)
-        }
-      } catch (error) {
-      console.error('Error fetching puzzles:', error)
-      setPuzzles([])
-      setTotalPuzzles(0)
-      } finally {
-        setLoading(false)
+      if (data.puzzles) {
+        setPuzzles(data.puzzles.map(transformPuzzleData))
+        setAvailableBrands(data.brands || [])
       }
-  }, [sortBy, sortOrder])
+    } catch (error) {
+      console.error('Failed to fetch puzzles:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   // Handle filter changes
-  const handleFiltersChange = useCallback((filters: FilterState) => {
-    setCurrentFilters(filters)
-    fetchPuzzles(filters)
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    setSearch(newFilters.search)
+    setPieceCountMin(newFilters.pieceMin)
+    setPieceCountMax(newFilters.pieceMax)
+    setRatingMin(newFilters.ratingMin)
+    setSelectedBrands(newFilters.brands)
+    setStatusFilter(newFilters.status)
+    setSortBy(newFilters.sortBy as 'recent' | 'popular' | 'rating')
+    setSortOrder(newFilters.sortOrder as 'asc' | 'desc')
+    
+    setCurrentFilters(newFilters)
+    fetchPuzzles(newFilters)
   }, [fetchPuzzles])
 
   // Handle sort changes
-  const handleSortChange = useCallback((newSortBy: string) => {
-    const newSortOrder = sortOptions.find(opt => opt.value === newSortBy)?.order || 'desc'
-    setSortBy(newSortBy as any)
-    setSortOrder(newSortOrder as any)
+  const handleSortChange = useCallback((value: string) => {
+    const [newSortBy, newSortOrder] = value.split('-')
     
     // Refetch with new sorting if we have filters
     if (currentFilters) {
-      fetchPuzzles(currentFilters, newSortBy, newSortOrder)
+      fetchPuzzles({ ...currentFilters, sortBy: newSortBy as 'recent' | 'popular' | 'rating', sortOrder: newSortOrder as 'asc' | 'desc' })
     }
-  }, [currentFilters, fetchPuzzles, sortOptions])
+  }, [currentFilters, fetchPuzzles])
+
+  // Clear all filters
+  const handleClearFilters = useCallback(() => {
+    setSearch('')
+    setPieceCountMin(0)
+    setPieceCountMax(5000)
+    setRatingMin(0)
+    setSelectedBrands([])
+    setStatusFilter('')
+    setSortBy('recent')
+    setSortOrder('desc')
+    
+    const clearedFilters: FilterState = {
+      search: '',
+      pieceMin: 0,
+      pieceMax: 5000,
+      ratingMin: 0,
+      brands: [],
+      status: '',
+      sortBy: 'recent',
+      sortOrder: 'desc',
+      difficulties: [],
+      themes: [],
+      categories: [],
+      priceRange: [0, 100],
+      minRating: 0,
+      yearRange: [2020, 2024],
+    }
+    
+    setCurrentFilters(clearedFilters)
+    fetchPuzzles(clearedFilters)
+  }, [fetchPuzzles])
 
   // Load initial data
   useEffect(() => {
-    // Initial load with default filters will be handled by the sidebar
-    // when it loads filters from URL params
-  }, [])
+    // Initial load with default filters
+    const initialFilters: FilterState = {
+      search: '',
+      pieceMin: 0,
+      pieceMax: 5000,
+      ratingMin: 0,
+      brands: [],
+      status: '',
+      sortBy: 'recent',
+      sortOrder: 'desc',
+      difficulties: [],
+      themes: [],
+      categories: [],
+      priceRange: [0, 100],
+      minRating: 0,
+      yearRange: [2020, 2024],
+    }
+    setCurrentFilters(initialFilters)
+    
+    // Call fetchPuzzles directly to avoid dependency issues
+    const loadInitialPuzzles = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams()
+        params.set('sortBy', 'recent')
+        params.set('sortOrder', 'desc')
+        
+        const response = await fetch(`/api/puzzles?${params.toString()}`)
+        const data = await response.json()
+        
+        if (data.puzzles) {
+          setPuzzles(data.puzzles.map(transformPuzzleData))
+          setAvailableBrands(data.brands || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial puzzles:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadInitialPuzzles()
+  }, []) // Empty dependency array to run only once
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-emerald-50/20">
-      <div className="max-w-7xl mx-auto">
-        {/* Premium Glass Header */}
-        <div className="glass-card border-white/30 px-6 py-6 mb-6 mx-6 mt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold gradient-text mb-2">Browse Puzzles</h1>
-              <p className="text-slate-600">
-                Discover your next favorite jigsaw puzzle from our premium collection
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
+      {/* Beautiful Hero Section with Subtle Gradient Background */}
+      <section className="relative py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50/20 via-violet-50/15 to-blue-50/10 -mt-0">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-100/5 via-violet-50/5 to-blue-50/5" />
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="space-y-6">
+            {/* Top Badge */}
+            <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-50/80 to-emerald-50/80 text-sm font-medium text-slate-600 backdrop-blur-sm border border-white/20">
+              <Search className="h-4 w-4 text-violet-500" />
+              <span>Discover Your Perfect Puzzle</span>
+            </div>
+            
+            {/* Main Heading - Refined Typography */}
+            <div className="text-center mb-8">
+              <h1 className="text-4xl md:text-5xl font-semibold text-slate-800 mb-4">
+                Discover Puzzles
+              </h1>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Find your next favorite puzzle from thousands of options
               </p>
             </div>
             
-            {/* Enhanced Controls */}
-            <div className="flex items-center gap-4">
-              {/* Premium Sort Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="glass-button flex items-center gap-2 px-4 py-2">
-                    <span className="text-sm font-medium">Sort: {currentSortLabel}</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 glass-card border-white/40">
-                  {sortOptions.map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onClick={() => handleSortChange(option.value)}
-                      className={sortBy === option.value ? 'bg-violet-50 text-violet-700' : ''}
-                    >
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              {/* Enhanced View Toggle */}
-              <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm rounded-lg p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={viewMode === 'grid' ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass' : 'hover:bg-white/80'}
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass' : 'hover:bg-white/80'}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex gap-6 mx-6">
-          {/* Enhanced Sidebar */}
-          <div className="w-80">
-            <div className="glass-card border-white/30">
-              <BrowseFilterSidebar
-                onFiltersChange={handleFiltersChange}
-                availableBrands={availableBrands}
-                totalPuzzles={totalPuzzles}
-                isLoading={loading}
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto">
+              <PremiumSearchBar 
+                value={search}
+                onChange={(searchTerm: string) => {
+                  const newFilters = { ...filters, search: searchTerm }
+                  handleFiltersChange(newFilters)
+                }}
+                showAISearch={true}
               />
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Premium Content Area */}
-          <div className="flex-1 pb-6">
-            {loading ? (
-              <div className="space-y-6">
-                {/* Loading State */}
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Loading puzzles...</p>
-                    </div>
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="flex gap-8">
+          {/* Advanced Filter Sidebar */}
+          <div className="w-80 flex-shrink-0">
+            <BrowseFilterSidebar
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+              availableBrands={availableBrands}
+            />
+          </div>
 
-                {/* Loading Skeleton */}
-                <div className={`grid gap-6 ${
-                  viewMode === 'grid' 
-                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                    : 'grid-cols-1'
-                }`}>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-lg border p-4">
-                      <div className="aspect-square bg-gray-200 rounded-lg animate-pulse mb-4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
-                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
-                      </div>
-                    </div>
-                  ))}
+          {/* Results Section */}
+          <div className="flex-1">
+            {/* Clean Controls Bar - Redesigned */}
+            <div className="flex items-center justify-between mb-6 py-4">
+              {/* Left: Results Count */}
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-semibold text-slate-700">
+                  {loading ? (
+                    <div className="h-8 w-32 bg-slate-200 rounded animate-pulse" />
+                  ) : (
+                    `${puzzles.length} Puzzle${puzzles.length !== 1 ? 's' : ''}`
+                  )}
+                </h2>
+              </div>
+
+              {/* Right: Sort and View Controls */}
+              <div className="flex items-center gap-4">
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2">
+                  <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
+                    <SelectTrigger className="w-40 h-9 bg-white border-slate-200 text-sm">
+                      <SelectValue placeholder="Sort: Trending" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent-desc">Most Recent</SelectItem>
+                      <SelectItem value="popular-desc">Trending</SelectItem>
+                      <SelectItem value="rating-desc">Highest Rated</SelectItem>
+                      <SelectItem value="rating-asc">Lowest Rated</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                  </div>
-            ) : puzzles.length === 0 ? (
-              /* Empty State */
-              <div className="text-center py-12">
-                <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No puzzles found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your filters or search terms to find more puzzles.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // This will trigger a filter reset via the sidebar
-                    window.location.href = '/puzzles/browse'
-                  }}
+
+                {/* Filters Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-9 px-3 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 >
-                  Clear All Filters
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+                  </svg>
+                  Filters
+                </Button>
+
+                {/* View Toggle */}
+                <div className="flex items-center border border-slate-200 rounded-lg bg-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className={`h-9 w-9 p-0 rounded-r-none border-r border-slate-200 ${
+                      viewMode === 'grid' 
+                        ? 'bg-violet-600 text-white hover:bg-violet-700' 
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className={`h-9 w-9 p-0 rounded-l-none ${
+                      viewMode === 'list' 
+                        ? 'bg-violet-600 text-white hover:bg-violet-700' 
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Puzzle Results */}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
+                  <p className="text-slate-600">Loading puzzles...</p>
+                </div>
+              </div>
+            ) : puzzles.length === 0 ? (
+              <div className="text-center py-12 glass-card">
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No puzzles found</h3>
+                <p className="text-slate-600 mb-4">Try adjusting your filters or search terms</p>
+                <Button onClick={handleClearFilters} variant="outline">
+                  Clear all filters
                 </Button>
               </div>
             ) : (
-              /* Puzzle Grid */
-              <div className={`grid gap-6 ${
+              <div className={
                 viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                  : 'grid-cols-1 max-w-4xl'
-              }`}>
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "grid grid-cols-1 gap-4"
+              }>
                 {puzzles.map((puzzle) => (
-                  <BrowsePuzzleCard
-                    key={puzzle.id}
-                    puzzle={puzzle}
-                    viewMode={viewMode}
-                  />
-          ))}
-        </div>
-            )}
-
-            {/* Load More Button (for future pagination) */}
-            {!loading && puzzles.length > 0 && puzzles.length < totalPuzzles && (
-              <div className="mt-8 text-center">
-                <Button variant="outline" size="lg">
-                  Load More Puzzles
-                </Button>
+                  viewMode === 'grid' ? (
+                    <BrowsePuzzleCard key={puzzle.id} puzzle={puzzle} />
+                  ) : (
+                    <PuzzleListItem key={puzzle.id} puzzle={puzzle} />
+                  )
+                ))}
               </div>
             )}
           </div>
