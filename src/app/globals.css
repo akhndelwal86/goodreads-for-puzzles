@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Glass Morphism Design System */
+@layer components {
+  /* Glass morphism card base */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-glass;
+  }
+  
+  /* Premium puzzle card specifically */
+  .glass-puzzle-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/30 shadow-glass-lg rounded-2xl overflow-hidden cursor-pointer transition-all duration-300;
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    @apply hover:-translate-y-1 hover:shadow-glass-xl hover:border-violet-200/50 transition-all duration-300;
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-violet-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent;
+  }
+  
+  /* Premium button styles */
+  .glass-button {
+    @apply bg-gradient-to-r from-emerald-500 to-violet-600 text-white px-4 py-2 rounded-xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105;
+  }
+  
+  /* Glass overlay for images */
+  .glass-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent;
+  }
+  
+  /* Premium badge styles */
+  .glass-badge {
+    @apply bg-white/30 backdrop-blur-md border border-white/40 text-slate-700 px-2 py-1 rounded-lg text-xs font-medium;
+  }
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
@@ -49,8 +87,9 @@
 
 @layer base {
   body {
-    background-color: hsl(var(--background));
+    background: linear-gradient(to bottom right, #f8fafc, #f1f5f9 30%, #e2e8f0 70%, #cbd5e1);
     color: hsl(var(--foreground));
+    min-height: 100vh;
   }
 }
 
@@ -67,7 +106,5 @@
     @apply bg-gradient-to-r from-emerald-400 to-cyan-500 text-white font-semibold px-4 py-2 rounded-full text-sm shadow-md hover:shadow-lg transition-all duration-300;
   }
 
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300;
-  }
+
 }

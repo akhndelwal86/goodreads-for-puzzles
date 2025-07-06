@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const supabase = createServiceClient()
-    
+
     // Get user's internal ID if authenticated
     let userInternalId: string | null = null
     if (userId) {

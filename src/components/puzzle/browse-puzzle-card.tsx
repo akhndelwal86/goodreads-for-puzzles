@@ -13,7 +13,8 @@ import {
   Check, 
   Eye,
   Heart,
-  Users
+  Users,
+  ShoppingCart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -83,22 +84,16 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
       }
     } catch (error) {
       console.error('Error checking puzzle status:', error)
-      // If there's an error, assume puzzle is untracked
       setPuzzleStatus({ hasLog: false })
     }
   }
 
-  // Parse time input into seconds
   const parseTimeInput = (timeStr: string): number => {
     if (!timeStr.trim()) return 0
     
-    // Remove extra spaces and convert to lowercase
     const cleanStr = timeStr.toLowerCase().replace(/\s+/g, ' ').trim()
-    
-    // Initialize total seconds
     let totalSeconds = 0
     
-    // Match different time formats
     const hourMatch = cleanStr.match(/(\d*\.?\d+)\s*h/)
     const minuteMatch = cleanStr.match(/(\d+)\s*m/)
     
@@ -110,7 +105,6 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
       totalSeconds += parseInt(minuteMatch[1]) * 60
     }
     
-    // If no specific format found, try to parse as just minutes
     if (!hourMatch && !minuteMatch) {
       const minutesOnly = parseFloat(cleanStr)
       if (!isNaN(minutesOnly)) {
@@ -190,16 +184,14 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
     }
   }
 
-  // Get difficulty level and color
   const getDifficultyInfo = (pieceCount: number) => {
-    if (pieceCount <= 300) return { level: 'Beginner', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-    if (pieceCount <= 500) return { level: 'Easy', color: 'bg-green-50 text-green-700 border-green-200' }
-    if (pieceCount <= 1000) return { level: 'Medium', color: 'bg-amber-50 text-amber-700 border-amber-200' }
-    if (pieceCount <= 2000) return { level: 'Hard', color: 'bg-orange-50 text-orange-700 border-orange-200' }
-    return { level: 'Expert', color: 'bg-red-50 text-red-700 border-red-200' }
+    if (pieceCount <= 300) return { level: 'Beginner', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+    if (pieceCount <= 500) return { level: 'Easy', color: 'bg-green-100 text-green-800 border-green-200' }
+    if (pieceCount <= 1000) return { level: 'Medium', color: 'bg-amber-100 text-amber-800 border-amber-200' }
+    if (pieceCount <= 2000) return { level: 'Hard', color: 'bg-orange-100 text-orange-800 border-orange-200' }
+    return { level: 'Expert', color: 'bg-red-100 text-red-800 border-red-200' }
   }
 
-  // Get status display info for button text only
   const getStatusInfo = (status?: string) => {
     switch (status) {
       case 'wishlist':
@@ -218,14 +210,14 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
   const difficulty = getDifficultyInfo(puzzle.pieceCount)
   const statusInfo = getStatusInfo(puzzleStatus.status)
 
-  // List view layout
+  // List view - Cleaner horizontal design
   if (viewMode === 'list') {
     return (
       <>
-        <div className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200">
+        <div className="group bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200">
           <div className="flex">
-            {/* Image Container - Cleaner with only difficulty badge */}
-            <div className="relative w-48 h-36 flex-shrink-0 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+            {/* Image Container */}
+            <div className="relative w-48 h-36 flex-shrink-0 overflow-hidden bg-gray-50">
               {puzzle.imageUrl ? (
                 <Image
                   src={puzzle.imageUrl}
@@ -235,148 +227,149 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                   sizes="192px"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
-                  <Clock className="w-12 h-12" />
+                <div className="flex items-center justify-center h-full bg-gray-100">
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6 text-gray-400" />
+                  </div>
                 </div>
               )}
-              
-              {/* Only Difficulty Badge - positioned better */}
-              <div className="absolute top-2 right-2">
-                <Badge variant="secondary" className={`${difficulty.color} text-xs font-medium border shadow-sm`}>
-                  {difficulty.level}
-                </Badge>
-              </div>
             </div>
 
-            {/* Content - Improved spacing and typography */}
-            <div className="flex-1 p-5 flex flex-col justify-between">
+            {/* Content */}
+            <div className="flex-1 p-6 flex flex-col justify-between">
               <div>
-                {/* Title and Brand */}
-                <div className="mb-3">
-                  <h3 className="font-semibold text-gray-900 text-lg leading-tight line-clamp-2 mb-1">
-                    {puzzle.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 font-medium">
-                    {puzzle.brand?.name || 'Unknown Brand'}
-                  </p>
-                </div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 pr-4">
+                    {/* Puzzle Title */}
+                    <h3 className="font-medium text-gray-800 text-base line-clamp-2 mb-1">
+                      {puzzle.title}
+                    </h3>
 
-                {/* Description */}
-                {puzzle.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                    {puzzle.description}
-                  </p>
-                )}
+                    {/* Brand Name */}
+                    <p className="text-gray-500 text-sm mb-2">
+                      {puzzle.brand?.name || 'Unknown Brand'}
+                    </p>
 
-                {/* Stats Row - Better spacing */}
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-gray-900">
-                      {puzzle.pieceCount.toLocaleString()}
-                    </span>
-                    <span className="text-gray-600">pieces</span>
-                  </div>
-                  {/* Rating */}
-                  {puzzle.avgRating && puzzle.reviewCount && puzzle.reviewCount > 0 ? (
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-amber-400 fill-current" />
-                      <span className="font-semibold text-gray-900">
-                        {puzzle.avgRating.toFixed(1)}
-                      </span>
-                      <span className="text-gray-500">
-                        ({puzzle.reviewCount} review{puzzle.reviewCount !== 1 ? 's' : ''})
-                      </span>
+                    {/* Piece Count and Rating Stats */}
+                    <div className="flex items-center gap-6 text-sm mb-4">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-700">
+                          {puzzle.pieceCount.toLocaleString()}
+                        </span>
+                        <span className="text-gray-500">pieces</span>
+                      </div>
+                      {puzzle.avgRating && puzzle.reviewCount && puzzle.reviewCount > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-amber-400 fill-current" />
+                          <span className="font-medium text-gray-700">
+                            {puzzle.avgRating.toFixed(1)}
+                          </span>
+                          <span className="text-gray-500">
+                            ({puzzle.reviewCount})
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-gray-400">
+                          <Star className="w-4 h-4" />
+                          <span>No reviews</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-gray-400">
-                      <Star className="w-4 h-4" />
-                      <span className="text-sm">No reviews yet</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1 text-gray-500">
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium">{Math.floor(Math.random() * 200) + 50} solves</span>
                   </div>
+                  <Badge className={`${difficulty.color} border text-xs`}>
+                    {difficulty.level}
+                  </Badge>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 mt-5">
-                {/* Add to List Dropdown */}
+              <div className="flex items-center gap-3">
                 {user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant={puzzleStatus.hasLog ? "secondary" : "default"} 
-                        size="sm" 
-                        className="min-w-[140px] h-9"
-                        disabled={isUpdating}
-                      >
-                        {isUpdating ? (
-                          <>
-                            <Clock className="w-3 h-3 mr-2 animate-spin" />
-                            Updating...
-                          </>
-                        ) : puzzleStatus.hasLog && statusInfo ? (
-                          <>
-                            <statusInfo.icon className="w-3 h-3 mr-2" />
-                            {statusInfo.label}
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-3 h-3 mr-2" />
-                            Add to List
-                          </>
-                        )}
-                        <ChevronDown className="w-3 h-3 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-48">
-                      <DropdownMenuItem 
-                        onClick={() => handleStatusChange('wishlist')}
-                        className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
-                      >
-                        <Heart className="w-4 h-4 mr-2" />
-                        Add to Wishlist
-                        {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleStatusChange('library')}
-                        className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
-                      >
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Add to Library
-                        {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleStatusChange('in-progress')}
-                        className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Currently Solving
-                        {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleStatusChange('completed')}
-                        className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Mark as Completed
-                        {puzzleStatus.status === 'completed' && <Check className="w-4 h-4 ml-auto" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href={`/puzzles/${puzzle.id}`} className="w-full">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <>
+                    {/* Add to List Button - Always Outline Style */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline"
+                          className="flex-1 h-9 text-xs font-medium border border-violet-200 text-violet-700 bg-white/80 backdrop-blur-sm hover:bg-violet-50 hover:border-violet-300 transition-all duration-300"
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Clock className="w-3 h-3 mr-1.5 animate-spin" />
+                              Updating...
+                            </>
+                          ) : puzzleStatus.hasLog && statusInfo ? (
+                            <>
+                              <statusInfo.icon className="w-3 h-3 mr-1.5" />
+                              {statusInfo.label}
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3 h-3 mr-1.5" />
+                              Add to List
+                            </>
+                          )}
+                          <ChevronDown className="w-3 h-3 ml-1.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48 glass-card border-white/40">
+                        <DropdownMenuItem 
+                          onClick={() => handleStatusChange('wishlist')}
+                          className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
+                        >
+                          <Heart className="w-4 h-4 mr-2" />
+                          Add to Wishlist
+                          {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleStatusChange('library')}
+                          className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
+                        >
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Add to Library
+                          {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleStatusChange('in-progress')}
+                          className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
+                        >
+                          <Clock className="w-4 h-4 mr-2" />
+                          Currently Solving
+                          {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleStatusChange('completed')}
+                          className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Mark as Completed
+                          {puzzleStatus.status === 'completed' && <Check className="w-4 h-4 ml-auto" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href={`/puzzles/${puzzle.id}`} className="w-full">
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Rate It Button - Solid Style */}
+                    <Button 
+                      asChild
+                      className="flex-1 h-9 text-xs font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass hover:shadow-glass-lg hover:scale-105 transition-all duration-300 border-0"
+                    >
+                      <Link href={`/puzzles/${puzzle.id}`}>
+                        <Star className="w-3 h-3 mr-1.5" />
+                        Rate It
+                      </Link>
+                    </Button>
+                  </>
                 ) : (
-                  <Button asChild variant="outline" size="sm" className="min-w-[120px] h-9">
+                  <Button asChild variant="outline" className="w-full h-9 text-xs font-medium border border-violet-200 text-violet-700 bg-white/80 backdrop-blur-sm hover:bg-violet-50 hover:border-violet-300">
                     <Link href={`/puzzles/${puzzle.id}`}>
-                      <Eye className="w-3 h-3 mr-2" />
+                      <Eye className="w-3 h-3 mr-1.5" />
                       View Details
                     </Link>
                   </Button>
@@ -386,7 +379,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
           </div>
         </div>
 
-        {/* Completion Time Modal */}
+        {/* Completion Modal */}
         <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -441,157 +434,201 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
     )
   }
 
-  // Grid view layout (default) - Cleaner design
+  // ✨ GLASS MORPHISM GRID VIEW - Premium transformation
   return (
     <>
-      <div className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200">
-        {/* Image Container - Clean with only difficulty badge */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="group glass-puzzle-card hover-lift">
+        {/* Enhanced Image Container with Glass Overlay */}
+        <div className="relative aspect-square overflow-hidden">
           {puzzle.imageUrl ? (
-            <Image
-              src={puzzle.imageUrl}
-              alt={puzzle.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+            <>
+              <Image
+                src={puzzle.imageUrl}
+                alt={puzzle.title}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+              {/* Glass overlay for depth */}
+              <div className="glass-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <Clock className="w-12 h-12" />
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 to-slate-100">
+              <div className="w-16 h-16 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-glass">
+                <ShoppingCart className="w-8 h-8 text-slate-400" />
+              </div>
             </div>
           )}
           
-          {/* Only Difficulty Badge - better positioned */}
-          <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className={`${difficulty.color} text-xs font-medium border shadow-sm`}>
+          {/* Premium Difficulty Badge */}
+          <div className="absolute top-3 right-3">
+            <div className={`glass-badge ${difficulty.color} backdrop-blur-lg border-white/40 shadow-glass`}>
               {difficulty.level}
-            </Badge>
+            </div>
           </div>
+
+          {/* Enhanced Rating Badge */}
+          {puzzle.avgRating && puzzle.reviewCount && puzzle.reviewCount > 0 && (
+            <div className="absolute top-3 left-3">
+              <div className="bg-amber-500/90 backdrop-blur-md rounded-xl px-3 py-1.5 flex items-center gap-1.5 shadow-glass border border-amber-400/20">
+                <Star className="w-3.5 h-3.5 text-white fill-current" />
+                <span className="text-xs font-bold text-white">
+                  {puzzle.avgRating.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Status Indicator */}
+          {puzzleStatus.hasLog && statusInfo && (
+            <div className="absolute bottom-3 left-3">
+              <div className="bg-white/90 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1 shadow-glass border border-white/40">
+                <statusInfo.icon className={`w-3 h-3 ${statusInfo.color}`} />
+                <span className="text-xs font-medium text-slate-700">
+                  {statusInfo.label}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Content - Improved layout */}
-        <div className="p-4">
-          {/* Title and Brand */}
-          <div className="mb-3">
-            <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2 mb-1">
-              {puzzle.title}
-            </h3>
-            <p className="text-xs text-gray-600 font-medium">
+        {/* Premium Content Section */}
+        <div className="p-4 bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-sm">
+          {/* Title with gradient accent */}
+          <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 mb-2 leading-tight group-hover:text-violet-700 transition-colors duration-300">
+            {puzzle.title}
+          </h3>
+
+          {/* Enhanced Brand and Piece Count Row */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-slate-500 text-xs font-medium">
               {puzzle.brand?.name || 'Unknown Brand'}
             </p>
+            <div className="flex items-baseline gap-1 bg-violet-50 px-2 py-1 rounded-lg">
+              <span className="text-sm font-bold text-violet-700">
+                {puzzle.pieceCount?.toLocaleString() || 0}
+              </span>
+              <span className="text-xs text-violet-500 font-medium">pc</span>
+            </div>
           </div>
 
-          {/* Piece Count - More prominent */}
-          <div className="mb-3">
-            <span className="text-sm font-semibold text-gray-900">
-              {puzzle.pieceCount.toLocaleString()}
-            </span>
-            <span className="text-sm text-gray-600 ml-1">pieces</span>
-          </div>
-
-          {/* Stats Row - Better spacing */}
+          {/* Theme and Rating Row with Premium Styling */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1">
-              {/* Rating */}
-              {puzzle.avgRating && puzzle.reviewCount && puzzle.reviewCount > 0 ? (
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-amber-400 fill-current" />
-                  <span className="text-sm font-semibold text-gray-900">
-                    {puzzle.avgRating.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    ({puzzle.reviewCount} review{puzzle.reviewCount !== 1 ? 's' : ''})
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-gray-400">
-                  <Star className="w-4 h-4" />
-                  <span className="text-xs">No reviews</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Users className="w-3 h-3" />
-              <span className="font-medium">{Math.floor(Math.random() * 200) + 50} solves</span>
-            </div>
+            {puzzle.theme ? (
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs py-1 px-2 h-auto font-medium">
+                {puzzle.theme}
+              </Badge>
+            ) : (
+              <div></div>
+            )}
+            
+            {puzzle.avgRating && puzzle.reviewCount && puzzle.reviewCount > 0 ? (
+              <div className="flex items-center gap-1.5 bg-amber-50 px-2 py-1 rounded-lg">
+                <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                <span className="text-xs font-bold text-amber-700">
+                  {puzzle.avgRating.toFixed(1)}
+                </span>
+                <span className="text-xs text-amber-600">
+                  ({puzzle.reviewCount})
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">
+                <Star className="w-3 h-3" />
+                <span>No reviews</span>
+              </div>
+            )}
           </div>
 
-          {/* Action Button - Full width for better UX */}
-          <div className="w-full">
+          {/* Enhanced Two-Button Layout */}
+          <div className="flex gap-2 w-full">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant={puzzleStatus.hasLog ? "secondary" : "default"} 
-                    size="sm" 
-                    className="w-full h-8"
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Clock className="w-3 h-3 mr-2 animate-spin" />
-                        Updating...
-                      </>
-                    ) : puzzleStatus.hasLog && statusInfo ? (
-                      <>
-                        <statusInfo.icon className="w-3 h-3 mr-2" />
-                        {statusInfo.label}
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3 h-3 mr-2" />
-                        Add to List
-                      </>
-                    )}
-                    <ChevronDown className="w-3 h-3 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem 
-                    onClick={() => handleStatusChange('wishlist')}
-                    className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
-                  >
-                    <Heart className="w-4 h-4 mr-2" />
-                    Add to Wishlist
-                    {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleStatusChange('library')}
-                    className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
-                  >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Add to Library
-                    {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleStatusChange('in-progress')}
-                    className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    Currently Solving
-                    {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleStatusChange('completed')}
-                    className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Mark as Completed
-                    {puzzleStatus.status === 'completed' && <Check className="w-4 h-4 ml-auto" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/puzzles/${puzzle.id}`} className="w-full">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                {/* Add to List Button - Always Outline Style */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      className="flex-1 h-9 text-xs font-medium border border-violet-200 text-violet-700 bg-white/80 backdrop-blur-sm hover:bg-violet-50 hover:border-violet-300 transition-all duration-300"
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Clock className="w-3 h-3 mr-1.5 animate-spin" />
+                          Updating...
+                        </>
+                      ) : puzzleStatus.hasLog && statusInfo ? (
+                        <>
+                          <statusInfo.icon className="w-3 h-3 mr-1.5" />
+                          {statusInfo.label}
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3 h-3 mr-1.5" />
+                          Add to List
+                        </>
+                      )}
+                      <ChevronDown className="w-3 h-3 ml-1.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 glass-card border-white/40">
+                    <DropdownMenuItem 
+                      onClick={() => handleStatusChange('wishlist')}
+                      className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
+                    >
+                      <Heart className="w-4 h-4 mr-2" />
+                      Add to Wishlist
+                      {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleStatusChange('library')}
+                      className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Add to Library
+                      {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleStatusChange('in-progress')}
+                      className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Currently Solving
+                      {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleStatusChange('completed')}
+                      className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Mark as Completed
+                      {puzzleStatus.status === 'completed' && <Check className="w-4 h-4 ml-auto" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href={`/puzzles/${puzzle.id}`} className="w-full">
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Details
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Rate It Button - Solid Style */}
+                <Button 
+                  asChild
+                  className="flex-1 h-9 text-xs font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass hover:shadow-glass-lg hover:scale-105 transition-all duration-300 border-0"
+                >
+                  <Link href={`/puzzles/${puzzle.id}`}>
+                    <Star className="w-3 h-3 mr-1.5" />
+                    Rate It
+                  </Link>
+                </Button>
+              </>
             ) : (
-              <Button asChild variant="outline" size="sm" className="w-full h-8">
+              <Button asChild variant="outline" className="w-full h-9 text-xs font-medium border border-violet-200 text-violet-700 bg-white/80 backdrop-blur-sm hover:bg-violet-50 hover:border-violet-300">
                 <Link href={`/puzzles/${puzzle.id}`}>
-                  <Eye className="w-3 h-3 mr-2" />
+                  <Eye className="w-3 h-3 mr-1.5" />
                   View Details
                 </Link>
               </Button>
@@ -600,7 +637,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
         </div>
       </div>
 
-      {/* Completion Time Modal */}
+      {/* Completion Modal */}
       <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

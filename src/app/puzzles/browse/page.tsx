@@ -97,21 +97,21 @@ export default function BrowsePuzzlesPage() {
         throw new Error('Failed to fetch puzzles')
       }
       
-      const data = await response.json()
+          const data = await response.json()
       setPuzzles(data.puzzles || [])
       setTotalPuzzles(data.total || data.puzzles?.length || 0)
       
       // Extract unique brands with counts for filtering
       if (data.brands) {
         setAvailableBrands(data.brands)
-      }
-    } catch (error) {
+        }
+      } catch (error) {
       console.error('Error fetching puzzles:', error)
       setPuzzles([])
       setTotalPuzzles(0)
-    } finally {
-      setLoading(false)
-    }
+      } finally {
+        setLoading(false)
+      }
   }, [sortBy, sortOrder])
 
   // Handle filter changes
@@ -139,34 +139,34 @@ export default function BrowsePuzzlesPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-emerald-50/20">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white border-b px-6 py-4">
+        {/* Premium Glass Header */}
+        <div className="glass-card border-white/30 px-6 py-6 mb-6 mx-6 mt-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Browse Puzzles</h1>
-              <p className="text-gray-600 mt-1">
-                Discover your next favorite jigsaw puzzle
+              <h1 className="text-3xl font-bold gradient-text mb-2">Browse Puzzles</h1>
+              <p className="text-slate-600">
+                Discover your next favorite jigsaw puzzle from our premium collection
               </p>
             </div>
             
-            {/* Controls */}
+            {/* Enhanced Controls */}
             <div className="flex items-center gap-4">
-              {/* Sort Dropdown */}
+              {/* Premium Sort Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <span className="text-sm">Sort: {currentSortLabel}</span>
+                  <Button className="glass-button flex items-center gap-2 px-4 py-2">
+                    <span className="text-sm font-medium">Sort: {currentSortLabel}</span>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 glass-card border-white/40">
                   {sortOptions.map((option) => (
                     <DropdownMenuItem
                       key={option.value}
                       onClick={() => handleSortChange(option.value)}
-                      className={sortBy === option.value ? 'bg-blue-50 text-blue-700' : ''}
+                      className={sortBy === option.value ? 'bg-violet-50 text-violet-700' : ''}
                     >
                       {option.label}
                     </DropdownMenuItem>
@@ -174,19 +174,21 @@ export default function BrowsePuzzlesPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              {/* View Toggle */}
-              <div className="flex items-center gap-2">
+              {/* Enhanced View Toggle */}
+              <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm rounded-lg p-1">
                 <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
+                  className={viewMode === 'grid' ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass' : 'hover:bg-white/80'}
                 >
                   <Grid className="w-4 h-4" />
                 </Button>
                 <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass' : 'hover:bg-white/80'}
                 >
                   <List className="w-4 h-4" />
                 </Button>
@@ -196,31 +198,33 @@ export default function BrowsePuzzlesPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex">
-          {/* Sidebar */}
-          <div className="w-80 bg-white border-r">
-            <BrowseFilterSidebar
-              onFiltersChange={handleFiltersChange}
-              availableBrands={availableBrands}
-              totalPuzzles={totalPuzzles}
-              isLoading={loading}
-            />
+        <div className="flex gap-6 mx-6">
+          {/* Enhanced Sidebar */}
+          <div className="w-80">
+            <div className="glass-card border-white/30">
+              <BrowseFilterSidebar
+                onFiltersChange={handleFiltersChange}
+                availableBrands={availableBrands}
+                totalPuzzles={totalPuzzles}
+                isLoading={loading}
+              />
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 p-6">
+          {/* Premium Content Area */}
+          <div className="flex-1 pb-6">
             {loading ? (
               <div className="space-y-6">
                 {/* Loading State */}
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="text-gray-600 mt-2">Loading puzzles...</p>
-                </div>
-                
+                    </div>
+
                 {/* Loading Skeleton */}
                 <div className={`grid gap-6 ${
                   viewMode === 'grid' 
-                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                     : 'grid-cols-1'
                 }`}>
                   {Array.from({ length: 8 }).map((_, i) => (
@@ -234,7 +238,7 @@ export default function BrowsePuzzlesPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+                  </div>
             ) : puzzles.length === 0 ? (
               /* Empty State */
               <div className="text-center py-12">
@@ -259,7 +263,7 @@ export default function BrowsePuzzlesPage() {
               /* Puzzle Grid */
               <div className={`grid gap-6 ${
                 viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                   : 'grid-cols-1 max-w-4xl'
               }`}>
                 {puzzles.map((puzzle) => (
@@ -268,8 +272,8 @@ export default function BrowsePuzzlesPage() {
                     puzzle={puzzle}
                     viewMode={viewMode}
                   />
-                ))}
-              </div>
+          ))}
+        </div>
             )}
 
             {/* Load More Button (for future pagination) */}
