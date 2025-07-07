@@ -1,24 +1,128 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Users, Star, Heart, BookmarkPlus, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+
+interface PuzzleOfTheDay {
+  id: string
+  title: string
+  brand: string
+  pieces: number
+  difficulty: string
+  image: string
+  description: string | null
+  avgTime: string
+  rating: number
+  completions: number
+  tags: string[]
+  inStock: boolean
+}
 
 export function PuzzleOfTheDay() {
-  // Mock data - in real app this would come from API
-  const puzzleOfTheDay = {
-    id: "daily-123",
-    title: "Sunset Over Santorini",
-    brand: "Ravensburger",
-    pieces: 1000,
-    difficulty: "Intermediate",
-    image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&h=400&fit=crop",
-    description: "Experience the breathtaking beauty of Santorini's famous sunset with this stunning 1000-piece puzzle.",
-    avgTime: "8-12 hours",
-    rating: 4.8,
-    completions: 1247,
-    tags: ["Landscapes", "Sunset", "Travel"],
-    inStock: true
+  const [puzzleOfTheDay, setPuzzleOfTheDay] = useState<PuzzleOfTheDay | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPuzzleOfTheDay = async () => {
+      try {
+        const response = await fetch('/api/puzzle-of-the-day', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.error) {
+          throw new Error(data.message || 'API returned error')
+        }
+        
+        setPuzzleOfTheDay(data)
+        setIsLoading(false)
+        
+      } catch (err) {
+        console.error('Error fetching puzzle of the day:', err)
+        setError(err instanceof Error ? err.message : 'Unknown error')
+        setIsLoading(false)
+      }
+    }
+
+    fetchPuzzleOfTheDay()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="bg-gradient-to-br from-violet-50/80 via-purple-50/60 to-emerald-50/40 rounded-3xl p-6 lg:p-8">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white px-3 py-1.5 rounded-full font-medium text-sm mb-3">
+            <Sparkles className="w-4 h-4" />
+            Puzzle of the Day
+          </div>
+          <h2 className="text-xl lg:text-2xl font-medium mb-2 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+            Loading Today's Featured Puzzle...
+          </h2>
+        </div>
+        <div className="glass-card border-white/40 rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+            <div className="relative aspect-[4/3] lg:aspect-[3/2] bg-slate-200 animate-pulse" />
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="h-6 bg-slate-200 rounded animate-pulse" />
+                <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-slate-200 rounded animate-pulse w-1/2" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gradient-to-br from-violet-50/80 via-purple-50/60 to-emerald-50/40 rounded-3xl p-6 lg:p-8">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white px-3 py-1.5 rounded-full font-medium text-sm mb-3">
+            <Sparkles className="w-4 h-4" />
+            Puzzle of the Day
+          </div>
+          <h2 className="text-xl lg:text-2xl font-medium mb-2 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+            Today's Featured Puzzle
+          </h2>
+        </div>
+        <div className="glass-card border-white/40 rounded-2xl overflow-hidden p-6 text-center">
+          <p className="text-slate-600 mb-4">Unable to load today's featured puzzle</p>
+          <p className="text-xs text-slate-500 mb-4">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            variant="outline" 
+            className="border-violet-200 text-violet-700 hover:bg-violet-50"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!puzzleOfTheDay) {
+    return (
+      <div className="bg-gradient-to-br from-violet-50/80 via-purple-50/60 to-emerald-50/40 rounded-3xl p-6 lg:p-8">
+        <div className="text-center">
+          <p className="text-slate-600">No puzzle data available</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -77,9 +181,11 @@ export function PuzzleOfTheDay() {
                   {puzzleOfTheDay.difficulty}
                 </Badge>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                {puzzleOfTheDay.description}
-              </p>
+              {puzzleOfTheDay.description && (
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  {puzzleOfTheDay.description}
+                </p>
+              )}
             </div>
 
             {/* Compact Stats Grid */}
@@ -90,7 +196,9 @@ export function PuzzleOfTheDay() {
               </div>
               <div className="bg-slate-50/50 rounded-lg p-3 text-center">
                 <Star className="w-4 h-4 text-violet-600 mx-auto mb-1" />
-                <div className="text-xs font-bold text-slate-800">{puzzleOfTheDay.rating}/5</div>
+                <div className="text-xs font-bold text-slate-800">
+                  {puzzleOfTheDay.rating > 0 ? `${puzzleOfTheDay.rating.toFixed(1)}/5` : 'No rating'}
+                </div>
               </div>
               <div className="bg-slate-50/50 rounded-lg p-3 text-center">
                 <Users className="w-4 h-4 text-violet-600 mx-auto mb-1" />
@@ -99,15 +207,17 @@ export function PuzzleOfTheDay() {
             </div>
 
             {/* Tags */}
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-1.5">
-                {puzzleOfTheDay.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="bg-violet-100 text-violet-800 hover:bg-violet-200 text-xs">
-                    {tag}
-                  </Badge>
-                ))}
+            {puzzleOfTheDay.tags.length > 0 && (
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {puzzleOfTheDay.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="bg-violet-100 text-violet-800 hover:bg-violet-200 text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-2">
