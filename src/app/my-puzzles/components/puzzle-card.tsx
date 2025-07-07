@@ -197,13 +197,13 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-100">
             {puzzle.image ? (
               <>
-                <Image
-                  src={puzzle.image}
-                  alt={puzzle.title}
-                  fill
+              <Image
+                src={puzzle.image}
+                alt={puzzle.title}
+                fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
                 {/* Gradient Overlay on Hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </>

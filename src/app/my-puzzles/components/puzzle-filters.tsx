@@ -39,12 +39,12 @@ export function PuzzleFilters({
                 <div className="p-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600">
                   <Search className="h-4 w-4 text-white" />
                 </div>
-                <Input
-                  placeholder="Search your puzzles..."
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
+              <Input
+                placeholder="Search your puzzles..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
                   className="border-0 bg-transparent text-slate-700 placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-                />
+              />
               </div>
             </div>
           </div>

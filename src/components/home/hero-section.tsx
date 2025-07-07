@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export function HeroSection() {
   return (
-    <section className="relative bg-gradient-to-br from-violet-50 via-white to-emerald-50 py-20 px-4 overflow-hidden">
+    <section className="relative bg-gradient-to-br from-violet-50 via-white to-emerald-50 pt-20 pb-8 px-4 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-emerald-100/20"></div>
       <div className="absolute top-20 left-20 w-72 h-72 bg-violet-200/30 rounded-full blur-3xl"></div>
@@ -20,11 +20,11 @@ export function HeroSection() {
         </div>
 
         {/* Main Hero Content */}
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-violet-600 via-purple-600 to-violet-800 bg-clip-text text-transparent leading-tight">
+        <h1 className="text-4xl md:text-5xl font-semibold mb-6 bg-gradient-to-r from-violet-600 via-purple-600 to-violet-800 bg-clip-text text-transparent leading-tight">
           Discover, Log & Share Your Puzzle Journey
         </h1>
         
-        <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
           Join thousands of puzzle enthusiasts discovering their next favorite puzzle, tracking their progress, and sharing their passion
         </p>
 

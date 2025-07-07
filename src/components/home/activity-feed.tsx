@@ -1,249 +1,291 @@
+'use client'
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Heart, MessageCircle, Share2, Clock, ArrowRight } from 'lucide-react'
-import Image from 'next/image'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Heart, MessageCircle, Star, CheckCircle, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
-// Helper function to create URL-friendly slugs
-const slugify = (text: string) => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-')     // Replace spaces with hyphens
-    .replace(/--+/g, '-')     // Collapse multiple hyphens
-    .trim()
+interface ActivityItem {
+  id: string
+  type: 'review' | 'completion' | 'follow' | 'like'
+  user: {
+    name: string
+    username: string
+    avatar: string
+  }
+  puzzle?: {
+    id: string
+    title: string
+    brand: string
+    image: string
+    pieceCount: number
+    difficulty: string
+    rating: number
+  }
+  content?: string
+  timestamp: string
+  stats?: {
+    hours: number
+    likes: number
+    comments: number
+  }
 }
 
 export function ActivityFeed() {
-  // Mock data - in real app this would come from API
-  const activities = [
+  const activities: ActivityItem[] = [
     {
-      id: 1,
-      type: "completion",
+      id: '1',
+      type: 'review',
       user: {
-        name: "Sarah Chen",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b647?w=50&h=50&fit=crop&crop=face",
-        username: "sarahpuzzles"
+        name: 'Sarah Johnson',
+        username: 'sarahj',
+        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
-        title: "Japanese Cherry Blossoms",
-        brand: "Buffalo Games",
-        pieces: 1000
+        id: '1',
+        title: 'Sunset Mountains',
+        brand: 'Ravensburger',
+        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop',
+        pieceCount: 1000,
+        difficulty: 'Medium',
+        rating: 4.8
       },
-      completionTime: "6h 42m",
-      image: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=400&h=300&fit=crop",
-      caption: "Finally finished this beautiful cherry blossom puzzle! The pink gradients were challenging but so worth it. Perfect for spring! 🌸",
-      timestamp: "2 hours ago",
-      likes: 24,
-      comments: 7,
-      rating: 5
+      content: 'Absolutely stunning puzzle! The colors are vibrant and the pieces fit perfectly. Took me about 9 hours over a weekend.',
+      timestamp: 'over 1 year ago',
+      stats: {
+        hours: 9,
+        likes: 12,
+        comments: 3
+      }
     },
     {
-      id: 2,
-      type: "progress",
+      id: '2',
+      type: 'completion',
       user: {
-        name: "Mike Rodriguez",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face",
-        username: "mikesolves"
+        name: 'Mike Rodriguez',
+        username: 'mikerod',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
-        title: "Starry Night Van Gogh",
-        brand: "Ravensburger",
-        pieces: 1500
+        id: '2',
+        title: 'Ocean Waves',
+        brand: 'Buffalo Games',
+        image: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=80&h=80&fit=crop',
+        pieceCount: 750,
+        difficulty: 'Easy',
+        rating: 4.6
       },
-      progress: 65,
-      image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop",
-      caption: "Making great progress on this Van Gogh masterpiece! The swirls in the sky are incredibly detailed. Can't wait to see it finished!",
-      timestamp: "5 hours ago",
-      likes: 18,
-      comments: 3
+      timestamp: 'over 1 year ago'
     },
     {
-      id: 3,
-      type: "review",
+      id: '3',
+      type: 'follow',
       user: {
-        name: "Emma Thompson",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face",
-        username: "emmapuzzles"
+        name: 'Alex Chen',
+        username: 'alexchen',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face'
       },
-      puzzle: {
-        title: "Mountain Lake Reflection",
-        brand: "Cobble Hill",
-        pieces: 500
-      },
-      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      caption: "Wonderful quality pieces and beautiful imagery! The reflection effect was tricky but rewarding. Highly recommend for intermediate puzzlers.",
-      timestamp: "1 day ago",
-      likes: 31,
-      comments: 12,
-      rating: 4
+      content: 'started following Sarah Johnson',
+      timestamp: 'over 1 year ago'
     }
   ]
 
-  const getActivityIcon = (type: string) => {
+  const renderActivityIcon = (type: string) => {
     switch (type) {
-      case "completion":
-        return "🎉"
-      case "progress":
-        return "🧩"
-      case "review":
-        return "⭐"
+      case 'review':
+        return <Star className="w-3 h-3 text-amber-500" />
+      case 'completion':
+        return <CheckCircle className="w-3 h-3 text-emerald-500" />
+      case 'follow':
+        return <UserPlus className="w-3 h-3 text-blue-500" />
       default:
-        return "📝"
+        return <Heart className="w-3 h-3 text-rose-500" />
     }
   }
 
-  const getActivityAction = (type: string) => {
-    switch (type) {
-      case "completion":
-        return "completed"
-      case "progress":
-        return "is working on"
-      case "review":
-        return "reviewed"
-      default:
-        return "posted about"
+  const renderActivity = (activity: ActivityItem) => {
+    if (activity.type === 'review' && activity.puzzle) {
+      return (
+        <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-7 h-7 border border-white shadow-sm">
+              <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium text-xs">
+                {activity.user.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-1.5 mb-1">
+                {renderActivityIcon(activity.type)}
+                <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
+                <span className="text-slate-500 text-xs">reviewed</span>
+                <span className="font-medium text-sm text-violet-600">"{activity.puzzle.title}"</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
+              
+              {/* Puzzle Info */}
+              <div className="bg-slate-50/50 rounded-lg p-2.5 mb-2">
+                <div className="flex items-center space-x-2.5">
+                  <img 
+                    src={activity.puzzle.image} 
+                    alt={activity.puzzle.title}
+                    className="w-9 h-9 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-slate-900">{activity.puzzle.title}</h4>
+                    <p className="text-xs text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
+                    <div className="flex items-center space-x-1 mt-0.5">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        activity.puzzle.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
+                        activity.puzzle.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-rose-100 text-rose-700'
+                      }`}>
+                        {activity.puzzle.difficulty}
+                      </span>
+                      <Star className="w-2.5 h-2.5 text-amber-400 fill-current" />
+                      <span className="text-xs text-slate-600">{activity.puzzle.rating}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Review Content */}
+              <div className="mb-2">
+                <div className="flex items-center space-x-1.5 mb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3 h-3 text-amber-400 fill-current" />
+                  ))}
+                  <span className="text-xs text-slate-700">Solved in {activity.stats?.hours} hours</span>
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed">{activity.content}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-1" />
+                  Like
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
     }
+
+    if (activity.type === 'completion' && activity.puzzle) {
+      return (
+        <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-7 h-7 border border-white shadow-sm">
+              <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-medium text-xs">
+                {activity.user.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex items-center space-x-1.5 mb-1">
+                {renderActivityIcon(activity.type)}
+                <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
+                <span className="text-slate-500 text-xs">completed</span>
+                <span className="font-medium text-sm text-emerald-600">"{activity.puzzle.title}"</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
+              
+              <div className="bg-slate-50/50 rounded-lg p-2.5 mb-2">
+                <div className="flex items-center space-x-2.5">
+                  <img 
+                    src={activity.puzzle.image} 
+                    alt={activity.puzzle.title}
+                    className="w-9 h-9 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-slate-900">{activity.puzzle.title}</h4>
+                    <p className="text-xs text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mt-0.5 ${
+                      activity.puzzle.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {activity.puzzle.difficulty}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-1" />
+                  Like
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (activity.type === 'follow') {
+      return (
+        <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-7 h-7 border border-white shadow-sm">
+              <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-medium text-xs">
+                {activity.user.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex items-center space-x-1.5 mb-1">
+                {renderActivityIcon(activity.type)}
+                <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
+                <span className="text-slate-500 text-xs">{activity.content}</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
+
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-1" />
+                  Like
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return null
   }
 
   return (
-    <section className="py-20 px-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Community Activity
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            See what fellow puzzlers are working on and sharing
-          </p>
+    <Card className="glass-card border-white/40">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium text-slate-800">Activity Feed</CardTitle>
+          <Link href="/activity" className="text-xs font-medium text-violet-600 hover:text-violet-700">
+            View All
+          </Link>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-          {activities.map((activity) => (
-            <div key={activity.id} className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-              {/* Header */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden">
-                    <Image
-                      src={activity.user.avatar}
-                      alt={activity.user.name}
-                      width={40}
-                      height={40}
-                      className="rounded-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800">{activity.user.name}</span>
-                      <span className="text-lg">{getActivityIcon(activity.type)}</span>
-                      <span className="text-sm text-gray-500">{getActivityAction(activity.type)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Clock className="w-3 h-3" />
-                      {activity.timestamp}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Image */}
-              <div className="relative aspect-[4/3]">
-                <Image
-                  src={activity.image}
-                  alt={activity.puzzle.title}
-                  fill
-                  className="object-cover"
-                />
-                {/* Overlay info */}
-                <div className="absolute top-3 left-3">
-                  {activity.type === "completion" && activity.rating && (
-                    <Badge className="bg-yellow-500 text-white border-0">
-                      ⭐ {activity.rating}/5
-                    </Badge>
-                  )}
-                  {activity.type === "progress" && activity.progress && (
-                    <Badge className="bg-blue-500 text-white border-0">
-                      {activity.progress}% Complete
-                    </Badge>
-                  )}
-                </div>
-                {activity.type === "completion" && activity.completionTime && (
-                  <div className="absolute bottom-3 right-3">
-                    <Badge className="bg-green-500 text-white border-0">
-                      ⏱️ {activity.completionTime}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-4">
-                <div className="mb-3">
-                  <h4 className="font-semibold text-gray-800 text-sm mb-1">
-                    {activity.puzzle.title}
-                  </h4>
-                  <p className="text-xs text-gray-500">
-                    {activity.puzzle.brand} • {activity.puzzle.pieces} pieces
-                  </p>
-                </div>
-                
-                <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                  {activity.caption}
-                </p>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button 
-                      className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-                      aria-label={`Like (${activity.likes} likes)`}
-                    >
-                      <Heart className="w-4 h-4" />
-                      <span className="text-xs">{activity.likes}</span>
-                    </button>
-                    <button 
-                      className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors"
-                      aria-label={`Comment (${activity.comments} comments)`}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span className="text-xs">{activity.comments}</span>
-                    </button>
-                    <button 
-                      className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors"
-                      aria-label="Share"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <Link 
-                    href={`/puzzles/${slugify(activity.puzzle.title)}`}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    View Puzzle
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* View All Button */}
-        <div className="text-center">
-          <Button 
-            variant="outline" 
-            size="lg"
-            className="group border-blue-200 text-blue-700 hover:bg-blue-50"
-            asChild
-          >
-            <Link href="/community/activity">
-              View All Activity
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </section>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {activities.map(renderActivity)}
+      </CardContent>
+    </Card>
   )
-} 
+}

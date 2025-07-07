@@ -80,7 +80,7 @@ export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps)
             
             return (
               <button
-                key={tab.key}
+              key={tab.key}
                 onClick={() => onTabChange(tab.key)}
                 className={`relative group p-4 rounded-xl transition-all duration-300 ${
                   isActive 
@@ -101,8 +101,8 @@ export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps)
                       ? `bg-gradient-to-r ${fromColor} ${toColor} text-white shadow-sm` 
                       : 'bg-slate-100 text-slate-600'
                   }`}>
-                    {tab.count}
-                  </span>
+                {tab.count}
+              </span>
                 </div>
               </button>
             )

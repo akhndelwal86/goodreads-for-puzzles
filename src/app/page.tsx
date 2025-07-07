@@ -1,77 +1,64 @@
 'use client'
 
 import { HeroSection } from '@/components/home/hero-section'
-import { StatsRow } from '@/components/home/stats-row'
-import { FeaturedPuzzles } from '@/components/home/featured-puzzles'
-import { BrandCarousel } from '@/components/brands/brand-carousel'
-import { Collections } from '@/components/home/collections'
-import { SmartListsSection } from '@/components/home/smart-lists-section'
+import { StatsStrip } from '@/components/home/stats-strip'
 import { PuzzleOfTheDay } from '@/components/home/puzzle-of-the-day'
+import { SmartListsSection } from '@/components/home/smart-lists-section'
+import { CategoryBrowser } from '@/components/home/category-browser'
+import { PopularBrandsCarousel } from '@/components/home/popular-brands-carousel'
 import { ActivityFeed } from '@/components/home/activity-feed'
-import { PopularCategories } from '@/components/home/popular-categories'
+import { Leaderboard } from '@/components/home/Leaderboard'
 import { useUserSync } from '@/lib/auth-utils'
-import type { Puzzle } from '@/types/database'
 
 export default function HomePage() {
   // Sync user with Supabase when they sign in
   useUserSync()
-  
-  // Mock data to test without database dependency for other components
-  const featuredPuzzles: Puzzle[] = []
 
   const handlePuzzleClick = (puzzleId: string) => {
     // TODO: Navigate to puzzle detail page
     console.log('Navigate to puzzle:', puzzleId)
   }
 
-  const handleViewAll = (listType: 'trending' | 'most-completed' | 'recently-added') => {
+  const handleViewAll = (listType: 'trending' | 'most-completed' | 'recently-added' | 'top-rated') => {
     // TODO: Navigate to dedicated list page
     console.log('View all:', listType)
   }
 
   return (
-    <main className="min-h-screen">
-      {/* Hero Section - Main landing area */}
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
+      {/* Hero Section - Full Width */}
       <HeroSection />
       
-      {/* Stats Row - Key platform metrics */}
-      <div className="py-16 bg-gradient-to-br from-violet-50 via-white to-emerald-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <StatsRow />
-        </div>
-      </div>
+      {/* Stats Strip - Full Width */}
+      <StatsStrip />
 
-      {/* Puzzle of the Day - Daily featured puzzle */}
-      <PuzzleOfTheDay />
+      {/* Sequential Content Layout */}
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        
+        {/* Puzzle of the Day */}
+        <PuzzleOfTheDay />
 
-      {/* Smart Lists - Trending, Most Completed, Recently Added (New Modular Version) */}
-      <div className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
+        {/* Smart Lists */}
+        <div className="bg-gradient-to-br from-violet-50/50 via-white to-emerald-50/30 rounded-3xl p-6">
           <SmartListsSection 
             onPuzzleClick={handlePuzzleClick}
             onViewAll={handleViewAll}
           />
         </div>
-      </div>
 
-      {/* Featured Puzzles - Database-driven puzzle grid */}
-      <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <FeaturedPuzzles />
+        {/* Category Browser */}
+        <CategoryBrowser />
+
+        {/* Popular Brands Carousel */}
+        <PopularBrandsCarousel />
+
+        {/* Activity Feed and Leaderboard Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <ActivityFeed />
+          <Leaderboard />
         </div>
+
       </div>
-
-      {/* Popular Categories - Browse by interest with filters */}
-      <PopularCategories />
-
-      {/* Brand Carousel - Brand browsing experience */}
-      <BrandCarousel />
-
-      {/* Activity Feed - Community activity preview */}
-      <ActivityFeed />
-
-      {/* Collections - Curated puzzle collections */}
-      <Collections />
     </main>
   )
 }

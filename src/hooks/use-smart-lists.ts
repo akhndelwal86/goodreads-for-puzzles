@@ -5,6 +5,7 @@ import {
   getMostCompletedPuzzles, 
   getTrendingPuzzles, 
   getRecentlyAddedPuzzles,
+  getHighestRatedPuzzles,
   type SmartListPuzzle 
 } from '@/lib/supabase'
 
@@ -55,16 +56,22 @@ export function useRecentlyAdded(limit = 3): UseQueryResult<SmartListPuzzle[]> {
   return useAsyncData(() => getRecentlyAddedPuzzles(limit), [limit])
 }
 
+export function useTopRated(limit = 3): UseQueryResult<SmartListPuzzle[]> {
+  return useAsyncData(() => getHighestRatedPuzzles(limit), [limit])
+}
+
 export function useSmartLists() {
   const trending = useTrending(3)
   const mostCompleted = useMostCompleted(3)
   const recentlyAdded = useRecentlyAdded(3)
+  const topRated = useTopRated(3)
 
   return {
     trending,
     mostCompleted,
     recentlyAdded,
-    isLoading: trending.isLoading || mostCompleted.isLoading || recentlyAdded.isLoading,
-    error: trending.error || mostCompleted.error || recentlyAdded.error
+    topRated,
+    isLoading: trending.isLoading || mostCompleted.isLoading || recentlyAdded.isLoading || topRated.isLoading,
+    error: trending.error || mostCompleted.error || recentlyAdded.error || topRated.error
   }
 } 

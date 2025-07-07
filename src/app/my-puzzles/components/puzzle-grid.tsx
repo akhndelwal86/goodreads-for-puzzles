@@ -18,15 +18,15 @@ export function PuzzleGrid({ puzzles, onPuzzleClick, onStatusChange, onLogProgre
       </h3>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {puzzles.map((puzzle) => (
-          <PuzzleCard
-            key={puzzle.id}
-            puzzle={puzzle}
-            onPuzzleClick={onPuzzleClick}
-            onStatusChange={onStatusChange}
-            onLogProgress={onLogProgress}
-          />
-        ))}
+      {puzzles.map((puzzle) => (
+        <PuzzleCard
+          key={puzzle.id}
+          puzzle={puzzle}
+          onPuzzleClick={onPuzzleClick}
+          onStatusChange={onStatusChange}
+          onLogProgress={onLogProgress}
+        />
+      ))}
       </div>
     </div>
   )

@@ -496,7 +496,7 @@ export default function BrowsePuzzlesPage() {
         params.set('sortOrder', 'desc')
         
         const response = await fetch(`/api/puzzles?${params.toString()}`)
-        const data = await response.json()
+          const data = await response.json()
         
         if (data.puzzles) {
           setPuzzles(data.puzzles.map(transformPuzzleData))
@@ -508,14 +508,14 @@ export default function BrowsePuzzlesPage() {
         setLoading(false)
       }
     }
-    
+
     loadInitialPuzzles()
   }, []) // Empty dependency array to run only once
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
       {/* Beautiful Hero Section with Subtle Gradient Background */}
-      <section className="relative py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50/20 via-violet-50/15 to-blue-50/10 -mt-0">
+      <section className="relative pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50/20 via-violet-50/15 to-blue-50/10">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-100/5 via-violet-50/5 to-blue-50/5" />
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="space-y-6">
@@ -552,9 +552,9 @@ export default function BrowsePuzzlesPage() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="flex gap-8">
+        <div className="flex gap-6">
           {/* Advanced Filter Sidebar */}
-          <div className="w-80 flex-shrink-0">
+          <div className="w-64 flex-shrink-0">
             <BrowseFilterSidebar
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -576,7 +576,7 @@ export default function BrowsePuzzlesPage() {
                     `${puzzles.length} Puzzle${puzzles.length !== 1 ? 's' : ''}`
                   )}
                 </h2>
-              </div>
+                  </div>
 
               {/* Right: Sort and View Controls */}
               <div className="flex items-center gap-4">
@@ -593,7 +593,7 @@ export default function BrowsePuzzlesPage() {
                       <SelectItem value="rating-asc">Lowest Rated</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                    </div>
 
                 {/* Filters Button */}
                 <Button 
@@ -633,9 +633,9 @@ export default function BrowsePuzzlesPage() {
                   >
                     <List className="w-4 h-4" />
                   </Button>
-                </div>
-              </div>
-            </div>
+                      </div>
+                      </div>
+                    </div>
 
             {/* Puzzle Results */}
             {loading ? (
@@ -656,7 +656,7 @@ export default function BrowsePuzzlesPage() {
             ) : (
               <div className={
                 viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
                   : "grid grid-cols-1 gap-4"
               }>
                 {puzzles.map((puzzle) => (
@@ -665,8 +665,8 @@ export default function BrowsePuzzlesPage() {
                   ) : (
                     <PuzzleListItem key={puzzle.id} puzzle={puzzle} />
                   )
-                ))}
-              </div>
+          ))}
+        </div>
             )}
           </div>
         </div>

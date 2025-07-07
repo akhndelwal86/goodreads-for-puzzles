@@ -84,7 +84,7 @@ export default function PuzzleDetailPage() {
   }, [params.id])
 
   const fetchPuzzleDetail = async (id: string) => {
-    try {
+      try {
       setLoading(true)
       const response = await fetch(`/api/puzzles/${id}`)
       
@@ -92,15 +92,15 @@ export default function PuzzleDetailPage() {
         throw new Error('Failed to fetch puzzle details')
       }
       
-      const data = await response.json()
-      setPuzzleData(data)
+          const data = await response.json()
+          setPuzzleData(data)
     } catch (error) {
       console.error('Error fetching puzzle:', error)
-      setError('Failed to load puzzle details')
-    } finally {
-      setLoading(false)
+          setError('Failed to load puzzle details')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
   // Rich mock data for comprehensive stats
   const mockStats = {
@@ -186,25 +186,25 @@ export default function PuzzleDetailPage() {
                 {/* Image - 2 columns */}
                 <div className="md:col-span-2">
                   <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-lg group">
-                    {puzzle.image_url ? (
-                      <Image
-                        src={puzzle.image_url}
-                        alt={puzzle.title}
+              {puzzle.image_url ? (
+                <Image
+                  src={puzzle.image_url}
+                  alt={puzzle.title}
                         width={500}
                         height={500}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
+                />
+              ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Sparkles className="w-16 h-16 text-slate-400" />
-                      </div>
-                    )}
-                  </div>
                 </div>
+              )}
+            </div>
+          </div>
 
                 {/* Info - 3 columns */}
                 <div className="md:col-span-3 space-y-3">
-                  <div>
+            <div>
                     <h1 className="text-2xl font-semibold text-slate-800 mb-2">{puzzle.title}</h1>
                     
                     {/* Brand and Basic Info */}
@@ -252,7 +252,7 @@ export default function PuzzleDetailPage() {
                   </div>
 
                   {/* Essential Specs as Labels */}
-                  <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-4">
                     <Badge variant="secondary" className="bg-violet-50 text-violet-700 border-violet-200 px-2 py-1 text-xs">
                       <Layers className="w-3 h-3 mr-1" />
                       {puzzle.piece_count} pieces
@@ -561,7 +561,7 @@ export default function PuzzleDetailPage() {
                   </div>
 
                   {/* Multi-Dimensional Ratings */}
-                  <div>
+              <div>
                     <h3 className="text-lg font-normal text-slate-700 mb-3">Quality Breakdown</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       {[
@@ -593,7 +593,7 @@ export default function PuzzleDetailPage() {
                         </div>
                       ))}
                     </div>
-                  </div>
+              </div>
 
                   {/* Individual Reviews */}
                   <div>

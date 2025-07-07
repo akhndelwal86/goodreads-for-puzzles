@@ -87,7 +87,7 @@
 
 @layer base {
   body {
-    background: linear-gradient(to bottom right, #f8fafc, #f1f5f9 30%, #e2e8f0 70%, #cbd5e1);
+    background: white;
     color: hsl(var(--foreground));
     min-height: 100vh;
   }
