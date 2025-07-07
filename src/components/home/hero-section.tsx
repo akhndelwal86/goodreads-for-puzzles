@@ -24,7 +24,7 @@ export function HeroSection() {
           Discover, Log & Share Your Puzzle Journey
         </h1>
         
-        <p className="text-lg md:text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-gray-600 font-light mb-12 max-w-3xl mx-auto leading-relaxed">
           Join thousands of puzzle enthusiasts discovering their next favorite puzzle, tracking their progress, and sharing their passion
         </p>
 
