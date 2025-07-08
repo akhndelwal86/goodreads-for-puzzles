@@ -24,7 +24,7 @@ and forums are acknowledged as v2.**
 
 - Achieve 10,000 user sign-ups within the first 6 months.
 
-- Build a catalog with 5,000+ accurately detailed puzzles in the first
+- Build a catalog with 50,000+ accurately detailed puzzles in the first
   year.
 
 - Grow weekly active users (WAU) to 2,000+ by the end of year one.
@@ -40,7 +40,7 @@ and forums are acknowledged as v2.**
 
 - Effortlessly discover jigsaw puzzles from all over the world with
   advanced search, smart lists, conversational AI recommendations, and
-  richly-filtered browsing, **including by brand**.
+  richly filtered browsing, **including by brand**.
 
 - Track personal puzzle history, including "want to solve," "solved,"
   custom lists, personal statistics per puzzle, and **log completed

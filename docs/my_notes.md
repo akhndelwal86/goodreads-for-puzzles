@@ -1,18 +1,24 @@
-- my library
-- need to check on the client server things 
-- P0- the log progress button is not working 
-- P0- need to make more smart lists 
-- need to improve smartlists
+
+- tag functionality: where how to add tags
+- barcode search
+- need to figure what all is behind the sign in 
+- mobile responsiveness
+- makea a puzzle of the day list and an admin dashboad to pouplate it / what is the current logic
+- some sort of curated list or smart list on browse page also 
+- sharing functionlality
+- modals to be redesigned
+- add heart functionality to puzzle which directly adds to the users wishlist 
+- rate it functionality on the puzzle cards
+- Rating logic 
+- make one more browse page with list categories etc 
+-need to make more smart lists 
 - need to standardise the call to actions
 - will need admin dashboard also later for managing and moderatign 
 - fix url naming also later
-- fix foler structure in code and naming etc
-- checklist for all apis
-- add best time for 500 1000 pieze puzzle in the my puzzles section
-- P0- improve purchase link feature 
-- flow of add and log a puzzle
-- add to list can just be a drop down 
-- clean code
+- Code and folder structure cleanup 
+- add more featuers to the my puzzles section 
+- how does abandon work in my puzzles
+
 
 P1:  Implement Multi-Image Support for Puzzles
 - Add additional_images JSONB column to puzzles table

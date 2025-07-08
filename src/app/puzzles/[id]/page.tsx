@@ -43,6 +43,7 @@ import {
   Palette,
   Shield
 } from 'lucide-react'
+import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
 
 interface PuzzleDetail {
   puzzle: {
@@ -76,6 +77,7 @@ export default function PuzzleDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('details')
+  const [showAdvancedRating, setShowAdvancedRating] = useState(false)
 
   useEffect(() => {
     if (params.id) {
@@ -281,7 +283,11 @@ export default function PuzzleDetailPage() {
                       <Archive className="w-4 h-4 mr-2" />
                       Add to Collection
                     </Button>
-                    <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50 px-4 text-sm">
+                    <Button 
+                      variant="outline" 
+                      className="border-violet-200 text-violet-700 hover:bg-violet-50 px-4 text-sm"
+                      onClick={() => setShowAdvancedRating(true)}
+                    >
                       <Star className="w-4 h-4 mr-2" />
                       Rate & Review
                     </Button>
@@ -1000,6 +1006,21 @@ export default function PuzzleDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Advanced Rating Modal */}
+      {puzzleData && (
+        <AdvancedRatingModal
+          isOpen={showAdvancedRating}
+          onClose={() => setShowAdvancedRating(false)}
+          puzzle={{
+            id: puzzle.id,
+            title: puzzle.title,
+            brand: { name: puzzle.brand?.name || 'Unknown Brand' },
+            imageUrl: puzzle.image_url,
+            pieceCount: puzzle.piece_count
+          }}
+        />
+      )}
     </div>
   )
 } 

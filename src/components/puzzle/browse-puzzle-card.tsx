@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
+import { QuickRatingModal } from '@/components/puzzle/quick-rating-modal'
 
 interface Puzzle {
   id: string
@@ -64,6 +65,12 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
   const [isUpdating, setIsUpdating] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completionTime, setCompletionTime] = useState('')
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  
+  // Debug: Log when modal state changes
+  useEffect(() => {
+    console.log('Rating modal state changed:', showRatingModal, 'for puzzle:', puzzle.id)
+  }, [showRatingModal, puzzle.id])
   const router = useRouter()
 
   useEffect(() => {
@@ -358,13 +365,11 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
 
                     {/* Rate It Button - Solid Style */}
                     <Button 
-                      asChild
                       className="flex-1 h-9 text-xs font-normal bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass hover:shadow-glass-lg hover:scale-105 transition-all duration-300 border-0"
+                      onClick={() => setShowRatingModal(true)}
                     >
-                      <Link href={`/puzzles/${puzzle.id}`}>
-                        <Star className="w-3 h-3 mr-1.5" />
-                        Rate It
-                      </Link>
+                      <Star className="w-3 h-3 mr-1.5" />
+                      Rate It
                     </Button>
                   </>
                 ) : (
@@ -429,11 +434,27 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                 )}
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </>
-    )
-  }
+                  </DialogContent>
+      </Dialog>
+
+      {/* Rating Modal */}
+      <QuickRatingModal
+        isOpen={showRatingModal}
+        onClose={() => {
+          console.log('Closing rating modal for puzzle:', puzzle.id)
+          setShowRatingModal(false)
+        }}
+        puzzle={{
+          id: puzzle.id,
+          title: puzzle.title,
+          brand: { name: puzzle.brand?.name || 'Unknown Brand' },
+          imageUrl: puzzle.imageUrl,
+          pieceCount: puzzle.pieceCount
+        }}
+      />
+    </>
+  )
+}
 
   // ✨ REDESIGNED GRID VIEW - Matching Reference Image Exactly
   return (
@@ -603,13 +624,14 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
 
                   {/* Rate It Button */}
                   <Button 
-                    asChild
                     className="flex-1 h-8 text-xs font-normal bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowRatingModal(true)
+                    }}
                   >
-                    <Link href={`/puzzles/${puzzle.id}`}>
-                      <Star className="w-3 h-3 mr-1 flex-shrink-0" />
-                      <span className="truncate">Rate It</span>
-                    </Link>
+                    <Star className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">Rate It</span>
                   </Button>
                 </>
               ) : (
@@ -676,6 +698,22 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rating Modal */}
+      <QuickRatingModal
+        isOpen={showRatingModal}
+        onClose={() => {
+          console.log('Closing rating modal for puzzle:', puzzle.id)
+          setShowRatingModal(false)
+        }}
+        puzzle={{
+          id: puzzle.id,
+          title: puzzle.title,
+          brand: { name: puzzle.brand?.name || 'Unknown Brand' },
+          imageUrl: puzzle.imageUrl,
+          pieceCount: puzzle.pieceCount
+        }}
+      />
     </>
   )
 } 

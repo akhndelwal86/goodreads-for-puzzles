@@ -242,6 +242,12 @@ export async function GET(request: NextRequest) {
       baseQuery = baseQuery.or(themeConditions)
     }
 
+    // Apply category filter (maps to theme field)
+    if (categories.length > 0) {
+      const categoryConditions = categories.map(category => `theme.ilike.%${category}%`).join(',')
+      baseQuery = baseQuery.or(categoryConditions)
+    }
+
     // Apply piece count range
     if (pieceMin > 0) {
       baseQuery = baseQuery.gte('piece_count', pieceMin)

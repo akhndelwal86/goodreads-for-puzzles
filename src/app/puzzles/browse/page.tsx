@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { BrowsePuzzleCard } from '@/components/puzzle/browse-puzzle-card'
 import { BrowseFilterSidebar } from '@/components/puzzle/browse-filter-sidebar'
 import { PremiumSearchBar } from '@/components/puzzle/premium-search-bar'
-import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye } from 'lucide-react'
+import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { 
   DropdownMenu, 
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { QuickRatingModal } from '@/components/puzzle/quick-rating-modal'
 
 interface FilterState {
   search: string
@@ -67,6 +68,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
   // Puzzle status state management
   const [puzzleStatus, setPuzzleStatus] = useState<{hasLog: boolean, status?: string}>({ hasLog: false })
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showRatingModal, setShowRatingModal] = useState(false)
   
   const getDifficultyInfo = (pieceCount: number) => {
     if (pieceCount <= 300) return { level: 'Easy', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
@@ -289,8 +291,9 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
               <Button 
                 size="sm" 
                 className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 px-4"
-                onClick={() => router.push(`/puzzles/${puzzle.id}`)}
+                onClick={() => setShowRatingModal(true)}
               >
+                <Star className="w-3 h-3 mr-1.5" />
                 Rate It
               </Button>
             </>
@@ -309,6 +312,19 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
           )}
         </div>
       </div>
+
+      {/* Rating Modal */}
+      <QuickRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        puzzle={{
+          id: puzzle.id,
+          title: puzzle.title,
+          brand: { name: puzzle.brand?.name || 'Unknown Brand' },
+          imageUrl: puzzle.imageUrl,
+          pieceCount: puzzle.pieceCount
+        }}
+      />
     </div>
   )
 }
@@ -511,6 +527,42 @@ export default function BrowsePuzzlesPage() {
 
     loadInitialPuzzles()
   }, []) // Empty dependency array to run only once
+
+  // Read and apply URL parameters
+  useEffect(() => {
+    const category = searchParams.get('category')
+    const search = searchParams.get('search')
+    const brands = searchParams.get('brands')
+    
+    if (category || search || brands) {
+      console.log('Applying URL filters:', { category, search, brands })
+      
+      // Update state based on URL parameters
+      if (search) setSearch(search)
+      if (brands) setSelectedBrands(brands.split(','))
+      
+      // Create filters with URL parameters
+      const urlFilters: FilterState = {
+        search: search || '',
+        pieceMin: 0,
+        pieceMax: 5000,
+        ratingMin: 0,
+        brands: brands ? brands.split(',') : [],
+        status: '',
+        sortBy: 'recent',
+        sortOrder: 'desc',
+        difficulties: [],
+        themes: [],
+        categories: category ? [category] : [],
+        priceRange: [0, 100],
+        minRating: 0,
+        yearRange: [2020, 2024],
+      }
+      
+      setCurrentFilters(urlFilters)
+      fetchPuzzles(urlFilters)
+    }
+  }, [searchParams, fetchPuzzles]) // Add dependency on searchParams
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">

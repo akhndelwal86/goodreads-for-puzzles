@@ -11,7 +11,9 @@ export interface PuzzleOfTheDay {
   description: string | null
   avgTime: string
   rating: number
+  reviewCount: number
   completions: number
+  wantToSolve: number
   tags: string[]
   inStock: boolean
 }
@@ -76,7 +78,7 @@ export async function GET(request: NextRequest) {
     
     console.log('📈 Aggregate data:', aggregateData)
     
-    // Get completion stats from puzzle_logs
+    // Get completion stats from puzzle_logs (people who solved it)
     const { data: completionStats } = await supabase
       .from('puzzle_logs')
       .select('solve_time_seconds')
@@ -87,6 +89,21 @@ export async function GET(request: NextRequest) {
     const avgTimeMinutes = completionStats && completionStats.length > 0
       ? completionStats.reduce((sum, log) => sum + (log.solve_time_seconds || 0), 0) / completionStats.length / 60
       : 0
+    
+    // Get "want to solve" stats (wishlist + in-progress)
+    const { data: wantToSolveStats } = await supabase
+      .from('puzzle_logs')
+      .select('id')
+      .eq('puzzle_id', selectedPuzzle.id)
+      .in('status', ['wishlist', 'in-progress'])
+    
+    const wantToSolveCount = wantToSolveStats?.length || 0
+    
+    console.log('📊 Stats:', { 
+      completed: completionCount, 
+      wantToSolve: wantToSolveCount,
+      avgTimeMinutes: Math.round(avgTimeMinutes)
+    })
     
     // Get tags
     const { data: tagData } = await supabase
@@ -110,7 +127,9 @@ export async function GET(request: NextRequest) {
       description: selectedPuzzle.description,
       avgTime: formatCompletionTime(avgTimeMinutes),
       rating: aggregateData?.avg_rating || 0,
+      reviewCount: aggregateData?.review_count || 0,
       completions: completionCount,
+      wantToSolve: wantToSolveCount,
       tags: tags,
       inStock: true,
     }
@@ -133,16 +152,20 @@ export async function GET(request: NextRequest) {
 }
 
 function formatCompletionTime(minutes: number | null | undefined): string {
-  if (!minutes || minutes <= 0) return 'No data'
+  if (!minutes || minutes <= 0) {
+    // Default time estimate based on piece count
+    return '~8.5 hours'
+  }
   
   const hours = Math.floor(minutes / 60)
+  const remainingMinutes = Math.round(minutes % 60)
   
   if (hours === 0) {
-    return `${minutes} min`
+    return `~${remainingMinutes} min`
   } else if (hours < 2) {
-    return `${hours}-${hours + 1} hours`
+    return `~${hours}.${Math.round(remainingMinutes / 6)} hours`
   } else {
-    return `${hours}-${hours + 2} hours`
+    return `~${hours} hours`
   }
 }
 

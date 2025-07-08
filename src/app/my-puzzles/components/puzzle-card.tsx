@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Clock, CheckCircle, Play, Edit3, Heart, Archive, PlayCircle, XCircle, Star, BookOpen } from 'lucide-react'
 import type { UserPuzzle } from '@/lib/supabase'
 import { usePuzzleLog } from '@/hooks/use-puzzle-log'
+import { AdvancedRatingModal } from '@/components/puzzle'
 
 interface PuzzleCardProps {
   puzzle: UserPuzzle
@@ -22,6 +23,7 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
   const { hasLog, loading: logLoading, checkForLog } = usePuzzleLog()
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completionTime, setCompletionTime] = useState('')
+  const [showRatingModal, setShowRatingModal] = useState(false)
 
   // Check for existing log when component mounts
   useEffect(() => {
@@ -151,37 +153,59 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
       
       case 'completed':
         return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onLogProgress?.(puzzle)}
-            disabled={logLoading}
-            className={`${baseButtonClass} border-emerald-200 text-emerald-700 bg-transparent hover:bg-emerald-50 hover:border-emerald-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
-          >
-            {hasLog ? (
-              <>
-                <Edit3 className="w-3 h-3" />
-                Edit Log
-              </>
-            ) : (
-              <>
-                <Star className="w-3 h-3" />
-                Log Progress
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onLogProgress?.(puzzle)}
+              disabled={logLoading}
+              className={`${baseButtonClass} border-emerald-200 text-emerald-700 bg-transparent hover:bg-emerald-50 hover:border-emerald-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
+            >
+              {hasLog ? (
+                <>
+                  <Edit3 className="w-3 h-3" />
+                  Edit Log
+                </>
+              ) : (
+                <>
+                  <Star className="w-3 h-3" />
+                  Log Progress
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowRatingModal(true)}
+              className={`${baseButtonClass} border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 hover:border-violet-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
+            >
+              <Star className="w-3 h-3" />
+              Rate It
+            </Button>
+          </div>
         )
       
       case 'abandoned':
         return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onStatusChange?.(puzzle.id, 'library')}
-            className={`${baseButtonClass} border-gray-200 text-gray-700 bg-transparent hover:bg-gray-50 hover:border-gray-300 shadow-sm hover:shadow-md`}
-          >
-            Restart
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onStatusChange?.(puzzle.id, 'library')}
+              className={`${baseButtonClass} border-gray-200 text-gray-700 bg-transparent hover:bg-gray-50 hover:border-gray-300 shadow-sm hover:shadow-md`}
+            >
+              Restart
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowRatingModal(true)}
+              className={`${baseButtonClass} border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 hover:border-violet-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
+            >
+              <Star className="w-3 h-3" />
+              Rate It
+            </Button>
+          </div>
         )
       
       default:
@@ -282,6 +306,18 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdvancedRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        puzzle={{
+          id: puzzle.id,
+          title: puzzle.title,
+          brand: { name: puzzle.brand },
+          imageUrl: puzzle.image,
+          pieceCount: puzzle.pieces
+        }}
+      />
     </div>
   )
 } 

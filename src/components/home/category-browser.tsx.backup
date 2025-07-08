@@ -54,7 +54,7 @@ export function CategoryBrowser() {
       name: 'Art & Paintings',
       description: 'Famous artworks and artistic masterpieces',
       puzzleCount: categoryCounts.art || 0,
-      image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&q=80',
       gradient: 'from-purple-500/20 to-violet-500/20',
       textColor: 'text-purple-700'
     },
@@ -90,7 +90,7 @@ export function CategoryBrowser() {
       name: 'Fantasy & Fiction',
       description: 'Magical worlds and futuristic scenes',
       puzzleCount: categoryCounts.fantasy || 0,
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&q=80',
       gradient: 'from-violet-500/20 to-purple-500/20',
       textColor: 'text-violet-700'
     },
@@ -150,14 +150,14 @@ export function CategoryBrowser() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 rounded-xl"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
-                        // Updated category-specific fallback images
+                        // Category-specific fallback images
                         const fallbacks: Record<string, string> = {
                           nature: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&q=80',
-                          art: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop&q=80',  
+                          art: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&q=80',  
                           animals: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=300&fit=crop&q=80',
                           architecture: 'https://images.unsplash.com/photo-1486718448742-163d73305017?w=400&h=300&fit=crop&q=80',
                           vintage: 'https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&h=300&fit=crop&q=80',
-                          fantasy: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&q=80',
+                          fantasy: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&q=80',
                           cities: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&q=80',
                           food: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&q=80'
                         }

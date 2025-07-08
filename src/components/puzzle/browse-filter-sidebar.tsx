@@ -79,14 +79,15 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
     { label: "Not Added", value: "not-added" }
   ]
 
-  const themes = [
-    "Landscape", "Abstract", "Wildlife", "Floral", "Cityscape", 
-    "Vintage", "Modern", "Classic", "Fantasy", "Nature"
-  ]
-
   const categories = [
-    "Nature", "Art", "Animals", "Architecture", "Fantasy", 
-    "Vintage", "Space", "Food", "Abstract", "Educational"
+    { id: "nature", name: "Nature" },
+    { id: "art", name: "Art" },
+    { id: "animals", name: "Animals" },
+    { id: "architecture", name: "Architecture" },
+    { id: "fantasy", name: "Fantasy" },
+    { id: "vintage", name: "Vintage" },
+    { id: "cities", name: "Cities" },
+    { id: "food", name: "Food" },
   ]
 
   const handleArrayFilterChange = (filterType: keyof FilterState, value: string, checked: boolean) => {
@@ -111,7 +112,6 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
   const getActiveFilterCount = () => {
     return (
       (filters.difficulties?.length || 0) +
-      (filters.themes?.length || 0) +
       (filters.categories?.length || 0) +
       (filters.brands?.length || 0) +
       (filters.pieceMin !== 0 || filters.pieceMax !== 5000 ? 1 : 0) +
@@ -197,6 +197,17 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
                 </button>
               </Badge>
             )}
+            {filters.categories?.map((category) => (
+              <Badge key={category} variant="secondary" className="bg-emerald-100 text-emerald-700">
+                {categories.find(c => c.id === category)?.name}
+                <button
+                  onClick={() => handleArrayFilterChange('categories', category, false)}
+                  className="ml-1 hover:text-emerald-900"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
           </div>
         </div>
       )}
@@ -350,26 +361,26 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
 
         {/* Theme Filter */}
         <FilterSection
-          title="Themes"
+          title="Categories"
           isExpanded={expandedSections.theme}
           onToggle={() => toggleSection('theme')}
         >
           <div className="space-y-3">
-            {themes.slice(0, 6).map((theme) => (
-              <div key={theme} className="flex items-center space-x-3">
+            {categories.map((category) => (
+              <div key={category.id} className="flex items-center space-x-3">
                 <Checkbox
-                  id={theme}
-                  checked={filters.themes?.includes(theme) || false}
+                  id={category.id}
+                  checked={filters.categories?.includes(category.id) || false}
                   onCheckedChange={(checked: boolean) =>
-                    handleArrayFilterChange('themes', theme, checked)
+                    handleArrayFilterChange('categories', category.id, checked)
                   }
                   className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                 />
                 <label
-                  htmlFor={theme}
+                  htmlFor={category.id}
                   className="text-sm text-slate-600 cursor-pointer hover:text-slate-900"
                 >
-                  {theme}
+                  {category.name}
                 </label>
               </div>
             ))}

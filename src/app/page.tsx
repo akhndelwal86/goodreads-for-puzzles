@@ -1,22 +1,26 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { HeroSection } from '@/components/home/hero-section'
 import { StatsStrip } from '@/components/home/stats-strip'
 import { PuzzleOfTheDay } from '@/components/home/puzzle-of-the-day'
 import { SmartListsSection } from '@/components/home/smart-lists-section'
+
 import { CategoryBrowser } from '@/components/home/category-browser'
 import { PopularBrandsCarousel } from '@/components/home/popular-brands-carousel'
 import { ActivityFeed } from '@/components/home/activity-feed'
-import { Leaderboard } from '@/components/home/Leaderboard'
+import { Leaderboard } from '@/components/home/leaderboard'
 import { useUserSync } from '@/lib/auth-utils'
 
 export default function HomePage() {
+  const router = useRouter()
+  
   // Sync user with Supabase when they sign in
   useUserSync()
 
   const handlePuzzleClick = (puzzleId: string) => {
-    // TODO: Navigate to puzzle detail page
-    console.log('Navigate to puzzle:', puzzleId)
+    console.log('Navigating to puzzle:', puzzleId)
+    router.push(`/puzzles/${puzzleId}`)
   }
 
   const handleViewAll = (listType: 'trending' | 'most-completed' | 'recently-added' | 'top-rated') => {
