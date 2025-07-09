@@ -8,6 +8,7 @@ import { Star, Clock, Users, Plus, Heart, ChevronDown, BookOpen, Check } from 'l
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { QuickRatingModal } from '@/components/puzzle/quick-rating-modal'
 import { useRatings } from '@/hooks/use-ratings'
 
@@ -30,6 +31,7 @@ interface PuzzleOfTheDay {
 
 export function PuzzleOfTheDay() {
   const { user } = useUser()
+  const router = useRouter()
   const [puzzleOfTheDay, setPuzzleOfTheDay] = useState<PuzzleOfTheDay | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -176,7 +178,7 @@ export function PuzzleOfTheDay() {
         <h2 className="text-2xl font-bold text-slate-800">Puzzle of the Day</h2>
       </div>
 
-      <Card className="glass-card border border-white/40 overflow-hidden">
+      <Card className="glass-card border border-white/40 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300" onClick={() => router.push(`/puzzles/${puzzleOfTheDay.id}`)}>
         <CardContent className="p-0">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Image Section */}
@@ -184,7 +186,7 @@ export function PuzzleOfTheDay() {
               <img
                 src={puzzleOfTheDay.image || "/placeholder-puzzle.svg"}
                 alt={puzzleOfTheDay.title}
-                className="w-full h-80 md:h-full object-cover"
+                className="w-full h-80 md:h-full object-cover transition-transform duration-300 hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
               <Badge className="absolute top-4 left-4 bg-amber-500 text-white border-0 shadow-lg">
@@ -239,7 +241,7 @@ export function PuzzleOfTheDay() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3">
+              <div className="flex space-x-3" onClick={(e) => e.stopPropagation()}>
                 {user ? (
                   <>
                     <DropdownMenu>
@@ -269,7 +271,10 @@ export function PuzzleOfTheDay() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-48">
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('wishlist')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStatusChange('wishlist')
+                          }}
                           className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
                         >
                           <Heart className="w-4 h-4 mr-2" />
@@ -277,7 +282,10 @@ export function PuzzleOfTheDay() {
                           {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('library')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStatusChange('library')
+                          }}
                           className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
                         >
                           <BookOpen className="w-4 h-4 mr-2" />
@@ -285,7 +293,10 @@ export function PuzzleOfTheDay() {
                           {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('in-progress')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStatusChange('in-progress')
+                          }}
                           className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
                         >
                           <Clock className="w-4 h-4 mr-2" />
@@ -293,7 +304,10 @@ export function PuzzleOfTheDay() {
                           {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('completed')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStatusChange('completed')
+                          }}
                           className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
                         >
                           <Check className="w-4 h-4 mr-2" />
@@ -307,7 +321,10 @@ export function PuzzleOfTheDay() {
                     <Button
                       variant="outline"
                       className="flex-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 bg-transparent"
-                      onClick={() => setShowRatingModal(true)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowRatingModal(true)
+                      }}
                     >
                       <Star className="h-4 w-4 mr-2" />
                       {userReview?.rating ? `Rated ${userReview.rating}/5` : 'Rate It'}

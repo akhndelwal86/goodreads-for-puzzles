@@ -111,7 +111,8 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
     }
   }
   
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: string, event: React.MouseEvent) => {
+    event.stopPropagation()
     setIsUpdating(true)
     
     try {
@@ -246,7 +247,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 glass-card border-white/40">
                   <DropdownMenuItem 
-                    onClick={() => handleStatusChange('wishlist')}
+                    onClick={(e) => handleStatusChange('wishlist', e)}
                     className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
                   >
                     <Heart className="w-4 h-4 mr-2" />
@@ -254,7 +255,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
                     {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleStatusChange('library')}
+                    onClick={(e) => handleStatusChange('library', e)}
                     className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -262,7 +263,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
                     {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleStatusChange('in-progress')}
+                    onClick={(e) => handleStatusChange('in-progress', e)}
                     className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
                   >
                     <Clock className="w-4 h-4 mr-2" />
@@ -270,7 +271,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
                     {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleStatusChange('completed')}
+                    onClick={(e) => handleStatusChange('completed', e)}
                     className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
                   >
                     <Check className="w-4 h-4 mr-2" />
@@ -291,7 +292,10 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
               <Button 
                 size="sm" 
                 className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 px-4"
-                onClick={() => setShowRatingModal(true)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowRatingModal(true)
+                }}
               >
                 <Star className="w-3 h-3 mr-1.5" />
                 Rate It

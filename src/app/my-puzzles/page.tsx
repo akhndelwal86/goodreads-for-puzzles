@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { getUserPuzzleStats } from '@/lib/supabase'
 import type { UserPuzzle, UserPuzzleStats, UserPuzzleStatus } from '@/lib/supabase'
 import { StatsHeader } from './components/stats-header'
@@ -15,6 +16,7 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 export default function MyPuzzlesPage() {
   // Get user from Clerk
   const { user, isLoaded } = useUser()
+  const router = useRouter()
   
   // State management
   const [puzzles, setPuzzles] = useState<UserPuzzle[]>([])
@@ -120,10 +122,9 @@ export default function MyPuzzlesPage() {
     // In production, this would call searchUserPuzzles API
   }
 
-  // Handle puzzle click
+  // Handle puzzle click - navigate to puzzle detail page
   const handlePuzzleClick = (puzzle: UserPuzzle) => {
-    setSelectedPuzzle(puzzle)
-    setIsModalOpen(true)
+    router.push(`/puzzles/${puzzle.id}`)
   }
 
   // Handle log progress modal

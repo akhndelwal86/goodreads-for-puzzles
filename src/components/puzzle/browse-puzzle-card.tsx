@@ -158,7 +158,9 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
     }
   }
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    
     if (newStatus === 'completed') {
       setShowCompletionModal(true)
       return
@@ -322,7 +324,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-48 glass-card border-white/40">
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('wishlist')}
+                          onClick={(e) => handleStatusChange('wishlist', e)}
                           className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
                         >
                           <Heart className="w-4 h-4 mr-2" />
@@ -330,7 +332,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                           {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('library')}
+                          onClick={(e) => handleStatusChange('library', e)}
                           className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
                         >
                           <BookOpen className="w-4 h-4 mr-2" />
@@ -338,7 +340,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                           {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('in-progress')}
+                          onClick={(e) => handleStatusChange('in-progress', e)}
                           className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
                         >
                           <Clock className="w-4 h-4 mr-2" />
@@ -346,7 +348,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                           {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleStatusChange('completed')}
+                          onClick={(e) => handleStatusChange('completed', e)}
                           className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
                         >
                           <Check className="w-4 h-4 mr-2" />
@@ -366,7 +368,10 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                     {/* Rate It Button - Solid Style */}
                     <Button 
                       className="flex-1 h-9 text-xs font-normal bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-glass hover:shadow-glass-lg hover:scale-105 transition-all duration-300 border-0"
-                      onClick={() => setShowRatingModal(true)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowRatingModal(true)
+                      }}
                     >
                       <Star className="w-3 h-3 mr-1.5" />
                       Rate It
@@ -488,7 +493,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                handleStatusChange('wishlist')
+                handleStatusChange('wishlist', e)
               }}
               className={`absolute top-3 right-3 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg backdrop-blur-sm ${
                 puzzleStatus.status === 'wishlist'
@@ -581,7 +586,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-48 glass-card border-white/40 rounded-xl">
                       <DropdownMenuItem 
-                        onClick={() => handleStatusChange('wishlist')}
+                        onClick={(e) => handleStatusChange('wishlist', e)}
                         className={puzzleStatus.status === 'wishlist' ? 'bg-accent' : ''}
                       >
                         <Heart className="w-4 h-4 mr-2" />
@@ -589,7 +594,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                         {puzzleStatus.status === 'wishlist' && <Check className="w-4 h-4 ml-auto" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleStatusChange('library')}
+                        onClick={(e) => handleStatusChange('library', e)}
                         className={puzzleStatus.status === 'library' ? 'bg-accent' : ''}
                       >
                         <BookOpen className="w-4 h-4 mr-2" />
@@ -597,7 +602,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                         {puzzleStatus.status === 'library' && <Check className="w-4 h-4 ml-auto" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleStatusChange('in-progress')}
+                        onClick={(e) => handleStatusChange('in-progress', e)}
                         className={puzzleStatus.status === 'in-progress' ? 'bg-accent' : ''}
                       >
                         <Clock className="w-4 h-4 mr-2" />
@@ -605,7 +610,7 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
                         {puzzleStatus.status === 'in-progress' && <Check className="w-4 h-4 ml-auto" />}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleStatusChange('completed')}
+                        onClick={(e) => handleStatusChange('completed', e)}
                         className={puzzleStatus.status === 'completed' ? 'bg-accent' : ''}
                       >
                         <Check className="w-4 h-4 mr-2" />

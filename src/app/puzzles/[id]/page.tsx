@@ -80,6 +80,16 @@ interface PuzzleDetail {
       wishlist_count: number
     }
   }
+  communityStats?: {
+    timesCompleted: number
+    wishlistCount: number
+    averageTime: number
+    communityDifficulty: number
+    successRate: number
+    activeSolvers: number
+    totalRatings: number
+    averageRating: number
+  }
 }
 
 export default function PuzzleDetailPage() {
@@ -95,10 +105,28 @@ export default function PuzzleDetailPage() {
   // Add to List dropdown state
   const [puzzleStatus, setPuzzleStatus] = useState<{hasLog: boolean, status?: string}>({ hasLog: false })
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  
+  // Activity feed state
+  const [activityData, setActivityData] = useState<any[]>([])
+  const [activityLoading, setActivityLoading] = useState(true)
+  const [activityError, setActivityError] = useState<string | null>(null)
+  
+  // Reviews state
+  const [reviewsData, setReviewsData] = useState<any>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [reviewsError, setReviewsError] = useState<string | null>(null)
+  
+  // Related puzzles state
+  const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<any>(null)
+  const [relatedPuzzlesLoading, setRelatedPuzzlesLoading] = useState(true)
+  const [relatedPuzzlesError, setRelatedPuzzlesError] = useState<string | null>(null)
 
   useEffect(() => {
     if (params.id) {
       fetchPuzzleDetail(params.id as string)
+      fetchActivityData(params.id as string)
+      fetchReviewsData(params.id as string)
+      fetchRelatedPuzzles(params.id as string)
     }
   }, [params.id])
 
@@ -128,12 +156,75 @@ export default function PuzzleDetailPage() {
       }
     }
 
+  // Fetch activity data for the puzzle
+  const fetchActivityData = async (id: string) => {
+    try {
+      setActivityLoading(true)
+      setActivityError(null)
+      const response = await fetch(`/api/puzzles/${id}/activity`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch activity data')
+      }
+      
+      const data = await response.json()
+      setActivityData(data.activities || [])
+    } catch (error) {
+      console.error('Error fetching activity:', error)
+      setActivityError('Failed to load recent activity')
+    } finally {
+      setActivityLoading(false)
+    }
+  }
+
+  // Fetch reviews data for the puzzle
+  const fetchReviewsData = async (id: string) => {
+    try {
+      setReviewsLoading(true)
+      setReviewsError(null)
+      const response = await fetch(`/api/puzzles/${id}/reviews?limit=20`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch reviews data')
+      }
+      
+      const data = await response.json()
+      setReviewsData(data)
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+      setReviewsError('Failed to load reviews')
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  // Fetch related puzzles from the same brand
+  const fetchRelatedPuzzles = async (id: string) => {
+    try {
+      setRelatedPuzzlesLoading(true)
+      setRelatedPuzzlesError(null)
+      const response = await fetch(`/api/puzzles/${id}/related?limit=4`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch related puzzles')
+      }
+      
+      const data = await response.json()
+      setRelatedPuzzlesData(data)
+    } catch (error) {
+      console.error('Error fetching related puzzles:', error)
+      setRelatedPuzzlesError('Failed to load related puzzles')
+    } finally {
+      setRelatedPuzzlesLoading(false)
+    }
+  }
+
   // Check current puzzle status for the user
   const checkPuzzleStatus = async () => {
     if (!user || !puzzleData?.puzzle.id) return
     
     try {
-      const response = await fetch(`/api/puzzle-status?puzzleId=${puzzleData.puzzle.id}`)
+      const response = await fetch(`/api/puzzle-logs/check?puzzleId=${puzzleData.puzzle.id}`)
       if (response.ok) {
         const data = await response.json()
         setPuzzleStatus(data)
@@ -156,13 +247,18 @@ export default function PuzzleDetailPage() {
         },
         body: JSON.stringify({
           puzzleId: puzzleData.puzzle.id,
-          status: newStatus,
+          newStatus: newStatus,
         }),
       })
 
       if (response.ok) {
-        const updatedStatus = await response.json()
-        setPuzzleStatus(updatedStatus)
+        const result = await response.json()
+        if (result.success && result.log) {
+          setPuzzleStatus({
+            hasLog: true,
+            status: result.log.status
+          })
+        }
       }
     } catch (error) {
       console.error('Error updating puzzle status:', error)
@@ -187,21 +283,16 @@ export default function PuzzleDetailPage() {
     }
   }
 
-  // Rich mock data for comprehensive stats
-  const mockStats = {
-    views: 12847,
-    likes: 2156,
-    timesCompleted: 2847,
-    successRate: 87,
-    wishlistCount: 1523,
-    wantToBuyCount: 892,
-    averageTime: 8.5,
-    timeRange: '6-12 hours',
-    communityDifficulty: 7.2,
-    activeSolvers: 156,
-    priceRange: '$18.99 - $32.99',
-    bestPrice: '$24.99',
-    recentlyAdded: 45
+  // Extract community stats from API response
+  const communityStats = puzzleData?.communityStats || {
+    timesCompleted: 0,
+    wishlistCount: 0,
+    averageTime: 0,
+    communityDifficulty: 0,
+    successRate: 0,
+    activeSolvers: 0,
+    totalRatings: 0,
+    averageRating: 0
   }
 
   // Loading state
@@ -581,74 +672,147 @@ export default function PuzzleDetailPage() {
                   </div>
                 </TabsContent>
 
-                {/* Specifications Tab - Detailed Technical Specs */}
+                {/* Specifications Tab - Real Data with Graceful Fallbacks */}
                 <TabsContent value="specifications" className="mt-4 space-y-4">
                   <div>
-                    <h3 className="text-base font-medium text-slate-700 mb-3">Technical Specifications</h3>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Puzzle Details</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium text-slate-700 mb-2">Dimensions & Weight</h4>
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Basic Information</h4>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Finished Size</span>
-                            <span className="text-slate-800">27" × 20" (68.6 × 50.8 cm)</span>
+                            <span className="text-slate-600">Piece Count</span>
+                            <span className="text-slate-800">{puzzle.piece_count || 'Not specified'}</span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Box Size</span>
-                            <span className="text-slate-800">14" × 10.25" × 2.37"</span>
+                            <span className="text-slate-600">Brand</span>
+                            <span className="text-slate-800">{puzzle.brand?.name || 'Unknown'}</span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Weight</span>
-                            <span className="text-slate-800">1.8 lbs (816g)</span>
+                            <span className="text-slate-600">Theme</span>
+                            <span className="text-slate-800">{puzzle.theme || 'Not specified'}</span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Piece Thickness</span>
-                            <span className="text-slate-800">2.0mm</span>
+                            <span className="text-slate-600">Material</span>
+                            <span className="text-slate-800">{puzzle.material || 'Premium Cardboard'}</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Year Published</span>
+                            <span className="text-slate-800">{puzzle.year_published || 'Not specified'}</span>
                           </div>
                         </div>
                       </div>
                       
                       <div>
-                        <h4 className="text-sm font-medium text-slate-700 mb-2">Manufacturing Details</h4>
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Specifications</h4>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Cutting Style</span>
-                            <span className="text-slate-800">Random Cut</span>
+                            <span className="text-slate-600">Difficulty Level</span>
+                            <span className="text-slate-800">{puzzle.difficulty || 'Not rated'}</span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Printing Method</span>
-                            <span className="text-slate-800">Offset Lithography</span>
+                            <span className="text-slate-600">Estimated Time</span>
+                            <span className="text-slate-800">
+                              {puzzle.estimated_time ? `${puzzle.estimated_time} hours` : 'Varies by skill level'}
+                            </span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Country of Origin</span>
-                            <span className="text-slate-800">USA</span>
+                            <span className="text-slate-600">Community Difficulty</span>
+                            <span className="text-slate-800">
+                              {communityStats.communityDifficulty > 0 
+                                ? `${communityStats.communityDifficulty}/10`
+                                : 'Not yet rated'
+                              }
+                            </span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-slate-600">Recycled Content</span>
-                            <span className="text-slate-800">75%</span>
+                            <span className="text-slate-600">Average Completion</span>
+                            <span className="text-slate-800">
+                              {communityStats.averageTime > 0 
+                                ? `${communityStats.averageTime} hours`
+                                : 'No data yet'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Success Rate</span>
+                            <span className="text-slate-800">
+                              {communityStats.successRate > 0 
+                                ? `${communityStats.successRate}%`
+                                : 'No data yet'
+                              }
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
+                  {/* Additional Information */}
+                  {puzzle.description && (
+                    <div>
+                      <h3 className="text-base font-medium text-slate-700 mb-3">Description</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg">
+                        {puzzle.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Community Stats */}
                   <div>
-                    <h3 className="text-base font-medium text-slate-700 mb-3">Quality Certifications</h3>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Community Analytics</h3>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="glass-card border-white/40 p-4 text-center">
-                        <Award className="w-8 h-8 text-amber-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">CPSIA Certified</h4>
-                        <p className="text-sm text-slate-600">Child safety compliant</p>
+                        <Trophy className="w-8 h-8 text-amber-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Times Completed</h4>
+                        <p className="text-sm text-slate-600">
+                          {communityStats.timesCompleted > 0 
+                            ? `${communityStats.timesCompleted.toLocaleString()} completions`
+                            : 'Be the first to complete!'
+                          }
+                        </p>
                       </div>
                       <div className="glass-card border-white/40 p-4 text-center">
-                        <Shield className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">Non-Toxic</h4>
-                        <p className="text-sm text-slate-600">Safe materials used</p>
+                        <Star className="w-8 h-8 text-violet-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Average Rating</h4>
+                        <p className="text-sm text-slate-600">
+                          {communityStats.averageRating > 0
+                            ? `${communityStats.averageRating}/5 stars`
+                            : 'No ratings yet'
+                          }
+                        </p>
                       </div>
                       <div className="glass-card border-white/40 p-4 text-center">
-                        <Zap className="w-8 h-8 text-violet-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">FSC Certified</h4>
-                        <p className="text-sm text-slate-600">Sustainable sourcing</p>
+                        <Heart className="w-8 h-8 text-rose-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Wishlist Count</h4>
+                        <p className="text-sm text-slate-600">
+                          {communityStats.wishlistCount > 0
+                            ? `${communityStats.wishlistCount.toLocaleString()} wishlists`
+                            : 'Add to yours today!'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Standard Quality Features */}
+                  <div>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Quality Features</h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Precision Cut</h4>
+                        <p className="text-sm text-slate-600">Perfect interlocking pieces</p>
+                      </div>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <ImageIcon className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">High Quality Print</h4>
+                        <p className="text-sm text-slate-600">Vibrant, fade-resistant colors</p>
+                      </div>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Shield className="w-8 h-8 text-violet-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Durable Material</h4>
+                        <p className="text-sm text-slate-600">Built to last multiple uses</p>
                       </div>
                     </div>
                   </div>
@@ -741,238 +905,249 @@ export default function PuzzleDetailPage() {
                   </div>
                 </TabsContent>
 
-                {/* Reviews Tab - Amazon-Style Review System */}
+                {/* Reviews Tab - Real database reviews */}
                 <TabsContent value="reviews" className="mt-4 space-y-4">
-                  {/* Rating Overview */}
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <h3 className="text-base font-medium text-slate-700 mb-3">Overall Rating</h3>
-                      <div className="text-center p-4 glass-card border-white/40 rounded-xl">
-                        <div className="text-3xl font-bold text-slate-800 mb-3">{puzzle.average_rating?.toFixed(1) || '4.6'}</div>
-                        <div className="flex justify-center mb-3">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-5 h-5 ${
-                                i < Math.floor(puzzle.average_rating || 4.6)
-                                  ? 'fill-amber-400 text-amber-400'
-                                  : 'text-slate-300'
-                              }`}
-                            />
+                  {reviewsLoading ? (
+                    // Loading state
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="h-32 bg-slate-200 rounded-xl animate-pulse" />
+                        <div className="md:col-span-2 space-y-2">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <div key={i} className="h-6 bg-slate-200 rounded animate-pulse" />
                           ))}
                         </div>
-                        <div className="text-sm text-slate-600 font-medium">{puzzle.total_ratings || 127} total reviews</div>
                       </div>
                     </div>
-                    
-                    <div className="md:col-span-2">
-                      <h3 className="text-base font-medium text-slate-700 mb-3">Rating Breakdown</h3>
-                      <div className="space-y-2">
-                        {[
-                          { stars: 5, count: 78, percentage: 61 },
-                          { stars: 4, count: 31, percentage: 24 },
-                          { stars: 3, count: 12, percentage: 10 },
-                          { stars: 2, count: 4, percentage: 3 },
-                          { stars: 1, count: 2, percentage: 2 }
-                        ].map((item) => (
-                          <div key={item.stars} className="flex items-center gap-4">
-                            <div className="flex items-center gap-1 w-16">
-                              <span className="text-sm font-medium text-slate-700">{item.stars}</span>
-                              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            </div>
-                            <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-amber-400 transition-all duration-500"
-                                style={{ width: `${item.percentage}%` }}
-                              />
-                            </div>
-                            <span className="text-sm text-slate-600 w-12 text-right">{item.percentage}%</span>
-                            <span className="text-sm text-slate-600 w-8 text-right">({item.count})</span>
-                          </div>
-                        ))}
-                      </div>
+                  ) : reviewsError ? (
+                    // Error state
+                    <div className="text-center py-8">
+                      <p className="text-slate-500 mb-4">{reviewsError}</p>
+                      <button
+                        onClick={() => fetchReviewsData(params.id as string)}
+                        className="text-violet-600 hover:text-violet-700 font-medium"
+                      >
+                        Try again
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Multi-Dimensional Ratings */}
-                  <div>
-                    <h3 className="text-base font-medium text-slate-700 mb-3">Quality Breakdown</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {[
-                        { category: 'Image Quality', rating: 4.8, icon: ImageIcon },
-                        { category: 'Piece Fit Quality', rating: 4.7, icon: Target },
-                        { category: 'Durability', rating: 4.6, icon: Award },
-                        { category: 'Overall Experience', rating: 4.6, icon: Star }
-                      ].map((item) => (
-                        <div key={item.category} className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <item.icon className="w-5 h-5 text-violet-600" />
-                            <span className="font-medium text-slate-700">{item.category}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
+                  ) : !reviewsData || reviewsData.summary.totalReviews === 0 ? (
+                    // Empty state
+                    <div className="text-center py-8">
+                      <div className="mb-4">
+                        <Star className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-slate-700 mb-2">No reviews yet</h3>
+                        <p className="text-slate-500 mb-4">Be the first to review this puzzle!</p>
+                      </div>
+                      <Button 
+                        onClick={() => setShowAdvancedRating(true)}
+                        className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white"
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        Write a Review
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Rating Overview */}
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div>
+                          <h3 className="text-base font-medium text-slate-700 mb-3">Overall Rating</h3>
+                          <div className="text-center p-4 glass-card border-white/40 rounded-xl">
+                            <div className="text-3xl font-bold text-slate-800 mb-3">
+                              {reviewsData.summary.averageRating.toFixed(1)}
+                            </div>
+                            <div className="flex justify-center mb-3">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`w-4 h-4 ${
-                                    i < Math.floor(item.rating)
+                                  className={`w-5 h-5 ${
+                                    i < Math.floor(reviewsData.summary.averageRating)
                                       ? 'fill-amber-400 text-amber-400'
                                       : 'text-slate-300'
                                   }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-sm font-bold text-slate-700">{item.rating}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Individual Reviews */}
-                  <div>
-                    <h3 className="text-base font-medium text-slate-700 mb-3">Customer Reviews</h3>
-                    <div className="space-y-4">
-                      {[
-                        {
-                          user: 'Sarah Johnson',
-                          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=50&h=50&fit=crop&crop=face',
-                          rating: 5,
-                          date: '2 days ago',
-                          verified: true,
-                          title: 'Absolutely stunning puzzle!',
-                          review: 'The colors are vibrant and the pieces fit perfectly. Took me about 9 hours over a weekend. The image quality is exceptional and there were no false fits.',
-                          helpful: 23,
-                          qualities: { imageQuality: 5, pieceFit: 5, durability: 4, experience: 5 }
-                        },
-                        {
-                          user: 'Mike Rodriguez',
-                          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
-                          rating: 4,
-                          date: '1 week ago',
-                          verified: true,
-                          title: 'Great quality, challenging enough',
-                          review: 'Really enjoyed this puzzle. The puppies are adorable and the detail is excellent. A few pieces were a bit tricky to distinguish but overall very satisfying.',
-                          helpful: 18,
-                          qualities: { imageQuality: 5, pieceFit: 4, durability: 4, experience: 4 }
-                        },
-                        {
-                          user: 'Emily Chen',
-                          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face',
-                          rating: 5,
-                          date: '2 weeks ago',
-                          verified: true,
-                          title: 'Perfect for family time',
-                          review: 'We completed this as a family over several evenings. Great quality pieces and beautiful artwork. The finished puzzle looks amazing on our wall!',
-                          helpful: 15,
-                          qualities: { imageQuality: 5, pieceFit: 5, durability: 5, experience: 5 }
-                        }
-                      ].map((review, index) => (
-                        <div key={index} className="glass-card border-white/40 p-5 rounded-xl">
-                          <div className="flex items-start gap-4">
-                            <img
-                              src={review.avatar}
-                              alt={review.user}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="font-medium text-slate-800">{review.user}</span>
-                                {review.verified && (
-                                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-2 py-1">
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Verified Purchase
-                                  </Badge>
-                                )}
-                                <span className="text-sm text-slate-500">{review.date}</span>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="flex">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-4 h-4 ${
-                                        i < review.rating
-                                          ? 'fill-amber-400 text-amber-400'
-                                          : 'text-slate-300'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="font-medium text-slate-700">{review.title}</span>
-                              </div>
-                              
-                              <p className="text-slate-600 mb-4 leading-relaxed">{review.review}</p>
-                              
-                              {/* Quality ratings */}
-                              <div className="flex gap-4 text-sm text-slate-600 mb-4">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-slate-500">Image Quality:</span>
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`w-3 h-3 ${
-                                          i < review.qualities.imageQuality
-                                            ? 'fill-amber-400 text-amber-400'
-                                            : 'text-slate-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-slate-500">Piece Fit:</span>
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`w-3 h-3 ${
-                                          i < review.qualities.pieceFit
-                                            ? 'fill-amber-400 text-amber-400'
-                                            : 'text-slate-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-slate-500">Durability:</span>
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`w-3 h-3 ${
-                                          i < review.qualities.durability
-                                            ? 'fill-amber-400 text-amber-400'
-                                            : 'text-slate-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <div className="flex gap-3">
-                                  <Button variant="outline" size="sm" className="text-sm px-3 py-1 hover:bg-slate-50">
-                                    <ThumbsUp className="w-3 h-3 mr-1" />
-                                    Helpful ({review.helpful})
-                                  </Button>
-                                  <Button variant="outline" size="sm" className="text-sm px-3 py-1 hover:bg-slate-50">
-                                    <MessageCircle className="w-3 h-3 mr-1" />
-                                    Reply
-                                  </Button>
-                                </div>
-                                <span className="text-xs text-slate-500">Was this review helpful?</span>
-                              </div>
+                            <div className="text-sm text-slate-600 font-medium">
+                              {reviewsData.summary.totalReviews} total review{reviewsData.summary.totalReviews !== 1 ? 's' : ''}
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        
+                        <div className="md:col-span-2">
+                          <h3 className="text-base font-medium text-slate-700 mb-3">Rating Breakdown</h3>
+                          <div className="space-y-2">
+                            {reviewsData.summary.ratingBreakdown.map((item: any) => (
+                              <div key={item.stars} className="flex items-center gap-4">
+                                <div className="flex items-center gap-1 w-16">
+                                  <span className="text-sm font-medium text-slate-700">{item.stars}</span>
+                                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                </div>
+                                <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-amber-400 transition-all duration-500"
+                                    style={{ width: `${item.percentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm text-slate-600 w-12 text-right">{item.percentage}%</span>
+                                <span className="text-sm text-slate-600 w-8 text-right">({item.count})</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Quality Breakdown */}
+                      <div>
+                        <h3 className="text-base font-medium text-slate-700 mb-3">Quality Breakdown</h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <ImageIcon className="w-5 h-5 text-violet-600" />
+                              <span className="font-medium text-slate-700">Image Quality</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < Math.floor(reviewsData.summary.qualityBreakdown.imageQuality)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-slate-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-bold text-slate-700">
+                                {reviewsData.summary.qualityBreakdown.imageQuality}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Target className="w-5 h-5 text-violet-600" />
+                              <span className="font-medium text-slate-700">Piece Fit Quality</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < Math.floor(reviewsData.summary.qualityBreakdown.pieceFit)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-slate-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-bold text-slate-700">
+                                {reviewsData.summary.qualityBreakdown.pieceFit}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Award className="w-5 h-5 text-violet-600" />
+                              <span className="font-medium text-slate-700">Durability</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < Math.floor(reviewsData.summary.qualityBreakdown.durability)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-slate-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-bold text-slate-700">
+                                {reviewsData.summary.qualityBreakdown.durability}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Star className="w-5 h-5 text-violet-600" />
+                              <span className="font-medium text-slate-700">Overall Experience</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < Math.floor(reviewsData.summary.qualityBreakdown.overallExperience)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-slate-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-bold text-slate-700">
+                                {reviewsData.summary.qualityBreakdown.overallExperience}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Individual Reviews */}
+                      <div>
+                        <h3 className="text-base font-medium text-slate-700 mb-3">Customer Reviews</h3>
+                        <div className="space-y-4">
+                          {reviewsData.reviews.map((review: any) => (
+                            <div key={review.id} className="p-4 glass-card border-white/40 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <img
+                                  src={review.user.avatar || '/default-avatar.png'}
+                                  alt={review.user.username}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-medium text-slate-800">{review.user.username}</span>
+                                    <div className="flex">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-4 h-4 ${
+                                            i < review.rating
+                                              ? 'fill-amber-400 text-amber-400'
+                                              : 'text-slate-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-sm text-slate-500">{review.timeAgo}</span>
+                                  </div>
+                                  {review.review && (
+                                    <p className="text-slate-600 mb-3 leading-relaxed">{review.review}</p>
+                                  )}
+                                  
+                                  {/* Show metadata if available */}
+                                  {(review.metadata?.looseFit || review.metadata?.falseFit) && (
+                                    <div className="text-sm text-slate-500 border-t pt-2">
+                                      {review.metadata.looseFit && (
+                                        <div>Fit Quality: {review.metadata.looseFit}/5</div>
+                                      )}
+                                      {review.metadata.falseFit && (
+                                        <div>False Fits: {review.metadata.falseFit}/5</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </TabsContent>
 
                 {/* Activity Tab - Social Feed */}
@@ -1050,73 +1225,97 @@ export default function PuzzleDetailPage() {
                   <div>
                     <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-600" />
-                      More from {puzzle.brand?.name}
+                      More from {relatedPuzzlesData?.brandName || puzzle.brand?.name || 'This Brand'}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        {
-                          id: 1,
-                          title: "Majestic Eagles",
-                          pieces: 1000,
-                          rating: 4.7,
-                          price: "$26.99",
-                          image: "https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=300&h=200&fit=crop"
-                        },
-                        {
-                          id: 2,
-                          title: "Forest Wildlife",
-                          pieces: 1500,
-                          rating: 4.8,
-                          price: "$32.99",
-                          image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop"
-                        },
-                        {
-                          id: 3,
-                          title: "Ocean Life",
-                          pieces: 1000,
-                          rating: 4.6,
-                          price: "$28.99",
-                          image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
-                        },
-                        {
-                          id: 4,
-                          title: "Mountain Vista",
-                          pieces: 2000,
-                          rating: 4.9,
-                          price: "$39.99",
-                          image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop"
-                        }
-                      ].map((related) => (
-                        <Link
-                          key={related.id}
-                          href={`/puzzles/${related.id}`}
-                          className="glass-card hover-lift border border-white/40 p-3 group rounded-xl"
-                        >
-                          <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-2 relative">
-                            <img
-                              src={related.image}
-                              alt={related.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          </div>
-                          <div>
-                            <h4 className="font-normal text-slate-800 group-hover:text-violet-600 transition-colors mb-1 text-sm">
-                              {related.title}
-                            </h4>
-                            <p className="text-xs text-slate-600 mb-2">
-                              {related.pieces} pieces
-                            </p>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-amber-400 fill-current" />
-                                <span className="text-xs font-normal text-slate-800">{related.rating}</span>
+                    
+                    {relatedPuzzlesLoading ? (
+                      // Loading state
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {[1, 2, 3, 4].map((index) => (
+                          <div key={index} className="glass-card border-white/40 p-3 rounded-xl">
+                            <div className="aspect-[4/3] bg-slate-200 rounded-lg animate-pulse mb-2" />
+                            <div className="space-y-1">
+                              <div className="h-3 bg-slate-200 rounded animate-pulse" />
+                              <div className="h-2 bg-slate-200 rounded animate-pulse w-16" />
+                              <div className="flex justify-between">
+                                <div className="h-3 bg-slate-200 rounded animate-pulse w-12" />
+                                <div className="h-3 bg-slate-200 rounded animate-pulse w-10" />
                               </div>
-                              <span className="text-xs font-normal text-emerald-600">{related.price}</span>
                             </div>
                           </div>
-                        </Link>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : relatedPuzzlesError ? (
+                      // Error state
+                      <div className="text-center py-6">
+                        <p className="text-slate-500 text-sm mb-3">{relatedPuzzlesError}</p>
+                        <button
+                          onClick={() => fetchRelatedPuzzles(params.id as string)}
+                          className="text-violet-600 hover:text-violet-700 font-medium text-sm"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData.relatedPuzzles.length === 0 ? (
+                      // Empty state
+                      <div className="text-center py-6">
+                        <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-1">
+                          No other puzzles from {relatedPuzzlesData?.brandName || 'this brand'}
+                        </h4>
+                        <p className="text-slate-500 text-sm">This appears to be the only puzzle from this brand.</p>
+                      </div>
+                    ) : (
+                      // Related puzzles list
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {relatedPuzzlesData.relatedPuzzles.map((related: any) => (
+                          <Link
+                            key={related.id}
+                            href={`/puzzles/${related.id}`}
+                            className="glass-card hover-lift border border-white/40 p-3 group rounded-xl"
+                          >
+                            <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-2 relative">
+                              {related.image ? (
+                                <img
+                                  src={related.image}
+                                  alt={related.title}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-slate-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-normal text-slate-800 group-hover:text-violet-600 transition-colors mb-1 text-sm line-clamp-2">
+                                {related.title}
+                              </h4>
+                              <p className="text-xs text-slate-600 mb-2">
+                                {related.pieces} pieces
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  {related.rating ? (
+                                    <>
+                                      <Star className="w-3 h-3 text-amber-400 fill-current" />
+                                      <span className="text-xs font-normal text-slate-800">{related.rating}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs text-slate-500">No rating</span>
+                                  )}
+                                </div>
+                                {related.timesCompleted > 0 && (
+                                  <span className="text-xs text-emerald-600 font-normal">
+                                    {related.timesCompleted} done
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1170,72 +1369,101 @@ export default function PuzzleDetailPage() {
               <div className="space-y-6">
                 {/* More from Brand */}
                 <div>
-                  <h3 className="text-lg font-medium text-slate-700 mb-3">More from {puzzle.brand?.name}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      {
-                        id: 1,
-                        title: "Majestic Eagles",
-                        pieces: 1000,
-                        rating: 4.7,
-                        price: "$26.99",
-                        image: "https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=300&h=200&fit=crop"
-                      },
-                      {
-                        id: 2,
-                        title: "Forest Wildlife",
-                        pieces: 1500,
-                        rating: 4.8,
-                        price: "$32.99",
-                        image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop"
-                      },
-                      {
-                        id: 3,
-                        title: "Ocean Life",
-                        pieces: 1000,
-                        rating: 4.6,
-                        price: "$28.99",
-                        image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
-                      },
-                      {
-                        id: 4,
-                        title: "Mountain Vista",
-                        pieces: 2000,
-                        rating: 4.9,
-                        price: "$39.99",
-                        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop"
-                      }
-                    ].map((related) => (
-                      <Link
-                        key={related.id}
-                        href={`/puzzles/${related.id}`}
-                        className="glass-card hover-lift border border-white/40 p-4 group rounded-xl transition-all duration-200"
-                      >
-                        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-3 relative">
-                          <img
-                            src={related.image}
-                            alt={related.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-slate-800 group-hover:text-violet-600 transition-colors mb-2">
-                            {related.title}
-                          </h4>
-                          <p className="text-sm text-slate-600 mb-3">
-                            {related.pieces} pieces
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-amber-400 fill-current" />
-                              <span className="text-sm font-medium text-slate-800">{related.rating}</span>
+                  <h3 className="text-lg font-medium text-slate-700 mb-3">
+                    More from {relatedPuzzlesData?.brandName || puzzle.brand?.name || 'This Brand'}
+                  </h3>
+                  
+                  {relatedPuzzlesLoading ? (
+                    // Loading state
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4].map((index) => (
+                        <div key={index} className="glass-card border-white/40 p-4 rounded-xl">
+                          <div className="aspect-[4/3] bg-slate-200 rounded-lg animate-pulse mb-3" />
+                          <div className="space-y-2">
+                            <div className="h-4 bg-slate-200 rounded animate-pulse" />
+                            <div className="h-3 bg-slate-200 rounded animate-pulse w-20" />
+                            <div className="flex justify-between">
+                              <div className="h-4 bg-slate-200 rounded animate-pulse w-16" />
+                              <div className="h-4 bg-slate-200 rounded animate-pulse w-12" />
                             </div>
-                            <span className="text-sm font-bold text-emerald-600">{related.price}</span>
                           </div>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : relatedPuzzlesError ? (
+                    // Error state
+                    <div className="text-center py-8">
+                      <p className="text-slate-500 mb-4">{relatedPuzzlesError}</p>
+                      <button
+                        onClick={() => fetchRelatedPuzzles(params.id as string)}
+                        className="text-violet-600 hover:text-violet-700 font-medium"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData.relatedPuzzles.length === 0 ? (
+                    // Empty state
+                    <div className="text-center py-8">
+                      <div className="mb-4">
+                        <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <h4 className="text-lg font-medium text-slate-700 mb-2">
+                          No other puzzles from {relatedPuzzlesData?.brandName || 'this brand'}
+                        </h4>
+                        <p className="text-slate-500">This appears to be the only puzzle from this brand in our collection.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Related puzzles list
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {relatedPuzzlesData.relatedPuzzles.map((related: any) => (
+                        <Link
+                          key={related.id}
+                          href={`/puzzles/${related.id}`}
+                          className="glass-card hover-lift border border-white/40 p-4 group rounded-xl transition-all duration-200"
+                        >
+                          <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-3 relative">
+                            {related.image ? (
+                              <img
+                                src={related.image}
+                                alt={related.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                                <Package className="w-8 h-8 text-slate-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-slate-800 group-hover:text-violet-600 transition-colors mb-2 line-clamp-2">
+                              {related.title}
+                            </h4>
+                            <p className="text-sm text-slate-600 mb-3">
+                              {related.pieces} pieces
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                {related.rating ? (
+                                  <>
+                                    <Star className="w-4 h-4 text-amber-400 fill-current" />
+                                    <span className="text-sm font-medium text-slate-800">{related.rating}</span>
+                                    <span className="text-xs text-slate-500">({related.reviewCount})</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-slate-500">No rating yet</span>
+                                )}
+                              </div>
+                              {related.timesCompleted > 0 && (
+                                <span className="text-xs text-emerald-600 font-medium">
+                                  {related.timesCompleted} completed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Suggestion Categories */}
@@ -1295,7 +1523,9 @@ export default function PuzzleDetailPage() {
                     <CheckCircle className="w-4 h-4" />
                     Completed
                   </span>
-                  <span className="text-slate-800 font-bold">{mockStats.timesCompleted.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">
+                    {communityStats.timesCompleted > 0 ? communityStats.timesCompleted.toLocaleString() : 'None yet'}
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -1303,7 +1533,9 @@ export default function PuzzleDetailPage() {
                     <Heart className="w-4 h-4" />
                     Wishlisted
                   </span>
-                  <span className="text-slate-800 font-bold">{mockStats.wishlistCount.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">
+                    {communityStats.wishlistCount > 0 ? communityStats.wishlistCount.toLocaleString() : 'None yet'}
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -1311,7 +1543,9 @@ export default function PuzzleDetailPage() {
                     <Clock className="w-4 h-4" />
                     Avg Time
                   </span>
-                  <span className="text-slate-800 font-bold">{mockStats.averageTime}h</span>
+                  <span className="text-slate-800 font-bold">
+                    {communityStats.averageTime > 0 ? `${communityStats.averageTime}h` : 'No data'}
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -1319,7 +1553,9 @@ export default function PuzzleDetailPage() {
                     <Target className="w-4 h-4" />
                     Difficulty
                   </span>
-                  <span className="text-slate-800 font-bold">{mockStats.communityDifficulty}/10</span>
+                  <span className="text-slate-800 font-bold">
+                    {communityStats.communityDifficulty > 0 ? `${communityStats.communityDifficulty}/10` : 'Not rated'}
+                  </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -1327,7 +1563,9 @@ export default function PuzzleDetailPage() {
                     <Trophy className="w-4 h-4" />
                     Success Rate
                   </span>
-                  <span className="text-emerald-600 font-bold">{mockStats.successRate}%</span>
+                  <span className="text-emerald-600 font-bold">
+                    {communityStats.successRate > 0 ? `${communityStats.successRate}%` : 'No data'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1339,40 +1577,63 @@ export default function PuzzleDetailPage() {
                 Recent Activity
               </h3>
               <div className="space-y-3">
-                {[
-                  {
-                    user: 'Alex Chen',
-                    action: 'completed',
-                    time: '2h ago',
-                    icon: Trophy,
-                    color: 'text-amber-600'
-                  },
-                  {
-                    user: 'Sarah Johnson',
-                    action: 'reviewed',
-                    time: '5h ago',
-                    icon: Star,
-                    color: 'text-violet-600'
-                  },
-                  {
-                    user: 'Mike Rodriguez',
-                    action: 'added to wishlist',
-                    time: '1d ago',
-                    icon: Heart,
-                    color: 'text-rose-600'
-                  }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <activity.icon className={`w-4 h-4 ${activity.color}`} />
-                    <div className="flex-1">
-                      <div className="text-sm">
-                        <span className="font-medium text-slate-800">{activity.user}</span>
-                        <span className="text-slate-600 ml-1">{activity.action}</span>
+                {activityLoading ? (
+                  // Loading state
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="w-4 h-4 bg-slate-200 rounded animate-pulse" />
+                        <div className="flex-1">
+                          <div className="h-4 bg-slate-200 rounded animate-pulse mb-1" />
+                          <div className="h-3 bg-slate-200 rounded animate-pulse w-16" />
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-500">{activity.time}</div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : activityError ? (
+                  // Error state
+                  <div className="text-center py-4">
+                    <p className="text-sm text-slate-500 mb-2">{activityError}</p>
+                    <button
+                      onClick={() => fetchActivityData(params.id as string)}
+                      className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : activityData.length === 0 ? (
+                  // Empty state
+                  <div className="text-center py-4">
+                    <p className="text-sm text-slate-500 mb-1">No recent activity</p>
+                    <p className="text-xs text-slate-400">Be the first to interact with this puzzle!</p>
+                  </div>
+                ) : (
+                  // Activity list
+                  activityData.map((activity, index) => {
+                    const activityConfig = {
+                      completed: { icon: Trophy, color: 'text-amber-600', text: 'completed this puzzle' },
+                      reviewed: { icon: Star, color: 'text-violet-600', text: 'reviewed this puzzle' },
+                      added_to_wishlist: { icon: Heart, color: 'text-rose-600', text: 'added to wishlist' },
+                      started_solving: { icon: Clock, color: 'text-blue-600', text: 'started solving' }
+                    }[activity.type] || { icon: Activity, color: 'text-slate-600', text: activity.type }
+
+                    return (
+                      <div key={activity.id} className="flex items-center gap-3">
+                        <activityConfig.icon className={`w-4 h-4 ${activityConfig.color}`} />
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium text-slate-800">{activity.user}</span>
+                            <span className="text-slate-600 ml-1">{activityConfig.text}</span>
+                            {activity.metadata?.rating && (
+                              <span className="text-amber-600 ml-1">({activity.metadata.rating}★)</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500">{activity.timeAgo}</div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </div>
 

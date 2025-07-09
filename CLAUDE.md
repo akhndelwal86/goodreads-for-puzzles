@@ -2,14 +2,69 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## yourules
-1. First think through the problem, read the codebase for relevant files, and write a plan to /tasks/todo.md.
-2. The plan should have a list of todo items that you can check off as you complete them
-3. Before you begin working, check in with me and I will verify the plan.
-4. Then, begin working on the todo items, marking them as complete as you go.
-5. Please every step of the way just give me a high level explanation of what changes you made
-6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
-7. Finally, add a review section to the [todo.md] file with a summary of the changes you made and any other relevant information.
+
+## Your Rules
+1. **ALWAYS start by creating a plan**: First think through the problem, read the codebase for relevant files, and write a detailed plan to `./tasks/todo.md`.
+
+2. **Plan structure**: The plan should have:
+   - Brief problem summary
+   - List of specific todo items with checkboxes `- [ ]`
+   - Each item should be actionable and specific
+   - Estimated complexity (Simple/Medium/Complex)
+
+3. **Wait for approval**: Before you begin working, check in with me and I will verify the plan. Do not start coding until I approve.
+
+4. **Execute the plan**: Begin working on the todo items one by one, marking them as complete `- [x]` as you go by updating the `./tasks/todo.md` file.
+
+5. **Progress updates**: For every step, give me a high-level explanation of what changes you made without showing code unless I ask.
+
+6. **Simplicity principle**: Make every task and code change as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+
+7. **Final review**: Add a review section to the `./tasks/todo.md` file with:
+   - Summary of changes made
+   - Files modified
+   - Any issues encountered
+   - Next steps if any
+
+## File Management Requirements
+
+- **ALWAYS** use the exact path: `./tasks/todo.md`
+- **ALWAYS** update the same file, don't create new ones
+- **ALWAYS** use proper markdown formatting with checkboxes
+- **ALWAYS** preserve existing content when updating
+
+## Example Todo Format
+
+```markdown
+# Task: [Task Name]
+**Date**: [Current Date]
+**Status**: Planning/In Progress/Complete
+
+## Problem Summary
+[Brief description of what needs to be done]
+
+## Todo Items
+- [ ] Read relevant files in codebase
+- [ ] Create component structure
+- [ ] Implement basic functionality
+- [ ] Add styling
+- [ ] Test and debug
+- [ ] Update documentation
+
+## Review
+[To be filled after completion]
+- **Files Modified**: 
+- **Summary**: 
+- **Issues**: 
+- **Next Steps**: 
+```
+
+## Workflow Enforcement
+
+1. If you don't see a `./tasks/todo.md` file, create it first
+2. If the file exists but is empty, populate it with the plan
+3. If the file has content, append new tasks or update existing ones
+4. Always use relative path `./tasks/todo.md` not absolute paths
 
 ## Common Commands
 

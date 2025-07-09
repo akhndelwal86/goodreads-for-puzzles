@@ -99,7 +99,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onStatusChange?.(puzzle.id, 'library')}
+            onClick={(e) => {
+              e.stopPropagation()
+              onStatusChange?.(puzzle.id, 'library')
+            }}
             className={`${baseButtonClass} border-rose-200 text-rose-700 bg-transparent hover:bg-rose-50 hover:border-rose-300 shadow-sm hover:shadow-md`}
           >
             Move to Library
@@ -111,7 +114,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onStatusChange?.(puzzle.id, 'in-progress')}
+            onClick={(e) => {
+              e.stopPropagation()
+              onStatusChange?.(puzzle.id, 'in-progress')
+            }}
             className={`${baseButtonClass} border-blue-200 text-blue-700 bg-transparent hover:bg-blue-50 hover:border-blue-300 shadow-sm hover:shadow-md`}
           >
             Start Puzzle
@@ -124,7 +130,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onLogProgress?.(puzzle)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onLogProgress?.(puzzle)
+              }}
               disabled={logLoading}
               className={`${baseButtonClass} border-amber-200 text-amber-700 bg-transparent hover:bg-amber-50 hover:border-amber-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
             >
@@ -143,7 +152,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={handleMarkComplete}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleMarkComplete()
+              }}
               className={`${baseButtonClass} border-emerald-200 text-emerald-700 bg-transparent hover:bg-emerald-50 hover:border-emerald-300 shadow-sm hover:shadow-md`}
             >
               Mark Complete
@@ -157,7 +169,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onLogProgress?.(puzzle)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onLogProgress?.(puzzle)
+              }}
               disabled={logLoading}
               className={`${baseButtonClass} border-emerald-200 text-emerald-700 bg-transparent hover:bg-emerald-50 hover:border-emerald-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
             >
@@ -176,7 +191,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setShowRatingModal(true)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowRatingModal(true)
+              }}
               className={`${baseButtonClass} border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 hover:border-violet-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
             >
               <Star className="w-3 h-3" />
@@ -191,7 +209,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onStatusChange?.(puzzle.id, 'library')}
+              onClick={(e) => {
+                e.stopPropagation()
+                onStatusChange?.(puzzle.id, 'library')
+              }}
               className={`${baseButtonClass} border-gray-200 text-gray-700 bg-transparent hover:bg-gray-50 hover:border-gray-300 shadow-sm hover:shadow-md`}
             >
               Restart
@@ -199,7 +220,10 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setShowRatingModal(true)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowRatingModal(true)
+              }}
               className={`${baseButtonClass} border-violet-200 text-violet-700 bg-transparent hover:bg-violet-50 hover:border-violet-300 flex items-center gap-1.5 shadow-sm hover:shadow-md`}
             >
               <Star className="w-3 h-3" />
@@ -214,7 +238,7 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
   }
 
   return (
-    <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer">
+    <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer" onClick={() => onPuzzleClick(puzzle)}>
       <div className="p-5">
         <div className="space-y-4">
           {/* Premium Image Container */}
@@ -241,10 +265,7 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
           {/* Premium Content Section */}
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
-              <h3 
-                className="font-medium text-lg text-slate-800 line-clamp-2 cursor-pointer hover:text-violet-700 transition-colors flex-1"
-                onClick={() => onPuzzleClick(puzzle)}
-              >
+              <h3 className="font-medium text-lg text-slate-800 line-clamp-2 hover:text-violet-700 transition-colors flex-1">
                 {puzzle.title}
               </h3>
               <Badge 
@@ -263,7 +284,7 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
             </div>
 
             {/* Premium Action Section */}
-            <div className="pt-3 border-t border-white/20">
+            <div className="pt-3 border-t border-white/20" onClick={(e) => e.stopPropagation()}>
               {getActionButtons()}
             </div>
           </div>
