@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users, MessageSquare, Heart, Star, Clock, Trophy, User, ChevronRight } from 'lucide-react'
 import CommunityActivityFeed from '@/components/home/ActivityFeed'
+import { PostCreationBox } from '@/components/community/post-creation-box'
 
 interface CommunityStats {
   activeMembers: number
@@ -107,6 +108,12 @@ export default function CommunityPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Community Activity Feed */}
           <div className="lg:col-span-2">
+            {/* Post Creation Box */}
+            <PostCreationBox onPostCreated={(post) => {
+              // TODO: Add optimistic update to activity feed
+              console.log('New post created:', post)
+            }} />
+            
             <CommunityActivityFeed limit={8} showHeader={true} />
           </div>
 
