@@ -1,13 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users, MessageSquare, Heart, Star, Clock, Trophy, User, ChevronRight } from 'lucide-react'
 import CommunityActivityFeed from '@/components/home/ActivityFeed'
 
+interface CommunityStats {
+  activeMembers: number
+  discussions: number
+  reviews: number
+  challenges: number
+}
+
 export default function CommunityPage() {
+  const [stats, setStats] = useState<CommunityStats>({
+    activeMembers: 0,
+    discussions: 0,
+    reviews: 0,
+    challenges: 0
+  })
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+
+  // Fetch community stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/community/stats')
+        const data = await response.json()
+        
+        if (data.stats) {
+          setStats(data.stats)
+        }
+      } catch (error) {
+        console.error('Error fetching community stats:', error)
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -26,28 +61,44 @@ export default function CommunityPage() {
           <Card className="glass-card border border-white/40">
             <CardContent className="p-6 text-center">
               <Users className="w-8 h-8 text-violet-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-slate-800">2,847</div>
+              {isLoadingStats ? (
+                <div className="h-8 bg-slate-200 rounded animate-pulse mb-1" />
+              ) : (
+                <div className="text-2xl font-bold text-slate-800">{stats.activeMembers.toLocaleString()}</div>
+              )}
               <div className="text-sm text-slate-600">Active Members</div>
             </CardContent>
           </Card>
           <Card className="glass-card border border-white/40">
             <CardContent className="p-6 text-center">
               <MessageSquare className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-slate-800">12,394</div>
+              {isLoadingStats ? (
+                <div className="h-8 bg-slate-200 rounded animate-pulse mb-1" />
+              ) : (
+                <div className="text-2xl font-bold text-slate-800">{stats.discussions.toLocaleString()}</div>
+              )}
               <div className="text-sm text-slate-600">Discussions</div>
             </CardContent>
           </Card>
           <Card className="glass-card border border-white/40">
             <CardContent className="p-6 text-center">
               <Star className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-slate-800">45,672</div>
+              {isLoadingStats ? (
+                <div className="h-8 bg-slate-200 rounded animate-pulse mb-1" />
+              ) : (
+                <div className="text-2xl font-bold text-slate-800">{stats.reviews.toLocaleString()}</div>
+              )}
               <div className="text-sm text-slate-600">Reviews</div>
             </CardContent>
           </Card>
           <Card className="glass-card border border-white/40">
             <CardContent className="p-6 text-center">
               <Trophy className="w-8 h-8 text-rose-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-slate-800">1,283</div>
+              {isLoadingStats ? (
+                <div className="h-8 bg-slate-200 rounded animate-pulse mb-1" />
+              ) : (
+                <div className="text-2xl font-bold text-slate-800">{stats.challenges.toLocaleString()}</div>
+              )}
               <div className="text-sm text-slate-600">Challenges</div>
             </CardContent>
           </Card>
