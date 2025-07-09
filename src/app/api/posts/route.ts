@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase'
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+import { uploadFile } from '@/lib/storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,53 +52,15 @@ export async function POST(request: NextRequest) {
     for (const [key, file] of imageEntries) {
       if (!(file instanceof File)) continue
 
-      // Validate file type
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        return NextResponse.json({ 
-          error: `Invalid file type: ${file.type}. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}` 
-        }, { status: 400 })
-      }
-
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json({ 
-          error: `File size exceeds 5MB limit: ${file.name}` 
-        }, { status: 400 })
-      }
-
       try {
-        // Generate unique filename
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
-        const filePath = `posts/${userData.id}/${fileName}`
-
-        // Convert file to buffer
-        const arrayBuffer = await file.arrayBuffer()
-        const buffer = new Uint8Array(arrayBuffer)
-
-        // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('puzzle-media')
-          .upload(filePath, buffer, {
-            contentType: file.type,
-            upsert: false
-          })
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError)
-          return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
-        }
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('puzzle-media')
-          .getPublicUrl(filePath)
-
-        uploadedImages.push(publicUrl)
+        // Use existing storage helper with validation
+        const result = await uploadFile(file, userData.id, 'puzzles')
+        uploadedImages.push(result.url)
 
       } catch (error) {
-        console.error('Error processing image:', error)
-        return NextResponse.json({ error: 'Failed to process image' }, { status: 500 })
+        console.error('Error uploading image:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to upload image'
+        return NextResponse.json({ error: errorMessage }, { status: 500 })
       }
     }
 

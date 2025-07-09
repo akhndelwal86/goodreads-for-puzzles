@@ -19,7 +19,7 @@ export const createServiceClient = () => {
 export const getImageUrl = (path: string) => {
   if (!path) return null
   if (path.startsWith('http')) return path // External URLs
-  return supabase.storage.from('puzzle-media').getPublicUrl(path).data.publicUrl
+  return supabase.storage.from('puzzle-photos').getPublicUrl(path).data.publicUrl
 }
 
 export const uploadImage = async (file: File, folder: string = 'puzzles') => {
@@ -27,7 +27,7 @@ export const uploadImage = async (file: File, folder: string = 'puzzles') => {
   const fileName = `${folder}/${Date.now()}-${Math.random()}.${fileExt}`
   
   const { data, error } = await supabase.storage
-    .from('puzzle-media')
+    .from('puzzle-photos')
     .upload(fileName, file)
   
   if (error) throw error
