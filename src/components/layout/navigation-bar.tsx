@@ -5,7 +5,16 @@ import Link from 'next/link'
 import { useUser, UserButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Home, Search, BookOpen, User, Plus } from 'lucide-react'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu'
+import { 
+  Menu, Home, Search, BookOpen, User, Plus, Users, Building2, 
+  ChevronDown, Grid3X3, List, FolderOpen 
+} from 'lucide-react'
 
 export function NavigationBar() {
   const { user, isLoaded } = useUser()
@@ -13,8 +22,15 @@ export function NavigationBar() {
 
   const navigationItems = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/puzzles/browse', label: 'Browse', icon: Search },
     { href: '/my-puzzles', label: 'My Puzzles', icon: BookOpen },
+    { href: '/community', label: 'Community', icon: Users },
+    { href: '/brands', label: 'Brands', icon: Building2 },
+  ]
+
+  const browseDropdownItems = [
+    { href: '/puzzles/browse', label: 'All Puzzles', icon: Grid3X3 },
+    { href: '/lists', label: 'Lists', icon: List },
+    { href: '/collections', label: 'Collections', icon: FolderOpen },
   ]
 
   return (
@@ -43,6 +59,33 @@ export function NavigationBar() {
                 <span className="font-medium">{item.label}</span>
               </Link>
             ))}
+
+            {/* Browse Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-0 h-auto font-medium hover:bg-transparent"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Browse</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {browseDropdownItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link 
+                      href={item.href}
+                      className="flex items-center space-x-2 w-full cursor-pointer"
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Right side */}
@@ -102,6 +145,25 @@ export function NavigationBar() {
                     </Link>
                   ))}
                   
+                  {/* Mobile Browse Section */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center space-x-3 text-gray-800 font-semibold p-2">
+                      <Search className="w-5 h-5" />
+                      <span className="text-lg">Browse</span>
+                    </div>
+                    {browseDropdownItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-2 pl-8 rounded-lg hover:bg-gray-50"
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span className="font-medium">{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                  
                   {/* Mobile Add Puzzle Button */}
                   {isLoaded && user && (
                     <Link
@@ -123,4 +185,4 @@ export function NavigationBar() {
       </div>
     </nav>
   )
-} 
+}

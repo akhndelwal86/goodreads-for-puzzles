@@ -1,13 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { 
   Star, 
   ArrowLeft, 
@@ -41,9 +48,14 @@ import {
   Package,
   Ruler,
   Palette,
-  Shield
+  Shield,
+  ChevronDown,
+  BookOpen,
+  Check,
+  Loader2
 } from 'lucide-react'
 import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
+import { PurchaseLinks } from '@/components/puzzle/purchase-links'
 
 interface PuzzleDetail {
   puzzle: {
@@ -72,18 +84,30 @@ interface PuzzleDetail {
 
 export default function PuzzleDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const { user } = useUser()
   const [puzzleData, setPuzzleData] = useState<PuzzleDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('details')
   const [showAdvancedRating, setShowAdvancedRating] = useState(false)
+  
+  // Add to List dropdown state
+  const [puzzleStatus, setPuzzleStatus] = useState<{hasLog: boolean, status?: string}>({ hasLog: false })
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   useEffect(() => {
     if (params.id) {
       fetchPuzzleDetail(params.id as string)
     }
   }, [params.id])
+
+  // Check puzzle status when user and puzzle data are available
+  useEffect(() => {
+    if (user && puzzleData?.puzzle.id) {
+      checkPuzzleStatus()
+    }
+  }, [user, puzzleData?.puzzle.id])
 
   const fetchPuzzleDetail = async (id: string) => {
       try {
@@ -103,6 +127,65 @@ export default function PuzzleDetailPage() {
         setLoading(false)
       }
     }
+
+  // Check current puzzle status for the user
+  const checkPuzzleStatus = async () => {
+    if (!user || !puzzleData?.puzzle.id) return
+    
+    try {
+      const response = await fetch(`/api/puzzle-status?puzzleId=${puzzleData.puzzle.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPuzzleStatus(data)
+      }
+    } catch (error) {
+      console.error('Error checking puzzle status:', error)
+    }
+  }
+
+  // Update puzzle status
+  const handleStatusChange = async (newStatus: string) => {
+    if (!user || !puzzleData?.puzzle.id) return
+    
+    setIsUpdatingStatus(true)
+    try {
+      const response = await fetch('/api/puzzle-status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          puzzleId: puzzleData.puzzle.id,
+          status: newStatus,
+        }),
+      })
+
+      if (response.ok) {
+        const updatedStatus = await response.json()
+        setPuzzleStatus(updatedStatus)
+      }
+    } catch (error) {
+      console.error('Error updating puzzle status:', error)
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  // Get status display info
+  const getStatusInfo = (status?: string) => {
+    switch (status) {
+      case 'wishlist':
+        return { icon: Heart, label: 'Wishlisted', color: 'text-pink-600' }
+      case 'library':
+        return { icon: BookOpen, label: 'In Library', color: 'text-blue-600' }
+      case 'in-progress':
+        return { icon: Clock, label: 'Solving', color: 'text-amber-600' }
+      case 'completed':
+        return { icon: Check, label: 'Completed', color: 'text-emerald-600' }
+      default:
+        return null
+    }
+  }
 
   // Rich mock data for comprehensive stats
   const mockStats = {
@@ -182,36 +265,36 @@ export default function PuzzleDetailPage() {
           <div className="lg:col-span-3 space-y-6">
             
             {/* Hero Section */}
-            <div className="glass-card border-white/30 rounded-2xl p-4">
-              <div className="grid md:grid-cols-5 gap-4">
+            <div className="glass-card border-white/30 rounded-2xl p-6">
+              <div className="grid md:grid-cols-5 gap-6">
                 
                 {/* Image - 2 columns */}
                 <div className="md:col-span-2">
                   <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-lg group">
-              {puzzle.image_url ? (
-                <Image
-                  src={puzzle.image_url}
-                  alt={puzzle.title}
+                    {puzzle.image_url ? (
+                      <Image
+                        src={puzzle.image_url}
+                        alt={puzzle.title}
                         width={500}
                         height={500}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
+                      />
+                    ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Sparkles className="w-16 h-16 text-slate-400" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
 
                 {/* Info - 3 columns */}
-                <div className="md:col-span-3 space-y-3">
-            <div>
-                    <h1 className="text-2xl font-semibold text-slate-800 mb-2">{puzzle.title}</h1>
+                <div className="md:col-span-3 space-y-4">
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-800 mb-3">{puzzle.title}</h1>
                     
                     {/* Brand and Basic Info */}
-                    <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
-                      <Link href={`/brands/${puzzle.brand?.name}`} className="font-normal text-violet-600 hover:text-violet-700">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
+                      <Link href={`/brands/${puzzle.brand?.name}`} className="font-medium text-violet-600 hover:text-violet-700">
                         {puzzle.brand?.name}
                       </Link>
                       {puzzle.year_published && (
@@ -226,12 +309,12 @@ export default function PuzzleDetailPage() {
 
                     {/* Rating */}
                     {puzzle.average_rating && (
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-4">
                         <div className="flex items-center">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${
+                              className={`w-5 h-5 ${
                                 i < Math.floor(puzzle.average_rating || 0)
                                   ? 'fill-amber-400 text-amber-400'
                                   : 'text-slate-300'
@@ -239,7 +322,7 @@ export default function PuzzleDetailPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-sm text-slate-600 font-normal">
+                        <span className="text-sm text-slate-600 font-medium">
                           {puzzle.average_rating.toFixed(1)} ({puzzle.total_ratings} reviews)
                         </span>
                       </div>
@@ -248,50 +331,105 @@ export default function PuzzleDetailPage() {
 
                   {/* Description */}
                   <div>
-                    <p className="text-slate-600 leading-relaxed mb-3 text-sm">
+                    <p className="text-slate-600 leading-relaxed mb-4 text-base">
                       {puzzle.description || 'A beautiful jigsaw puzzle featuring stunning artwork and premium quality pieces. Perfect for puzzle enthusiasts looking for their next challenge with excellent image quality and precise piece cutting.'}
                     </p>
                   </div>
 
                   {/* Essential Specs as Labels */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="secondary" className="bg-violet-50 text-violet-700 border-violet-200 px-2 py-1 text-xs">
-                      <Layers className="w-3 h-3 mr-1" />
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <Badge variant="secondary" className="bg-violet-50 text-violet-700 border-violet-200 px-3 py-1 text-sm">
+                      <Layers className="w-4 h-4 mr-1" />
                       {puzzle.piece_count} pieces
                     </Badge>
                     {puzzle.difficulty && (
-                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-1 text-xs">
-                        <Target className="w-3 h-3 mr-1" />
+                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1 text-sm">
+                        <Target className="w-4 h-4 mr-1" />
                         {puzzle.difficulty} difficulty
                       </Badge>
                     )}
                     {puzzle.estimated_time && (
-                      <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 px-2 py-1 text-xs">
-                        <Clock className="w-3 h-3 mr-1" />
+                      <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1 text-sm">
+                        <Clock className="w-4 h-4 mr-1" />
                         ~{puzzle.estimated_time}h avg
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="bg-rose-50 text-rose-700 border-rose-200 px-2 py-1 text-xs">
-                      <Star className="w-3 h-3 mr-1" />
+                    <Badge variant="secondary" className="bg-rose-50 text-rose-700 border-rose-200 px-3 py-1 text-sm">
+                      <Star className="w-4 h-4 mr-1" />
                       {puzzle.average_rating?.toFixed(1) || '4.6'} rating
                     </Badge>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button className="bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white px-4 text-sm">
-                      <Archive className="w-4 h-4 mr-2" />
-                      Add to Collection
-                    </Button>
+                  <div className="flex gap-3">
+                    {/* Add to List Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          className="bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white px-6 py-2"
+                          disabled={isUpdatingStatus || !user}
+                        >
+                          {isUpdatingStatus ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <>
+                              {puzzleStatus.hasLog && puzzleStatus.status ? (
+                                <>
+                                  {(() => {
+                                    const statusInfo = getStatusInfo(puzzleStatus.status)
+                                    return statusInfo ? (
+                                      <statusInfo.icon className="w-4 h-4 mr-2" />
+                                    ) : (
+                                      <Archive className="w-4 h-4 mr-2" />
+                                    )
+                                  })()}
+                                </>
+                              ) : (
+                                <Archive className="w-4 h-4 mr-2" />
+                              )}
+                            </>
+                          )}
+                          {puzzleStatus.hasLog && puzzleStatus.status 
+                            ? getStatusInfo(puzzleStatus.status)?.label || 'Add to List'
+                            : 'Add to List'
+                          }
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem onClick={() => handleStatusChange('wishlist')}>
+                          <Heart className="w-4 h-4 mr-2" />
+                          Add to Wishlist
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange('library')}>
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Add to Library
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleStatusChange('in-progress')}>
+                          <Clock className="w-4 h-4 mr-2" />
+                          Currently Solving
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                          <Check className="w-4 h-4 mr-2" />
+                          Mark as Completed
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <Button 
                       variant="outline" 
-                      className="border-violet-200 text-violet-700 hover:bg-violet-50 px-4 text-sm"
+                      className="border-violet-200 text-violet-700 hover:bg-violet-50 px-6 py-2"
                       onClick={() => setShowAdvancedRating(true)}
                     >
                       <Star className="w-4 h-4 mr-2" />
                       Rate & Review
                     </Button>
-                    <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 px-4 text-sm">
+                    <Button 
+                      variant="outline" 
+                      className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 px-6 py-2"
+                      onClick={() => router.push('/my-puzzles')}
+                    >
                       <Play className="w-4 h-4 mr-2" />
                       Log Progress
                     </Button>
@@ -300,131 +438,217 @@ export default function PuzzleDetailPage() {
               </div>
             </div>
 
+            {/* Purchase Links Section */}
+            <div className="glass-card border-white/30 rounded-2xl p-6">
+              <PurchaseLinks 
+                puzzleId={puzzle.id} 
+                puzzleTitle={puzzle.title}
+              />
+            </div>
+
             {/* Tabbed Content */}
-            <div className="glass-card border-white/30 rounded-2xl p-4">
+            <div className="glass-card border-white/30 rounded-2xl p-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-5 bg-white/50">
-                  <TabsTrigger value="details" className="text-sm font-normal">Details</TabsTrigger>
-                  <TabsTrigger value="community" className="text-sm font-normal">Community</TabsTrigger>
-                  <TabsTrigger value="reviews" className="text-sm font-normal">Reviews</TabsTrigger>
-                  <TabsTrigger value="activity" className="text-sm font-normal">Activity</TabsTrigger>
-                  <TabsTrigger value="related" className="text-sm font-normal">Related</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 glass-card border-white/30 p-1 rounded-xl">
+                  <TabsTrigger 
+                    value="details" 
+                    className="text-sm font-normal data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-violet-700 data-[state=active]:text-white data-[state=active]:font-medium data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg"
+                  >
+                    Product Details
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="reviews" 
+                    className="text-sm font-normal data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-violet-700 data-[state=active]:text-white data-[state=active]:font-medium data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg"
+                  >
+                    Reviews & Ratings
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="specifications" 
+                    className="text-sm font-normal data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-violet-700 data-[state=active]:text-white data-[state=active]:font-medium data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg"
+                  >
+                    Specifications
+                  </TabsTrigger>
                 </TabsList>
 
-                {/* Details Tab - Comprehensive Specifications */}
+                {/* Product Details Tab - Amazon-style main details */}
                 <TabsContent value="details" className="mt-4 space-y-4">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
-                        <Package className="w-4 h-4 text-violet-600" />
-                        Product Specifications
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Brand</span>
-                          <span className="text-slate-700 font-normal">{puzzle.brand?.name}</span>
+                  
+                  {/* Main Details Section */}
+                  <div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Brand</span>
+                          <span className="font-medium text-slate-800">{puzzle.brand?.name}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Piece Count</span>
-                          <span className="text-slate-700 font-normal">{puzzle.piece_count}</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Piece Count</span>
+                          <span className="font-medium text-slate-800">{puzzle.piece_count}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Finished Size</span>
-                          <span className="text-slate-700 font-normal">27" × 20" (68.6 × 50.8 cm)</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Theme</span>
+                          <span className="font-medium text-slate-800">{puzzle.theme || 'Animals & Pets'}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Box Size</span>
-                          <span className="text-slate-700 font-normal">14" × 10.25" × 2.37"</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Difficulty</span>
+                          <span className="font-medium text-slate-800">{puzzle.difficulty || 'Intermediate'}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Weight</span>
-                          <span className="text-slate-700 font-normal">1.8 lbs (816g)</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Material</span>
+                          <span className="font-medium text-slate-800">{puzzle.material || 'Premium Cardboard'}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Material</span>
-                          <span className="text-slate-700 font-normal">{puzzle.material || 'Premium Cardboard'}</span>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Finished Size</span>
+                          <span className="font-medium text-slate-800">27" × 20"</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Piece Thickness</span>
-                          <span className="text-slate-700 font-normal">2.0mm</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Age Range</span>
+                          <span className="font-medium text-slate-800">14+ years</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Cutting Style</span>
-                          <span className="text-slate-700 font-normal">Random Cut</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Surface Finish</span>
+                          <span className="font-medium text-slate-800">Anti-glare Matte</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Age Range</span>
-                          <span className="text-slate-700 font-normal">14+ years</span>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">Average Time</span>
+                          <span className="font-medium text-slate-800">{puzzle.estimated_time || 8}h</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b border-slate-100">
+                          <span className="text-slate-600">SKU</span>
+                          <span className="font-medium text-slate-800">#{puzzle.id.slice(0, 12)}</span>
                         </div>
                       </div>
                     </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-emerald-600" />
-                        Design & Theme
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Theme</span>
-                          <span className="text-slate-700 font-normal">{puzzle.theme || 'Animals & Pets'}</span>
+                  </div>
+
+                  {/* What's Included */}
+                  <div>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">What's Included</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">{puzzle.piece_count} premium puzzle pieces</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Category</span>
-                          <span className="text-slate-700 font-normal">Photography</span>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">Full-color reference poster</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Artist</span>
-                          <span className="text-slate-700 font-normal">Nature Photography</span>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">Resealable storage bag</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Color Palette</span>
-                          <span className="text-slate-700 font-normal">Warm Earth Tones</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">Sturdy storage box</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Dominant Colors</span>
-                          <span className="text-slate-700 font-normal">Brown, Golden, Cream</span>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">Manufacturer warranty</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Image Quality</span>
-                          <span className="text-slate-700 font-normal">High Definition</span>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-slate-700">Assembly instructions</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Surface Finish</span>
-                          <span className="text-slate-700 font-normal">Anti-glare Matte</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Key Features */}
+                  <div>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Key Features</h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Precision Cut</h4>
+                        <p className="text-sm text-slate-600">Perfect interlocking pieces with no false fits</p>
+                      </div>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Eye className="w-8 h-8 text-violet-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">HD Imaging</h4>
+                        <p className="text-sm text-slate-600">Crystal clear reproduction with vibrant colors</p>
+                      </div>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Dust-Free</h4>
+                        <p className="text-sm text-slate-600">Clean cutting process with smooth edges</p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Specifications Tab - Detailed Technical Specs */}
+                <TabsContent value="specifications" className="mt-4 space-y-4">
+                  <div>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Technical Specifications</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Dimensions & Weight</h4>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Finished Size</span>
+                            <span className="text-slate-800">27" × 20" (68.6 × 50.8 cm)</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Box Size</span>
+                            <span className="text-slate-800">14" × 10.25" × 2.37"</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Weight</span>
+                            <span className="text-slate-800">1.8 lbs (816g)</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Piece Thickness</span>
+                            <span className="text-slate-800">2.0mm</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Series</span>
-                          <span className="text-slate-700 font-normal">Animal Kingdom Collection</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">SKU</span>
-                          <span className="text-slate-700 font-normal">#{puzzle.id.slice(0, 12)}</span>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Manufacturing Details</h4>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Cutting Style</span>
+                            <span className="text-slate-800">Random Cut</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Printing Method</span>
+                            <span className="text-slate-800">Offset Lithography</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Country of Origin</span>
+                            <span className="text-slate-800">USA</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-slate-600">Recycled Content</span>
+                            <span className="text-slate-800">75%</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-600" />
-                      Quality & Features
-                    </h3>
-                    <div className="grid md:grid-cols-3 gap-3">
-                      <div className="glass-card border-white/40 p-3 text-center">
-                        <CheckCircle className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                        <h4 className="font-normal text-slate-700 mb-1 text-sm">Precision Cut</h4>
-                        <p className="text-xs text-slate-600">Perfect interlocking pieces</p>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Quality Certifications</h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Award className="w-8 h-8 text-amber-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">CPSIA Certified</h4>
+                        <p className="text-sm text-slate-600">Child safety compliant</p>
                       </div>
-                      <div className="glass-card border-white/40 p-3 text-center">
-                        <Eye className="w-6 h-6 text-violet-600 mx-auto mb-2" />
-                        <h4 className="font-normal text-slate-700 mb-1 text-sm">HD Imaging</h4>
-                        <p className="text-xs text-slate-600">Crystal clear reproduction</p>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Shield className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">Non-Toxic</h4>
+                        <p className="text-sm text-slate-600">Safe materials used</p>
                       </div>
-                      <div className="glass-card border-white/40 p-3 text-center">
-                        <Shield className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                        <h4 className="font-normal text-slate-700 mb-1 text-sm">Dust-Free</h4>
-                        <p className="text-xs text-slate-600">Clean cutting process</p>
+                      <div className="glass-card border-white/40 p-4 text-center">
+                        <Zap className="w-8 h-8 text-violet-600 mx-auto mb-3" />
+                        <h4 className="font-medium text-slate-700 mb-2">FSC Certified</h4>
+                        <p className="text-sm text-slate-600">Sustainable sourcing</p>
                       </div>
                     </div>
                   </div>
@@ -522,14 +746,14 @@ export default function PuzzleDetailPage() {
                   {/* Rating Overview */}
                   <div className="grid md:grid-cols-3 gap-4">
                     <div>
-                      <h3 className="text-lg font-normal text-slate-700 mb-3">Overall Rating</h3>
+                      <h3 className="text-base font-medium text-slate-700 mb-3">Overall Rating</h3>
                       <div className="text-center p-4 glass-card border-white/40 rounded-xl">
-                        <div className="text-3xl font-normal text-slate-800 mb-2">{puzzle.average_rating?.toFixed(1) || '4.6'}</div>
-                        <div className="flex justify-center mb-2">
+                        <div className="text-3xl font-bold text-slate-800 mb-3">{puzzle.average_rating?.toFixed(1) || '4.6'}</div>
+                        <div className="flex justify-center mb-3">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${
+                              className={`w-5 h-5 ${
                                 i < Math.floor(puzzle.average_rating || 4.6)
                                   ? 'fill-amber-400 text-amber-400'
                                   : 'text-slate-300'
@@ -537,12 +761,12 @@ export default function PuzzleDetailPage() {
                             />
                           ))}
                         </div>
-                        <div className="text-sm text-slate-600">{puzzle.total_ratings || 127} total reviews</div>
+                        <div className="text-sm text-slate-600 font-medium">{puzzle.total_ratings || 127} total reviews</div>
                       </div>
                     </div>
                     
                     <div className="md:col-span-2">
-                      <h3 className="text-lg font-normal text-slate-700 mb-3">Rating Breakdown</h3>
+                      <h3 className="text-base font-medium text-slate-700 mb-3">Rating Breakdown</h3>
                       <div className="space-y-2">
                         {[
                           { stars: 5, count: 78, percentage: 61 },
@@ -551,15 +775,19 @@ export default function PuzzleDetailPage() {
                           { stars: 2, count: 4, percentage: 3 },
                           { stars: 1, count: 2, percentage: 2 }
                         ].map((item) => (
-                          <div key={item.stars} className="flex items-center gap-3">
-                            <span className="text-sm font-normal text-slate-700 w-6">{item.stars}★</span>
-                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div key={item.stars} className="flex items-center gap-4">
+                            <div className="flex items-center gap-1 w-16">
+                              <span className="text-sm font-medium text-slate-700">{item.stars}</span>
+                              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            </div>
+                            <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-amber-400 transition-all duration-500"
                                 style={{ width: `${item.percentage}%` }}
                               />
                             </div>
-                            <span className="text-sm text-slate-600 w-8">{item.count}</span>
+                            <span className="text-sm text-slate-600 w-12 text-right">{item.percentage}%</span>
+                            <span className="text-sm text-slate-600 w-8 text-right">({item.count})</span>
                           </div>
                         ))}
                       </div>
@@ -567,8 +795,8 @@ export default function PuzzleDetailPage() {
                   </div>
 
                   {/* Multi-Dimensional Ratings */}
-              <div>
-                    <h3 className="text-lg font-normal text-slate-700 mb-3">Quality Breakdown</h3>
+                  <div>
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Quality Breakdown</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       {[
                         { category: 'Image Quality', rating: 4.8, icon: ImageIcon },
@@ -576,17 +804,17 @@ export default function PuzzleDetailPage() {
                         { category: 'Durability', rating: 4.6, icon: Award },
                         { category: 'Overall Experience', rating: 4.6, icon: Star }
                       ].map((item) => (
-                        <div key={item.category} className="flex items-center justify-between p-3 glass-card border-white/40 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <item.icon className="w-4 h-4 text-violet-600" />
-                            <span className="font-normal text-slate-700 text-sm">{item.category}</span>
+                        <div key={item.category} className="flex items-center justify-between p-4 glass-card border-white/40 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <item.icon className="w-5 h-5 text-violet-600" />
+                            <span className="font-medium text-slate-700">{item.category}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`w-3 h-3 ${
+                                  className={`w-4 h-4 ${
                                     i < Math.floor(item.rating)
                                       ? 'fill-amber-400 text-amber-400'
                                       : 'text-slate-300'
@@ -594,17 +822,17 @@ export default function PuzzleDetailPage() {
                                 />
                               ))}
                             </div>
-                            <span className="text-sm font-normal text-slate-700">{item.rating}</span>
+                            <span className="text-sm font-bold text-slate-700">{item.rating}</span>
                           </div>
                         </div>
                       ))}
                     </div>
-              </div>
+                  </div>
 
                   {/* Individual Reviews */}
                   <div>
-                    <h3 className="text-lg font-normal text-slate-700 mb-3">Recent Reviews</h3>
-                    <div className="space-y-3">
+                    <h3 className="text-base font-medium text-slate-700 mb-3">Customer Reviews</h3>
+                    <div className="space-y-4">
                       {[
                         {
                           user: 'Sarah Johnson',
@@ -627,33 +855,44 @@ export default function PuzzleDetailPage() {
                           review: 'Really enjoyed this puzzle. The puppies are adorable and the detail is excellent. A few pieces were a bit tricky to distinguish but overall very satisfying.',
                           helpful: 18,
                           qualities: { imageQuality: 5, pieceFit: 4, durability: 4, experience: 4 }
+                        },
+                        {
+                          user: 'Emily Chen',
+                          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face',
+                          rating: 5,
+                          date: '2 weeks ago',
+                          verified: true,
+                          title: 'Perfect for family time',
+                          review: 'We completed this as a family over several evenings. Great quality pieces and beautiful artwork. The finished puzzle looks amazing on our wall!',
+                          helpful: 15,
+                          qualities: { imageQuality: 5, pieceFit: 5, durability: 5, experience: 5 }
                         }
                       ].map((review, index) => (
-                        <div key={index} className="glass-card border-white/40 p-4 rounded-xl">
-                          <div className="flex items-start gap-3">
+                        <div key={index} className="glass-card border-white/40 p-5 rounded-xl">
+                          <div className="flex items-start gap-4">
                             <img
                               src={review.avatar}
                               alt={review.user}
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-12 h-12 rounded-full object-cover"
                             />
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-normal text-slate-800 text-sm">{review.user}</span>
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="font-medium text-slate-800">{review.user}</span>
                                 {review.verified && (
-                                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-1 py-0">
+                                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-2 py-1">
                                     <CheckCircle className="w-3 h-3 mr-1" />
-                                    Verified
+                                    Verified Purchase
                                   </Badge>
                                 )}
-                                <span className="text-xs text-slate-500">{review.date}</span>
+                                <span className="text-sm text-slate-500">{review.date}</span>
                               </div>
                               
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 mb-3">
                                 <div className="flex">
                                   {[...Array(5)].map((_, i) => (
                                     <Star
                                       key={i}
-                                      className={`w-3 h-3 ${
+                                      className={`w-4 h-4 ${
                                         i < review.rating
                                           ? 'fill-amber-400 text-amber-400'
                                           : 'text-slate-300'
@@ -661,27 +900,72 @@ export default function PuzzleDetailPage() {
                                     />
                                   ))}
                                 </div>
-                                <span className="font-normal text-slate-700 text-sm">{review.title}</span>
+                                <span className="font-medium text-slate-700">{review.title}</span>
                               </div>
                               
-                              <p className="text-slate-600 mb-3 text-sm">{review.review}</p>
+                              <p className="text-slate-600 mb-4 leading-relaxed">{review.review}</p>
+                              
+                              {/* Quality ratings */}
+                              <div className="flex gap-4 text-sm text-slate-600 mb-4">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-500">Image Quality:</span>
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`w-3 h-3 ${
+                                          i < review.qualities.imageQuality
+                                            ? 'fill-amber-400 text-amber-400'
+                                            : 'text-slate-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-500">Piece Fit:</span>
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`w-3 h-3 ${
+                                          i < review.qualities.pieceFit
+                                            ? 'fill-amber-400 text-amber-400'
+                                            : 'text-slate-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-500">Durability:</span>
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`w-3 h-3 ${
+                                          i < review.qualities.durability
+                                            ? 'fill-amber-400 text-amber-400'
+                                            : 'text-slate-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                               
                               <div className="flex items-center justify-between">
-                                <div className="flex gap-3 text-xs text-slate-500">
-                                  <span>Image: {review.qualities.imageQuality}★</span>
-                                  <span>Fit: {review.qualities.pieceFit}★</span>
-                                  <span>Durability: {review.qualities.durability}★</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button variant="outline" size="sm" className="text-xs px-2 py-1">
+                                <div className="flex gap-3">
+                                  <Button variant="outline" size="sm" className="text-sm px-3 py-1 hover:bg-slate-50">
                                     <ThumbsUp className="w-3 h-3 mr-1" />
                                     Helpful ({review.helpful})
                                   </Button>
-                                  <Button variant="outline" size="sm" className="text-xs px-2 py-1">
+                                  <Button variant="outline" size="sm" className="text-sm px-3 py-1 hover:bg-slate-50">
                                     <MessageCircle className="w-3 h-3 mr-1" />
                                     Reply
                                   </Button>
                                 </div>
+                                <span className="text-xs text-slate-500">Was this review helpful?</span>
                               </div>
                             </div>
                           </div>
@@ -875,48 +1159,143 @@ export default function PuzzleDetailPage() {
                 </TabsContent>
               </Tabs>
             </div>
+
+            {/* Related Puzzles - Standalone Section */}
+            <div className="glass-card border-white/30 rounded-2xl p-6">
+              <h2 className="text-xl font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+                You Might Also Like
+              </h2>
+              
+              <div className="space-y-6">
+                {/* More from Brand */}
+                <div>
+                  <h3 className="text-lg font-medium text-slate-700 mb-3">More from {puzzle.brand?.name}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      {
+                        id: 1,
+                        title: "Majestic Eagles",
+                        pieces: 1000,
+                        rating: 4.7,
+                        price: "$26.99",
+                        image: "https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=300&h=200&fit=crop"
+                      },
+                      {
+                        id: 2,
+                        title: "Forest Wildlife",
+                        pieces: 1500,
+                        rating: 4.8,
+                        price: "$32.99",
+                        image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop"
+                      },
+                      {
+                        id: 3,
+                        title: "Ocean Life",
+                        pieces: 1000,
+                        rating: 4.6,
+                        price: "$28.99",
+                        image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop"
+                      },
+                      {
+                        id: 4,
+                        title: "Mountain Vista",
+                        pieces: 2000,
+                        rating: 4.9,
+                        price: "$39.99",
+                        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop"
+                      }
+                    ].map((related) => (
+                      <Link
+                        key={related.id}
+                        href={`/puzzles/${related.id}`}
+                        className="glass-card hover-lift border border-white/40 p-4 group rounded-xl transition-all duration-200"
+                      >
+                        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-3 relative">
+                          <img
+                            src={related.image}
+                            alt={related.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-slate-800 group-hover:text-violet-600 transition-colors mb-2">
+                            {related.title}
+                          </h4>
+                          <p className="text-sm text-slate-600 mb-3">
+                            {related.pieces} pieces
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 text-amber-400 fill-current" />
+                              <span className="text-sm font-medium text-slate-800">{related.rating}</span>
+                            </div>
+                            <span className="text-sm font-bold text-emerald-600">{related.price}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Suggestion Categories */}
+                <div>
+                  <h3 className="text-lg font-medium text-slate-700 mb-3">Browse Similar</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      {
+                        title: "Same Difficulty",
+                        description: "7-8/10 difficulty puzzles",
+                        count: 24,
+                        icon: Target,
+                        color: "from-violet-500 to-violet-600"
+                      },
+                      {
+                        title: "Same Piece Count",
+                        description: "1000-piece puzzles",
+                        count: 156,
+                        icon: Layers,
+                        color: "from-emerald-500 to-emerald-600"
+                      },
+                      {
+                        title: "Animal Theme",
+                        description: "More animal puzzles",
+                        count: 89,
+                        icon: Heart,
+                        color: "from-rose-500 to-rose-600"
+                      }
+                    ].map((category, index) => (
+                      <div key={index} className="glass-card hover-lift border border-white/40 p-4 text-center cursor-pointer group transition-all duration-200">
+                        <div className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-r ${category.color} flex items-center justify-center shadow-lg mb-3`}>
+                          <category.icon className="w-6 h-6 text-white" />
+                        </div>
+                        <h4 className="font-medium text-slate-800 mb-2 group-hover:text-violet-600 transition-colors">{category.title}</h4>
+                        <p className="text-sm text-slate-600 mb-2">{category.description}</p>
+                        <span className="text-sm text-violet-600 font-medium">{category.count} puzzles</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Rich Sidebar - 1 column */}
           <div className="space-y-4">
             
-            {/* Quick Stats */}
+            {/* Key Stats */}
             <div className="glass-card border-white/30 rounded-2xl p-5">
-              <h3 className="text-lg font-medium text-slate-700 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-violet-600" />
-                Quick Stats
+                Key Stats
               </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-2">
-                    <Eye className="w-4 h-4" />
-                    Views
-                  </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.views.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-2">
-                    <ThumbsUp className="w-4 h-4" />
-                    Likes
-                  </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.likes.toLocaleString()}</span>
-                </div>
-                
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-600 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     Completed
                   </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.timesCompleted.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-2">
-                    <Trophy className="w-4 h-4" />
-                    Success Rate
-                  </span>
-                  <span className="text-emerald-600 font-semibold">{mockStats.successRate}%</span>
+                  <span className="text-slate-800 font-bold">{mockStats.timesCompleted.toLocaleString()}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -924,15 +1303,7 @@ export default function PuzzleDetailPage() {
                     <Heart className="w-4 h-4" />
                     Wishlisted
                   </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.wishlistCount.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-600 flex items-center gap-2">
-                    <ShoppingCart className="w-4 h-4" />
-                    Want to Buy
-                  </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.wantToBuyCount}</span>
+                  <span className="text-slate-800 font-bold">{mockStats.wishlistCount.toLocaleString()}</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -940,7 +1311,7 @@ export default function PuzzleDetailPage() {
                     <Clock className="w-4 h-4" />
                     Avg Time
                   </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.averageTime}h</span>
+                  <span className="text-slate-800 font-bold">{mockStats.averageTime}h</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -948,61 +1319,63 @@ export default function PuzzleDetailPage() {
                     <Target className="w-4 h-4" />
                     Difficulty
                   </span>
-                  <span className="text-slate-800 font-semibold">{mockStats.communityDifficulty}/10</span>
+                  <span className="text-slate-800 font-bold">{mockStats.communityDifficulty}/10</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-slate-600 flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Active Solvers
+                    <Trophy className="w-4 h-4" />
+                    Success Rate
                   </span>
-                  <span className="text-violet-600 font-semibold">{mockStats.activeSolvers}</span>
+                  <span className="text-emerald-600 font-bold">{mockStats.successRate}%</span>
                 </div>
               </div>
             </div>
 
-            {/* Pricing Info */}
+            {/* Recent Activity */}
             <div className="glass-card border-white/30 rounded-2xl p-5">
-              <h3 className="text-lg font-medium text-slate-700 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                Pricing
-              </h3>
-              <div className="space-y-3">
-                <div className="text-center p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
-                  <div className="text-2xl font-bold text-emerald-700 mb-1">{mockStats.bestPrice}</div>
-                  <div className="text-sm text-emerald-600 font-medium">Best Price Found</div>
-                </div>
-                <div className="text-center text-sm text-slate-600">
-                  Range: {mockStats.priceRange}
-                </div>
-                <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white">
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Find Best Deals
-                </Button>
-              </div>
-            </div>
-
-            {/* Recent Activity Snapshot */}
-            <div className="glass-card border-white/30 rounded-2xl p-5">
-              <h3 className="text-lg font-medium text-slate-700 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <Activity className="w-5 h-5 text-amber-600" />
                 Recent Activity
               </h3>
-              <div className="text-sm text-slate-600 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span>{mockStats.recentlyAdded} added to collections today</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <span>12 completed this week</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                  <span>8 new reviews posted</span>
-                </div>
+              <div className="space-y-3">
+                {[
+                  {
+                    user: 'Alex Chen',
+                    action: 'completed',
+                    time: '2h ago',
+                    icon: Trophy,
+                    color: 'text-amber-600'
+                  },
+                  {
+                    user: 'Sarah Johnson',
+                    action: 'reviewed',
+                    time: '5h ago',
+                    icon: Star,
+                    color: 'text-violet-600'
+                  },
+                  {
+                    user: 'Mike Rodriguez',
+                    action: 'added to wishlist',
+                    time: '1d ago',
+                    icon: Heart,
+                    color: 'text-rose-600'
+                  }
+                ].map((activity, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <activity.icon className={`w-4 h-4 ${activity.color}`} />
+                    <div className="flex-1">
+                      <div className="text-sm">
+                        <span className="font-medium text-slate-800">{activity.user}</span>
+                        <span className="text-slate-600 ml-1">{activity.action}</span>
+                      </div>
+                      <div className="text-xs text-slate-500">{activity.time}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
           </div>
         </div>
       </div>

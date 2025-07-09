@@ -1,4 +1,6 @@
 
+- puzzle awards
+- users can also create collections 
 - tag functionality: where how to add tags
 - barcode search
 - need to figure what all is behind the sign in 
