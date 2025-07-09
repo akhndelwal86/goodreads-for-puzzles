@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,7 +34,36 @@ interface ActivityItem {
 }
 
 export function ActivityFeed() {
-  const activities: ActivityItem[] = [
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch real activity data
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const response = await fetch('/api/activity?limit=6')
+        const data = await response.json()
+        
+        if (data.activities && data.activities.length > 0) {
+          setActivities(data.activities)
+        } else {
+          // Fallback to mock data when no real activities exist
+          setActivities(getMockActivities())
+        }
+      } catch (error) {
+        console.error('Error fetching activities:', error)
+        // Fallback to mock data on error
+        setActivities(getMockActivities())
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchActivities()
+  }, [])
+
+  // Mock data fallback
+  const getMockActivities = (): ActivityItem[] => [
     {
       id: '1',
       type: 'review',
@@ -52,7 +82,7 @@ export function ActivityFeed() {
         rating: 4.8
       },
       content: 'Absolutely stunning puzzle! The colors are vibrant and the pieces fit perfectly. Took me about 9 hours over a weekend.',
-      timestamp: 'over 1 year ago',
+      timestamp: '2h ago',
       stats: {
         hours: 9,
         likes: 12,
@@ -76,7 +106,7 @@ export function ActivityFeed() {
         difficulty: 'Easy',
         rating: 4.6
       },
-      timestamp: 'over 1 year ago'
+      timestamp: '5h ago'
     },
     {
       id: '3',
@@ -87,7 +117,7 @@ export function ActivityFeed() {
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face'
       },
       content: 'started following Sarah Johnson',
-      timestamp: 'over 1 year ago'
+      timestamp: '1d ago'
     }
   ]
 
@@ -278,13 +308,29 @@ export function ActivityFeed() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium text-slate-800">Activity Feed</CardTitle>
-          <Link href="/activity" className="text-xs font-medium text-violet-600 hover:text-violet-700">
+          <Link href="/community" className="text-xs font-medium text-violet-600 hover:text-violet-700">
             View All
           </Link>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {activities.map(renderActivity)}
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                <div className="flex items-start space-x-3">
+                  <div className="w-7 h-7 bg-slate-200 rounded-full animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4" />
+                    <div className="h-3 bg-slate-200 rounded animate-pulse w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          activities.map(renderActivity)
+        )}
       </CardContent>
     </Card>
   )
