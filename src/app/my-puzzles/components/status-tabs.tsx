@@ -3,14 +3,17 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { UserPuzzle, UserPuzzleStatus } from '@/lib/supabase'
 import { Layers, Heart, Archive, PlayCircle, CheckCircle, XCircle } from 'lucide-react'
+import { ViewToggle } from './view-toggle'
 
 interface StatusTabsProps {
   activeTab: string
   onTabChange: (tab: string) => void
   puzzles: UserPuzzle[]
+  view: 'grid' | 'list'
+  onViewChange: (view: 'grid' | 'list') => void
 }
 
-export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps) {
+export function StatusTabs({ activeTab, onTabChange, puzzles, view, onViewChange }: StatusTabsProps) {
   // Count puzzles by status - CLEAN ARCHITECTURE VERSION
   const counts = {
     all: puzzles.length,
@@ -67,12 +70,15 @@ export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps)
   ]
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-semibold text-slate-700">Puzzle Collection</h2>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-slate-700">Puzzle Collection</h2>
+        <ViewToggle view={view} onViewChange={onViewChange} />
+      </div>
       
       {/* Premium Status Tabs */}
       <div className="glass-card border-white/30 rounded-xl p-2">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key
             const [fromColor, toColor, borderColor, textColor] = tab.colors.split(' ')
@@ -82,7 +88,7 @@ export function StatusTabs({ activeTab, onTabChange, puzzles }: StatusTabsProps)
               <button
               key={tab.key}
                 onClick={() => onTabChange(tab.key)}
-                className={`relative group p-4 rounded-xl transition-all duration-300 ${
+                className={`relative group p-3 rounded-xl transition-all duration-300 ${
                   isActive 
                     ? `glass-card hover-lift border border-white/40 ${textColor} shadow-glass` 
                     : 'hover:bg-white/30 text-slate-600 hover:text-slate-800'

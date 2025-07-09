@@ -5,7 +5,8 @@ import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { getUserPuzzleStats } from '@/lib/supabase'
 import type { UserPuzzle, UserPuzzleStats, UserPuzzleStatus } from '@/lib/supabase'
-import { StatsHeader } from './components/stats-header'
+import { OverviewWidget } from './components/overview-widget'
+import { BestTimesWidget } from './components/best-times-widget'
 import { StatusTabs } from './components/status-tabs'
 import { PuzzleFilters } from './components/puzzle-filters'
 import { PuzzleGrid } from './components/puzzle-grid'
@@ -28,6 +29,7 @@ export default function MyPuzzlesPage() {
   const [sortBy, setSortBy] = useState<'recent' | 'title' | 'brand' | 'pieces'>('recent')
   const [selectedPuzzle, setSelectedPuzzle] = useState<UserPuzzle | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
 
   // Load user's puzzles via API
   const loadUserData = async () => {
@@ -249,61 +251,79 @@ export default function MyPuzzlesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
-      <div className="max-w-7xl mx-auto px-4 pt-20 pb-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 pt-20 pb-8">
+        {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-slate-800 mb-2">My Puzzles</h1>
           <p className="text-slate-600">Track your puzzle collection and progress</p>
         </div>
-        {/* Premium Stats Header */}
-        <StatsHeader 
-          user={user} 
-          stats={stats} 
-        />
 
-        {/* Glass Container for Filters and Content */}
-        <div className="glass-card border-white/30 rounded-2xl p-6 space-y-6">
-        {/* Filters and Search */}
-          <PuzzleFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            brandFilter={brandFilter}
-            onBrandChange={setBrandFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            availableBrands={availableBrands}
-          />
+        {/* Main Content + Right Sidebar Layout */}
+        <div className="flex flex-col lg:flex-row gap-5">
+          {/* Main Content Area */}
+          <div className="flex-1">
+            {/* Glass Container for Filters and Content */}
+            <div className="glass-card border-white/30 rounded-2xl p-4 space-y-4">
+              {/* Filters and Search */}
+              <PuzzleFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                brandFilter={brandFilter}
+                onBrandChange={setBrandFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                availableBrands={availableBrands}
+              />
 
-        {/* Status Tabs */}
-        <StatusTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          puzzles={puzzles}
-        />
+              {/* Status Tabs */}
+              <StatusTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                puzzles={puzzles}
+                view={view}
+                onViewChange={setView}
+              />
 
-        {/* Puzzle Grid */}
-        {filteredPuzzles.length > 0 ? (
-          <PuzzleGrid
-            puzzles={filteredPuzzles}
-            onPuzzleClick={handlePuzzleClick}
-            onStatusChange={handleStatusChange}
-            onLogProgress={handleLogProgress}
-          />
-        ) : (
-          <EmptyState 
-              status={searchTerm || brandFilter !== 'all' ? 'filtered' : activeTab}
-              onAction={() => {
-                if (searchTerm || brandFilter !== 'all') {
-                  // Clear filters
-              setSearchTerm('')
-              setBrandFilter('all')
-              setActiveTab('all')
-                } else {
-                  // Navigate to browse puzzles
-                  window.location.href = '/puzzles/browse'
-                }
-            }}
-          />
-        )}
+              {/* Puzzle Grid */}
+              {filteredPuzzles.length > 0 ? (
+                <PuzzleGrid
+                  puzzles={filteredPuzzles}
+                  onPuzzleClick={handlePuzzleClick}
+                  onStatusChange={handleStatusChange}
+                  onLogProgress={handleLogProgress}
+                  view={view}
+                />
+              ) : (
+                <EmptyState 
+                  status={searchTerm || brandFilter !== 'all' ? 'filtered' : activeTab}
+                  onAction={() => {
+                    if (searchTerm || brandFilter !== 'all') {
+                      // Clear filters
+                      setSearchTerm('')
+                      setBrandFilter('all')
+                      setActiveTab('all')
+                    } else {
+                      // Navigate to browse puzzles
+                      window.location.href = '/puzzles/browse'
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Right Sidebar - Enhanced Stats Widgets */}
+          <div className="lg:w-56 lg:flex-shrink-0">
+            <div className="lg:sticky lg:top-8 space-y-4">
+              <OverviewWidget 
+                stats={stats}
+                puzzles={puzzles}
+              />
+              <BestTimesWidget 
+                puzzles={puzzles}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Puzzle Logging Modal */}

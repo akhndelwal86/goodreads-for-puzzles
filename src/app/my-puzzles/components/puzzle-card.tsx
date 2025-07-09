@@ -17,9 +17,10 @@ interface PuzzleCardProps {
   onPuzzleClick: (puzzle: UserPuzzle) => void
   onStatusChange?: (puzzleId: string, newStatus: string, completionTime?: number) => void
   onLogProgress?: (puzzle: UserPuzzle) => void
+  view?: 'grid' | 'list'
 }
 
-export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgress }: PuzzleCardProps) {
+export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgress, view = 'grid' }: PuzzleCardProps) {
   const { hasLog, loading: logLoading, checkForLog } = usePuzzleLog()
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completionTime, setCompletionTime] = useState('')
@@ -65,6 +66,21 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
     }
     
     return Math.round(totalMinutes * 60) // Convert to seconds
+  }
+
+  const formatTime = (seconds: number): string => {
+    if (seconds === 0) return 'Unknown'
+    
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    
+    if (hours === 0) {
+      return `${minutes}m`
+    } else if (minutes === 0) {
+      return `${hours}h`
+    } else {
+      return `${hours}h ${minutes}m`
+    }
   }
 
   const handleMarkComplete = () => {
@@ -247,6 +263,143 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
     }
   }
 
+  if (view === 'list') {
+    return (
+      <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer" onClick={handleCardClick}>
+        <div className="p-5">
+          <div className="flex gap-4">
+            {/* Image Container - Smaller for list view */}
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+              {puzzle.image ? (
+                <>
+                  <Image
+                    src={puzzle.image}
+                    alt={puzzle.title}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="96px"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+              )}
+            </div>
+
+            {/* Content - Horizontal layout */}
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-medium text-lg text-slate-800 line-clamp-2 hover:text-violet-700 transition-colors flex-1">
+                    {puzzle.title}
+                  </h3>
+                  <Badge 
+                    variant="secondary" 
+                    className={`${getStatusColor(puzzle.status)} text-xs font-normal px-3 py-1.5 rounded-full border flex items-center gap-1.5 shrink-0`}
+                  >
+                    {getStatusIcon(puzzle.status)}
+                    {puzzle.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-slate-600">
+                  <span>{puzzle.brand}</span>
+                  <span>{puzzle.pieces} pieces</span>
+                </div>
+
+                {/* Progress Bar for In-Progress Puzzles */}
+                {puzzle.status === 'in-progress' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-amber-700">Progress</span>
+                      <span className="font-medium text-amber-700">{puzzle.progressPercentage || 0}%</span>
+                    </div>
+                    <div className="w-full bg-amber-100 rounded-full h-2 border border-amber-200">
+                      <div 
+                        className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${puzzle.progressPercentage || 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Completion Time for Completed Puzzles */}
+                {puzzle.status === 'completed' && puzzle.timeSpent && (
+                  <div className="flex items-center justify-between text-sm bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-600" />
+                      <span className="font-medium text-emerald-700">Completed in</span>
+                    </div>
+                    <span className="font-semibold text-emerald-800">
+                      {formatTime(puzzle.timeSpent)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-white/20" onClick={(e) => e.stopPropagation()}>
+                {getActionButtons()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Mark Puzzle Complete</DialogTitle>
+              <DialogDescription>
+                How long did it take to complete this puzzle?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="completion-time" className="text-sm font-medium">
+                  Completion Time
+                </label>
+                <Input
+                  id="completion-time"
+                  type="text"
+                  value={completionTime}
+                  onChange={(e) => setCompletionTime(e.target.value)}
+                  placeholder="e.g., 2h 30m, 90m, or 1.5h"
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter time in any format (e.g., "2h 30m", "90m", "1.5h"). Leave blank if unknown.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCompletionModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmComplete}>
+                Mark Complete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AdvancedRatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          puzzle={{
+            id: puzzle.id,
+            title: puzzle.title,
+            brand: { name: puzzle.brand },
+            imageUrl: puzzle.image,
+            pieceCount: puzzle.pieces
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Grid view (default)
   return (
     <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer" onClick={handleCardClick}>
       <div className="p-5">
@@ -286,6 +439,35 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
                 {puzzle.status.replace('_', ' ')}
               </Badge>
             </div>
+
+            {/* Progress Bar for In-Progress Puzzles */}
+            {puzzle.status === 'in-progress' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-amber-700">Progress</span>
+                  <span className="font-medium text-amber-700">{puzzle.progressPercentage || 0}%</span>
+                </div>
+                <div className="w-full bg-amber-100 rounded-full h-2 border border-amber-200">
+                  <div 
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${puzzle.progressPercentage || 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Completion Time for Completed Puzzles */}
+            {puzzle.status === 'completed' && puzzle.timeSpent && (
+              <div className="flex items-center justify-between text-sm bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  <span className="font-medium text-emerald-700">Completed in</span>
+                </div>
+                <span className="font-semibold text-emerald-800">
+                  {formatTime(puzzle.timeSpent)}
+                </span>
+              </div>
+            )}
 
             {/* Premium Metadata */}
             <div className="flex items-center justify-between text-sm">
