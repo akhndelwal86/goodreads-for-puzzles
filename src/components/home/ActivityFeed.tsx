@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Star, CheckCircle, UserPlus, MessageSquare } from 'lucide-react'
+import { Heart, MessageCircle, Star, CheckCircle, UserPlus, MessageSquare, Loader2 } from 'lucide-react'
+import { LikeButton } from '@/components/community/like-button'
+import { CommentSection } from '@/components/community/comment-section'
 
 export interface Activity {
   id: string
@@ -32,38 +34,71 @@ export interface Activity {
 }
 
 interface CommunityActivityFeedProps {
+  activities?: Activity[]
+  isLoading?: boolean
   limit?: number
   showHeader?: boolean
+  onRefresh?: () => void
 }
 
-export default function CommunityActivityFeed({ limit = 10, showHeader = true }: CommunityActivityFeedProps) {
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+export default function CommunityActivityFeed({ 
+  activities: externalActivities,
+  isLoading: externalLoading,
+  limit = 10, 
+  showHeader = true,
+  onRefresh
+}: CommunityActivityFeedProps) {
+  const [internalActivities, setInternalActivities] = useState<Activity[]>([])
+  const [internalLoading, setInternalLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Fetch real activity data
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch(`/api/activity?limit=${limit}`)
-        const data = await response.json()
-        
-        if (data.activities && data.activities.length > 0) {
-          setActivities(data.activities)
-        } else {
-          // Fallback to mock data when no real activities exist
-          setActivities(getMockActivities().slice(0, limit))
-        }
-      } catch (error) {
-        console.error('Error fetching activities:', error)
-        // Fallback to mock data on error
-        setActivities(getMockActivities().slice(0, limit))
-      } finally {
-        setIsLoading(false)
-      }
+  // Use external activities if provided, otherwise use internal state
+  const activities = externalActivities || internalActivities
+  const isLoading = externalLoading !== undefined ? externalLoading : internalLoading
+
+  // Only fetch data if no external activities provided
+  const fetchActivities = async (isRefresh = false) => {
+    if (externalActivities) return // Don't fetch if external data provided
+
+    if (isRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setInternalLoading(true)
     }
+    
+    try {
+      const response = await fetch(`/api/activity?limit=${limit}`)
+      const data = await response.json()
+      
+      if (data.activities && data.activities.length > 0) {
+        setInternalActivities(data.activities)
+      } else {
+        // Fallback to mock data when no real activities exist
+        setInternalActivities(getMockActivities().slice(0, limit))
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error)
+      // Fallback to mock data on error
+      setInternalActivities(getMockActivities().slice(0, limit))
+    } finally {
+      setInternalLoading(false)
+      setIsRefreshing(false)
+    }
+  }
 
-    fetchActivities()
-  }, [limit])
+  useEffect(() => {
+    if (!externalActivities) {
+      fetchActivities()
+    }
+  }, [limit, externalActivities])
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh()
+    } else {
+      fetchActivities(true)
+    }
+  }
 
   // Mock data fallback
   const getMockActivities = (): Activity[] => [
@@ -186,11 +221,11 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
   }
 
   const renderActivity = (activity: Activity) => {
-    return (
-      <Card key={activity.id} className="glass-card border-white/40 hover:shadow-lg transition-all duration-200">
-        <CardContent className="p-6">
-          <div className="flex items-start space-x-4">
-            <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
+  return (
+      <div className="bg-white hover:bg-slate-50/50 transition-all duration-300 border-b border-slate-100 last:border-b-0 hover:shadow-sm">
+        <div className="p-4">
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-12 h-12 ring-2 ring-white shadow-sm hover:shadow-md transition-shadow duration-200 hover:scale-105 transform">
               <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
               <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium">
                 {activity.user.name.split(' ').map(n => n[0]).join('')}
@@ -198,37 +233,45 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
             </Avatar>
             
             <div className="flex-1 min-w-0">
-              {/* Activity Header */}
-              <div className="flex items-center space-x-2 mb-2">
-                {renderActivityIcon(activity.type)}
-                <span className="font-semibold text-slate-900">{activity.user.name}</span>
-                <span className="text-slate-500 text-sm">
-                  {activity.type === 'review' ? 'reviewed' : 
-                   activity.type === 'completion' ? 'completed' : 
-                   activity.type === 'post' ? 'posted an update' :
-                   activity.type === 'follow' ? activity.content : 'liked'}
+              {/* User Header */}
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="font-semibold text-slate-900 hover:text-violet-600 cursor-pointer transition-colors duration-200">
+                  {activity.user.name}
                 </span>
-                {activity.puzzle && (
-                  <span className="font-medium text-violet-600">"{activity.puzzle.title}"</span>
-                )}
+                <span className="text-slate-400">·</span>
+                <span className="text-slate-500 text-sm hover:text-slate-600 transition-colors duration-200">{activity.timestamp}</span>
               </div>
               
-              <p className="text-slate-500 text-sm mb-3">{activity.timestamp}</p>
+              {/* Activity Description */}
+              <div className="flex items-center space-x-2 mb-3">
+                {renderActivityIcon(activity.type)}
+                <span className="text-slate-600 text-sm">
+                  {activity.type === 'review' ? 'shared a review' : 
+                   activity.type === 'completion' ? 'completed a puzzle' : 
+                   activity.type === 'post' ? 'shared an update' :
+                   activity.type === 'follow' ? activity.content : 'liked a post'}
+                </span>
+                {activity.puzzle && (
+                  <span className="font-medium text-violet-600 hover:text-violet-700 cursor-pointer transition-colors duration-200 hover:underline">
+                    "{activity.puzzle.title}"
+                  </span>
+                )}
+              </div>
 
               {/* Puzzle Info */}
               {activity.puzzle && (
-                <div className="bg-slate-50/50 rounded-xl p-4 mb-4">
+                <div className="bg-slate-50/30 rounded-lg p-3 mb-3 border border-slate-100 hover:bg-slate-50/50 hover:border-slate-200 transition-all duration-200 cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img 
                       src={activity.puzzle.image} 
                       alt={activity.puzzle.title}
-                      className="w-12 h-12 rounded-lg object-cover"
+                      className="w-10 h-10 rounded-md object-cover hover:scale-105 transition-transform duration-200"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-900">{activity.puzzle.title}</h4>
-                      <p className="text-sm text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
+                      <h4 className="font-medium text-slate-900 text-sm">{activity.puzzle.title}</h4>
+                      <p className="text-xs text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           activity.puzzle.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
                           activity.puzzle.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' :
                           'bg-rose-100 text-rose-700'
@@ -238,7 +281,7 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
                         {activity.type === 'review' && (
                           <div className="flex items-center space-x-1">
                             <Star className="w-3 h-3 text-amber-400 fill-current" />
-                            <span className="text-sm text-slate-600">{activity.puzzle.rating}</span>
+                            <span className="text-xs text-slate-600">{activity.puzzle.rating}</span>
                           </div>
                         )}
                       </div>
@@ -249,62 +292,131 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
 
               {/* Content */}
               {activity.content && activity.type !== 'follow' && (
-                <div className="mb-4">
+                <div className="mb-3">
                   {activity.type === 'review' && (
                     <div className="flex items-center space-x-1 mb-2">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-amber-400 fill-current" />
+                        <Star key={i} className="w-3 h-3 text-amber-400 fill-current" />
                       ))}
                       {activity.stats?.hours && (
-                        <span className="text-sm text-slate-600 ml-2">
+                        <span className="text-xs text-slate-600 ml-2">
                           Solved in {activity.stats.hours} hours
                         </span>
                       )}
                     </div>
                   )}
-                  <p className="text-slate-700 leading-relaxed">{activity.content}</p>
+                  <p className="text-slate-700 leading-relaxed text-sm">{activity.content}</p>
                 </div>
               )}
 
               {/* Image Gallery for Posts */}
               {activity.type === 'post' && activity.media_urls && activity.media_urls.length > 0 && (
                 <div className="mb-4">
-                  <div className={`grid gap-2 ${
-                    activity.media_urls.length === 1 ? 'grid-cols-1' :
-                    activity.media_urls.length === 2 ? 'grid-cols-2' :
-                    activity.media_urls.length === 3 ? 'grid-cols-3' :
-                    'grid-cols-2'
-                  }`}>
-                    {activity.media_urls.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
+                  {activity.media_urls.length === 1 ? (
+                    // Single image - responsive with max height
+                    <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <img
+                        src={activity.media_urls[0]}
+                        alt="Post image"
+                        className="w-full max-h-80 object-cover hover:scale-105 transition-transform duration-300"
+                        style={{ 
+                          aspectRatio: 'auto',
+                          minHeight: '200px' 
+                        }}
+                        onLoad={(e) => {
+                          const img = e.target as HTMLImageElement
+                          const aspectRatio = img.naturalWidth / img.naturalHeight
+                          
+                          // For very wide images, limit height more
+                          if (aspectRatio > 2) {
+                            img.style.maxHeight = '240px'
+                          }
+                          // For very tall images, limit height less
+                          else if (aspectRatio < 0.75) {
+                            img.style.maxHeight = '400px'
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : activity.media_urls.length === 2 ? (
+                    // Two images - side by side with consistent height
+                    <div className="grid grid-cols-2 gap-2">
+                      {activity.media_urls.map((imageUrl, index) => (
+                        <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                          <img
+                            src={imageUrl}
+                            alt={`Post image ${index + 1}`}
+                            className="w-full h-52 object-cover hover:scale-105 transition-transform duration-200"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : activity.media_urls.length === 3 ? (
+                    // Three images - one large, two small
+                    <div className="grid grid-cols-2 gap-2 h-60">
+                      <div className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                         <img
-                          src={imageUrl}
-                          alt={`Post image ${index + 1}`}
-                          className={`w-full object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity ${
-                            activity.media_urls!.length === 1 ? 'h-64' : 'h-32'
-                          }`}
+                          src={activity.media_urls[0]}
+                          alt="Post image 1"
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
                         />
                       </div>
-                    ))}
-                  </div>
+                      <div className="grid grid-rows-2 gap-2">
+                        {activity.media_urls.slice(1, 3).map((imageUrl, index) => (
+                          <div key={index + 1} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                            <img
+                              src={imageUrl}
+                              alt={`Post image ${index + 2}`}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    // Four or more images - 2x2 grid with overflow indicator
+                    <div className="grid grid-cols-2 gap-2">
+                      {activity.media_urls.slice(0, 4).map((imageUrl, index) => (
+                        <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                          <img
+                            src={imageUrl}
+                            alt={`Post image ${index + 1}`}
+                            className="w-full h-44 object-cover hover:scale-105 transition-transform duration-200"
+                          />
+                          {/* Show +N overlay on last image if there are more than 4 images */}
+                          {index === 3 && activity.media_urls && activity.media_urls.length > 4 && (
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-semibold text-lg">
+                              +{activity.media_urls.length - 4}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-slate-600 hover:text-rose-600">
-                  <Heart className="w-4 h-4 mr-1" />
-                  <span className="text-sm">{activity.stats?.likes || 0}</span>
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-slate-600 hover:text-blue-600">
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  <span className="text-sm">{activity.stats?.comments || 0}</span>
-                </Button>
+              <div className="flex items-center space-x-6 pt-3 border-t border-slate-100 mt-3">
+                <div className="transform hover:scale-105 transition-transform duration-200">
+                  <LikeButton 
+                    activityId={activity.id}
+                    activityType="feed_item"
+                    initialLikeCount={activity.stats?.likes || 0}
+                  />
+                </div>
+                <div className="transform hover:scale-105 transition-transform duration-200">
+                  <CommentSection
+                    activityId={activity.id}
+                    activityType="feed_item"
+                    initialCommentCount={activity.stats?.comments || 0}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
@@ -316,21 +428,19 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
             <h2 className="text-2xl font-bold text-slate-800">Community Activity</h2>
           </div>
         )}
-        <div className="space-y-4">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100 animate-in fade-in-0 duration-500">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="glass-card border-white/40">
-              <CardContent className="p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-slate-200 rounded-full animate-pulse" />
-                  <div className="flex-1 space-y-3">
-                    <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4" />
-                    <div className="h-3 bg-slate-200 rounded animate-pulse w-1/2" />
-                    <div className="h-20 bg-slate-200 rounded-lg animate-pulse" />
-                  </div>
+            <div key={i} className="p-4 animate-in slide-in-from-bottom-3 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className="flex items-start space-x-3">
+                <div className="w-12 h-12 bg-slate-200 rounded-full animate-pulse" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-slate-200 rounded animate-pulse w-1/2" />
+                  <div className="h-20 bg-slate-200 rounded-lg animate-pulse" />
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </div>
+      ))}
         </div>
       </div>
     )
@@ -340,15 +450,31 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
     <div className="space-y-6">
       {showHeader && (
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-slate-800">Community Activity</h2>
-          <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50">
-            Refresh
+          <h2 className="text-xl font-semibold text-slate-800">Recent Activity</h2>
+          <Button 
+            variant="ghost" 
+            className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              'Refresh'
+            )}
           </Button>
         </div>
       )}
       
-      <div className="space-y-4">
-        {activities.map(renderActivity)}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100 animate-in fade-in-0 duration-500">
+        {activities.map((activity, index) => (
+          <div key={activity.id} className="animate-in slide-in-from-bottom-3 duration-300" style={{ animationDelay: `${index * 50}ms` }}>
+            {renderActivity(activity)}
+          </div>
+        ))}
       </div>
     </div>
   )

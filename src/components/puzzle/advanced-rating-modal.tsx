@@ -173,7 +173,10 @@ export function AdvancedRatingModal({ isOpen, onClose, puzzle }: AdvancedRatingM
                   setHoveredCategory('')
                   setHoveredRating(0)
                 }}
-                onClick={() => handleStarClick(category, star)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleStarClick(category, star)
+                }}
                 disabled={isSubmitting || submitSuccess}
               >
                 <Star
@@ -197,9 +200,19 @@ export function AdvancedRatingModal({ isOpen, onClose, puzzle }: AdvancedRatingM
     </div>
   )
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Prevent event propagation when closing the modal
+      onClose()
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[95vh] overflow-y-auto bg-white border-0 shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent 
+        className="sm:max-w-2xl max-h-[95vh] overflow-y-auto bg-white border-0 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader className="relative pb-6 border-b border-slate-100">
           <DialogTitle className="text-xl font-semibold text-slate-900 text-center">
             {userReview ? 'Edit Your Review' : 'Write a Review'}
@@ -207,7 +220,10 @@ export function AdvancedRatingModal({ isOpen, onClose, puzzle }: AdvancedRatingM
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation()
+              onClose()
+            }}
             className="absolute right-0 top-0 h-10 w-10 p-0 hover:bg-slate-100 rounded-full"
           >
             <X className="h-5 w-5 text-slate-600" />
@@ -343,14 +359,20 @@ export function AdvancedRatingModal({ isOpen, onClose, puzzle }: AdvancedRatingM
                <div className="flex space-x-4 pt-6 border-t border-slate-100">
                  <Button
                    variant="outline"
-                   onClick={onClose}
+                   onClick={(e) => {
+                    e.stopPropagation()
+                    onClose()
+                  }}
                    disabled={isSubmitting}
                    className="flex-1 h-10 text-sm font-medium border-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200"
                  >
                    Cancel
                  </Button>
                  <Button
-                   onClick={handleSubmit}
+                   onClick={(e) => {
+                    e.stopPropagation()
+                    handleSubmit()
+                  }}
                    disabled={!overallRating || isSubmitting}
                    className="flex-1 h-10 text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                  >

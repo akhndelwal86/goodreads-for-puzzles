@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
           id,
           username,
           avatar_url,
+          email,
           clerk_id
         ),
         target_puzzle:puzzles!target_puzzle_id(
@@ -52,16 +53,58 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch activity feed' }, { status: 500 })
     }
 
+    // Get like and comment counts for all feed items
+    const activityIds = feedItems?.map(item => item.id) || []
+    const likeCounts = new Map<string, number>()
+    const commentCounts = new Map<string, number>()
+
+    if (activityIds.length > 0) {
+      // Batch fetch like counts
+      const { data: likes } = await supabase
+        .from('likes')
+        .select('activity_id')
+        .in('activity_id', activityIds)
+        .eq('activity_type', 'feed_item')
+
+      // Count likes per activity
+      likes?.forEach(like => {
+        likeCounts.set(like.activity_id, (likeCounts.get(like.activity_id) || 0) + 1)
+      })
+
+      // Batch fetch comment counts
+      const { data: comments } = await supabase
+        .from('comments')
+        .select('activity_id')
+        .in('activity_id', activityIds)
+        .eq('activity_type', 'feed_item')
+
+      // Count comments per activity
+      comments?.forEach(comment => {
+        commentCounts.set(comment.activity_id, (commentCounts.get(comment.activity_id) || 0) + 1)
+      })
+    }
+
     // Format activities for the frontend
     const activities = feedItems?.map(item => {
+      // Debug logging - check if user is array or object
+      console.log('🔍 Debug user data for activity:', item.id, {
+        raw_user: item.user,
+        is_array: Array.isArray(item.user),
+        username_array: item.user?.[0]?.username,
+        email_array: item.user?.[0]?.email
+      })
+      
+      // Handle both array and object cases
+      const userData = Array.isArray(item.user) ? item.user[0] : item.user
+      
       const baseActivity = {
         id: item.id,
         type: item.type,
         user: {
-          name: item.user?.[0]?.username || 'Anonymous',
-          username: item.user?.[0]?.username || 'unknown',
-          avatar: item.user?.[0]?.avatar_url || '',
-          clerk_id: item.user?.[0]?.clerk_id
+          name: userData?.username || userData?.email?.split('@')[0] || 'User',
+          username: userData?.username || userData?.email?.split('@')[0] || 'user',
+          avatar: userData?.avatar_url || '',
+          clerk_id: userData?.clerk_id
         },
         timestamp: formatTimestamp(item.created_at),
         content: item.text || ''
@@ -83,8 +126,8 @@ export async function GET(request: NextRequest) {
             } : null,
             stats: {
               hours: 0, // Will be calculated from solve time if available
-              likes: 0,
-              comments: 0
+              likes: likeCounts.get(item.id) || 0,
+              comments: commentCounts.get(item.id) || 0
             }
           }
 
@@ -104,8 +147,8 @@ export async function GET(request: NextRequest) {
             stats: {
               hours: item.target_puzzle_log?.[0]?.solve_time_seconds ? 
                 Math.round(item.target_puzzle_log[0].solve_time_seconds / 3600) : 0,
-              likes: 0,
-              comments: 0
+              likes: likeCounts.get(item.id) || 0,
+              comments: commentCounts.get(item.id) || 0
             }
           }
 
@@ -114,7 +157,49 @@ export async function GET(request: NextRequest) {
             ...baseActivity,
             type: 'post',
             content: item.text || '',
-            media_urls: item.media_urls || []
+            media_urls: item.media_urls || [],
+            stats: {
+              hours: 0,
+              likes: likeCounts.get(item.id) || 0,
+              comments: commentCounts.get(item.id) || 0
+            }
+          }
+
+        case 'puzzle_log':
+          // Check if this is actually a user post (has text content) from before we had 'post' type
+          if (item.text && item.text.trim()) {
+            return {
+              ...baseActivity,
+              type: 'post',
+              content: item.text || '',
+              media_urls: item.media_urls || [],
+              stats: {
+                hours: 0,
+                likes: likeCounts.get(item.id) || 0,
+                comments: commentCounts.get(item.id) || 0
+              }
+            }
+          } else {
+            // Regular puzzle log activity
+            return {
+              ...baseActivity,
+              type: 'completion',
+              puzzle: item.target_puzzle?.[0] ? {
+                id: item.target_puzzle[0].id,
+                title: item.target_puzzle[0].title,
+                brand: item.target_puzzle[0].brand?.[0]?.name || 'Unknown Brand',
+                image: item.target_puzzle[0].image_url || '/placeholder-puzzle.svg',
+                pieceCount: item.target_puzzle[0].piece_count || 0,
+                difficulty: getDifficultyFromRating(item.target_puzzle_log?.[0]?.difficulty_rating),
+                rating: item.target_puzzle_log?.[0]?.user_rating || 0
+              } : null,
+              stats: {
+                hours: item.target_puzzle_log?.[0]?.solve_time_seconds ? 
+                  Math.round(item.target_puzzle_log[0].solve_time_seconds / 3600) : 0,
+                likes: likeCounts.get(item.id) || 0,
+                comments: commentCounts.get(item.id) || 0
+              }
+            }
           }
 
         case 'add_to_list':

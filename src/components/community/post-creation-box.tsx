@@ -2,203 +2,298 @@
 
 import { useState, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ImageIcon, X, Loader2 } from 'lucide-react'
+import { ImageIcon, X, Loader2, Plus } from 'lucide-react'
 
-interface PostCreationBoxProps {
-  onPostCreated?: (post: any) => void
+interface Activity {
+  id: string
+  type: 'review' | 'completion' | 'follow' | 'like' | 'post'
+  user: {
+    name: string
+    username: string
+    avatar: string
+  }
+  content?: string
+  timestamp: string
+  media_urls?: string[]
 }
 
-export function PostCreationBox({ onPostCreated }: PostCreationBoxProps) {
+interface PostCreationBoxProps {
+  onOptimisticPost: (post: Activity) => void
+  onPostCreated: (realPost: Activity, tempId: string) => void
+  onPostError: (tempId: string) => void
+}
+
+export function PostCreationBox({ onOptimisticPost, onPostCreated, onPostError }: PostCreationBoxProps) {
   const { user } = useUser()
   const [text, setText] = useState('')
   const [images, setImages] = useState<File[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const maxCharacters = 500
-  const maxImages = 4
-  const remainingChars = maxCharacters - text.length
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.filter(file => 
+      file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024 // 5MB limit
+    ).slice(0, 4 - images.length) // Limit to 4 total images
 
-  const handleImageSelect = (files: FileList | null) => {
-    if (!files) return
-
-    const newImages = Array.from(files).slice(0, maxImages - images.length)
-    setImages(prev => [...prev, ...newImages])
+    setImages(prev => [...prev, ...validFiles])
+    if (!isExpanded) setIsExpanded(true)
   }
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleCancel = () => {
+    setText('')
+    setImages([])
+    setIsExpanded(false)
+  }
+
   const handleSubmit = async () => {
-    if (!text.trim() && images.length === 0) return
-    if (!user) return
+    if ((!text.trim() && images.length === 0) || !user) return
 
     setIsSubmitting(true)
-    setError(null)
+
+    // Store current values for potential retry
+    const originalText = text.trim()
+    const originalImages = [...images]
+
+    // Create optimistic post
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    // Create a proper name fallback
+    const displayName = user.fullName || 
+                       (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') ||
+                       user.firstName ||
+                       user.username ||
+                       user.emailAddresses[0]?.emailAddress.split('@')[0] ||
+                       'User'
+    
+    const optimisticPost: Activity = {
+      id: tempId,
+      type: 'post',
+      user: {
+        name: displayName,
+        username: user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'user',
+        avatar: user.imageUrl || ''
+      },
+      content: originalText,
+      timestamp: new Date().toISOString(),
+      media_urls: originalImages.map(file => URL.createObjectURL(file)) // Temporary preview URLs
+    }
+
+    console.log('🚀 Creating optimistic post:', tempId)
+
+    // Add optimistic post immediately
+    onOptimisticPost(optimisticPost)
+
+    // Clear form immediately for better UX
+    setText('')
+    setImages([])
+    setIsExpanded(false)
 
     try {
+      // Submit to API
       const formData = new FormData()
-      formData.append('text', text.trim())
-      
-      images.forEach((image, index) => {
+      formData.append('text', originalText)
+      originalImages.forEach((image, index) => {
         formData.append(`image_${index}`, image)
       })
 
       const response = await fetch('/api/posts', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create post')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create post')
       }
 
-      // Reset form
-      setText('')
-      setImages([])
-      setIsExpanded(false)
+      const result = await response.json()
       
-      // Notify parent component
-      onPostCreated?.(data.post)
+      console.log('✅ Post created successfully:', result.post.id)
+      
+      // Replace optimistic post with real data
+      const realPost: Activity = {
+        id: result.post.id,
+        type: 'post',
+        user: {
+          name: result.post.user.name || result.post.user.username || 'User',
+          username: result.post.user.username || 'user',
+          avatar: result.post.user.avatar || ''
+        },
+        content: result.post.text || result.post.content || '',
+        timestamp: result.post.created_at || result.post.timestamp || new Date().toISOString(),
+        media_urls: result.post.image_urls || result.post.media_urls || []
+      }
+
+      onPostCreated(realPost, tempId)
 
     } catch (error) {
-      console.error('Error creating post:', error)
-      setError(error instanceof Error ? error.message : 'Failed to create post')
+      console.error('❌ Error creating post:', error)
+      
+      // Remove optimistic post on error
+      onPostError(tempId)
+      
+      // Restore form data for user to retry
+      setText(originalText)
+      setImages(originalImages)
+      setIsExpanded(true)
+      
+      // Show error message
+      alert(`Failed to create post: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const canSubmit = (text.trim().length > 0 || images.length > 0) && !isSubmitting
+  const characterCount = text.length
+  const maxCharacters = 500
+  const isOverLimit = characterCount > maxCharacters
+  const canSubmit = (text.trim() || images.length > 0) && !isOverLimit && !isSubmitting
 
   if (!user) {
-    return null // Don't show post creation if user not logged in
+    return null
   }
 
   return (
-    <Card className="glass-card border-white/40 mb-6">
-      <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
-            <AvatarImage src={user.imageUrl} alt={user.fullName || user.username || 'User'} />
-            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium">
-              {(user.fullName || user.username || 'U').split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1">
-            {/* Text Input */}
-            <Textarea
-              placeholder={isExpanded ? "Share your puzzle progress, ask questions, or connect with the community..." : "Share your puzzle progress..."}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onFocus={() => setIsExpanded(true)}
-              className={`resize-none border-0 p-0 bg-transparent text-slate-700 placeholder:text-slate-500 focus:ring-0 focus:outline-none ${
-                isExpanded ? 'min-h-[100px]' : 'min-h-[44px]'
-              }`}
-              maxLength={maxCharacters}
-            />
-
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden hover:shadow-md transition-shadow duration-300">
+      {/* Main Content */}
+      <div className="p-4">
+          <div className="space-y-4">
+            {/* User Avatar and Input */}
+            <div className="flex items-start space-x-3">
+              <Avatar className="w-10 h-10 ring-2 ring-white shadow-sm hover:shadow-md transition-shadow duration-200">
+                <AvatarImage src={user.imageUrl} alt={user.fullName || 'User'} />
+                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium">
+                  {(user.fullName || 'U').split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1">
+                <Textarea
+                  placeholder={isExpanded ? "What's your puzzle story today? Share your progress, tips, or discoveries..." : "What's on your mind?"}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onFocus={() => setIsExpanded(true)}
+                  className={`min-h-[${isExpanded ? '120px' : '56px'}] resize-none border-0 focus:outline-none focus:ring-0 transition-all duration-300 text-base placeholder:text-slate-400 p-0 bg-transparent hover:bg-slate-50/30 rounded-lg px-3 py-2 focus:bg-slate-50/50`}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+              
             {/* Character Counter */}
-            {isExpanded && (
-              <div className="flex justify-between items-center mt-2 mb-3">
-                <span className={`text-xs ${remainingChars < 50 ? 'text-rose-500' : 'text-slate-500'}`}>
-                  {remainingChars} characters remaining
+            {(isExpanded || characterCount > 0) && (
+              <div className="flex justify-end">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  isOverLimit ? 'bg-red-100 text-red-600' : 
+                  characterCount > maxCharacters * 0.8 ? 'bg-amber-100 text-amber-600' : 
+                  'bg-slate-100 text-slate-500'
+                }`}>
+                  {characterCount}/{maxCharacters}
                 </span>
               </div>
             )}
 
-            {/* Image Previews */}
+            {/* Image Preview Grid - Only show when there are images */}
             {images.length > 0 && (
-              <div className="mb-4">
-                <div className={`grid gap-2 ${
+              <div className="space-y-3">
+                <div className={`grid gap-3 ${
                   images.length === 1 ? 'grid-cols-1' :
                   images.length === 2 ? 'grid-cols-2' :
-                  'grid-cols-2'
+                  'grid-cols-2 md:grid-cols-3'
                 }`}>
                   {images.map((image, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-slate-200"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2 w-6 h-6 p-0 opacity-80 hover:opacity-100"
-                        onClick={() => removeImage(index)}
+                      <div className="relative overflow-hidden rounded-xl bg-slate-100 border border-slate-200">
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Upload ${index + 1}`}
+                          className="w-full max-h-48 object-contain transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeImage(index)
+                        }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                        disabled={isSubmitting}
                       >
-                        <X className="w-3 h-3" />
-                      </Button>
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
+                  
+                  {/* Add More Button - Only show if under 4 images */}
+                  {images.length < 4 && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="min-h-[120px] max-h-48 border-2 border-dashed border-violet-300 rounded-xl flex flex-col items-center justify-center space-y-2 text-violet-600 hover:bg-violet-50 hover:border-violet-400 transition-all duration-200"
+                      disabled={isSubmitting}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">Add More</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-3 text-sm text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">
-                {error}
-              </div>
-            )}
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+              disabled={isSubmitting || images.length >= 4}
+            />
 
-            {/* Actions Row */}
+            {/* Action Buttons */}
             {isExpanded && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <div className="flex items-center space-x-2">
-                  {/* Image Upload Button */}
                   <Button
-                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={images.length >= maxImages}
-                    className="text-slate-600 hover:text-violet-600 hover:bg-violet-50"
+                    disabled={images.length >= 4 || isSubmitting}
+                    className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-full transform hover:scale-105 transition-all duration-200"
                   >
                     <ImageIcon className="w-4 h-4 mr-1" />
-                    Photo ({images.length}/{maxImages})
+                    Photos
                   </Button>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => handleImageSelect(e.target.files)}
-                    className="hidden"
-                  />
+                  {images.length > 0 && (
+                    <span className="text-xs text-slate-500">({images.length}/4)</span>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setText('')
-                      setImages([])
-                      setIsExpanded(false)
-                      setError(null)
-                    }}
-                    className="text-slate-600 hover:text-slate-800"
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                    className="text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-full transform hover:scale-105 transition-all duration-200"
                   >
                     Cancel
                   </Button>
-                  
                   <Button
                     onClick={handleSubmit}
                     disabled={!canSubmit}
-                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25"
+                    size="sm"
+                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-4 py-2 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:hover:scale-100"
                   >
                     {isSubmitting ? (
                       <>
@@ -214,7 +309,6 @@ export function PostCreationBox({ onPostCreated }: PostCreationBoxProps) {
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   )
 } 

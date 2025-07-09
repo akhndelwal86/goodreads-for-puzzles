@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // Get user data from database
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, username, avatar_url')
+      .select('id, username, avatar_url, email')
       .eq('clerk_id', userId)
       .single()
 
@@ -24,6 +24,14 @@ export async function POST(request: NextRequest) {
       console.error('Error fetching user:', userError)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    // Debug logging
+    console.log('🔍 Debug user data for post creation:', {
+      clerk_id: userId,
+      userData: userData,
+      username: userData.username,
+      email: userData.email
+    })
 
     // Parse form data
     const formData = await request.formData()
@@ -67,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Create feed item record
     const feedItemData = {
       user_id: userData.id,
-      type: 'post',
+      type: 'post', // Now properly supported in database
       text: text.trim(),
       image_url: uploadedImages[0] || null, // Primary image
       media_urls: uploadedImages.length > 0 ? uploadedImages : null, // All images as JSON
@@ -92,7 +100,8 @@ export async function POST(request: NextRequest) {
       image_urls: uploadedImages,
       user: {
         id: userData.id,
-        name: userData.username,
+        name: userData.username || userData.email?.split('@')[0] || 'User',
+        username: userData.username || userData.email?.split('@')[0] || 'user',
         avatar: userData.avatar_url
       },
       created_at: feedItem.created_at,

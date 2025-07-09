@@ -1,20 +1,23 @@
-
+- aethstics of my puzzles page 
+- progress bar in the WIP page 
+- bug in the my puzzle page 
+- where is log progress going 
+- what to show in the activity feed 
+- add notificaitions P0 
+- user profile page P0
 - puzzle awards
 - users can also create collections 
-- tag functionality: where how to add tags
+- tag functionality: where how to add tags/ AI generated?  P0
 - barcode search
-- need to figure what all is behind the sign in 
+- need to figure what all is behind the sign in P0
 - mobile responsiveness
-- makea a puzzle of the day list and an admin dashboad to pouplate it / what is the current logic
-- some sort of curated list or smart list on browse page also 
+- makea a puzzle of the day list and an admin dashboad to pouplate it / what is the current logic P1
+- some sort of curated list or smart list on browse page also P0
 - sharing functionlality
-- modals to be redesigned
+- my puzzles modals to be redesigned
 - add heart functionality to puzzle which directly adds to the users wishlist 
-- rate it functionality on the puzzle cards
-- Rating logic 
 - make one more browse page with list categories etc 
 -need to make more smart lists 
-- need to standardise the call to actions
 - will need admin dashboard also later for managing and moderatign 
 - fix url naming also later
 - Code and folder structure cleanup 

@@ -5,6 +5,18 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+interface PuzzleActivity {
+  id: string
+  type: 'completed' | 'reviewed' | 'added_to_wishlist' | 'started_solving'
+  user: string
+  avatar: string | null
+  timestamp: string
+  metadata?: {
+    solveTime?: number
+    rating?: number
+  }
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
@@ -18,7 +30,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const supabase = createServiceClient()
     
     // Fetch recent activities for this puzzle
-    const activities = []
+    const activities: PuzzleActivity[] = []
     
     try {
       // Get recent completions from puzzle_logs
@@ -44,8 +56,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           activities.push({
             id: completion.id,
             type: 'completed',
-            user: completion.user?.username || 'Anonymous',
-            avatar: completion.user?.avatar_url || null,
+            user: completion.user?.[0]?.username || 'Anonymous',
+            avatar: completion.user?.[0]?.avatar_url || null,
             timestamp: completion.updated_at,
             metadata: {
               solveTime: completion.solve_time_seconds
@@ -75,8 +87,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           activities.push({
             id: review.id,
             type: 'reviewed',
-            user: review.user?.username || 'Anonymous',
-            avatar: review.user?.avatar_url || null,
+            user: review.user?.[0]?.username || 'Anonymous',
+            avatar: review.user?.[0]?.avatar_url || null,
             timestamp: review.created_at,
             metadata: {
               rating: review.rating
@@ -107,8 +119,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           activities.push({
             id: addition.id,
             type: 'added_to_wishlist',
-            user: addition.user?.username || 'Anonymous',
-            avatar: addition.user?.avatar_url || null,
+            user: addition.user?.[0]?.username || 'Anonymous',
+            avatar: addition.user?.[0]?.avatar_url || null,
             timestamp: addition.updated_at,
             metadata: {}
           })
@@ -137,8 +149,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           activities.push({
             id: start.id,
             type: 'started_solving',
-            user: start.user?.username || 'Anonymous',
-            avatar: start.user?.avatar_url || null,
+            user: start.user?.[0]?.username || 'Anonymous',
+            avatar: start.user?.[0]?.avatar_url || null,
             timestamp: start.updated_at,
             metadata: {}
           })

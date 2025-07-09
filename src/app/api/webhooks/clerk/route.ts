@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         .insert({
           clerk_id: id,
           email: email_addresses[0]?.email_address || '',
-          username: username || `${first_name || ''} ${last_name || ''}`.trim() || null,
+          username: username || `${first_name || ''} ${last_name || ''}`.trim() || email_addresses[0]?.email_address?.split('@')[0] || 'User',
           avatar_url: image_url || null,
         })
 
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         .from('users')
         .update({
           email: email_addresses[0]?.email_address || '',
-          username: username || `${first_name || ''} ${last_name || ''}`.trim() || null,
+          username: username || `${first_name || ''} ${last_name || ''}`.trim() || email_addresses[0]?.email_address?.split('@')[0] || 'User',
           avatar_url: image_url || null,
         })
         .eq('clerk_id', id)

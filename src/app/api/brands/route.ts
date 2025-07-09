@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
+interface Brand {
+  id: string
+  name: string
+  imageUrl: string
+  description: string
+  puzzleCount: number
+  rating: number
+  reviewCount: number
+}
+
 // ============================
 // GET /api/brands
 // Get popular brands with real stats
@@ -19,7 +29,7 @@ export async function GET() {
       console.error('❌ Error fetching brands:', brandsError)
     }
 
-    let brands = []
+    let brands: Brand[] = []
 
     // Brand-specific logo mapping for consistent branding
     const brandLogos: Record<string, string> = {

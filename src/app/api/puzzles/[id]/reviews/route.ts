@@ -122,9 +122,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const formattedReviews = reviews?.map(review => ({
       id: review.id,
       user: {
-        id: review.user?.id || '',
-        username: review.user?.username || 'Anonymous',
-        avatar: review.user?.avatar_url || null
+        id: review.user?.[0]?.id || '',
+        username: review.user?.[0]?.username || 'Anonymous',
+        avatar: review.user?.[0]?.avatar_url || null
       },
       rating: review.rating,
       title: null, // Could be extracted from review_text or added as separate field

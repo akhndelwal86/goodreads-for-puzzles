@@ -246,10 +246,11 @@ export function RatingExample({
       <AdvancedRatingModal
         isOpen={showAdvancedModal}
         onClose={() => setShowAdvancedModal(false)}
-        puzzleId={puzzleId}
-        puzzleTitle={puzzleTitle}
-        currentReview={userReview}
-        onSubmit={handleAdvancedReview}
+        puzzle={{
+          id: puzzleId,
+          title: puzzleTitle,
+          pieceCount: 1000 // Default piece count since it's required
+        }}
       />
     </div>
   )

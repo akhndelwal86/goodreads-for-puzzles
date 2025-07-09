@@ -23,13 +23,13 @@ export async function GET() {
       console.error('Error fetching review count:', reviewError)
     }
 
-    // Get puzzle log count (represents discussions/activities)
-    const { count: logCount, error: logError } = await supabase
-      .from('puzzle_logs')
+    // Get feed items count (represents discussions/posts)
+    const { count: feedCount, error: feedError } = await supabase
+      .from('feed_items')
       .select('*', { count: 'exact', head: true })
 
-    if (logError && logError.code !== 'PGRST116') {
-      console.error('Error fetching log count:', logError)
+    if (feedError && feedError.code !== 'PGRST116') {
+      console.error('Error fetching feed items count:', feedError)
     }
 
     // Get completed puzzle count (challenges/achievements)
@@ -45,7 +45,7 @@ export async function GET() {
     // Calculate stats with fallbacks for empty database
     const stats = {
       activeMembers: userCount || 0,
-      discussions: logCount || 0, 
+      discussions: feedCount || 0, 
       reviews: reviewCount || 0,
       challenges: completedCount || 0
     }

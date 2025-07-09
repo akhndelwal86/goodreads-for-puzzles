@@ -75,9 +75,8 @@ interface PuzzleDetail {
     average_rating?: number
     total_ratings?: number
     puzzle_aggregates?: {
-      times_completed: number
-      average_completion_time: number
-      wishlist_count: number
+      avg_rating: number
+      review_count: number
     }
   }
   communityStats?: {
@@ -1610,12 +1609,13 @@ export default function PuzzleDetailPage() {
                 ) : (
                   // Activity list
                   activityData.map((activity, index) => {
-                    const activityConfig = {
+                    const activityConfigMap = {
                       completed: { icon: Trophy, color: 'text-amber-600', text: 'completed this puzzle' },
                       reviewed: { icon: Star, color: 'text-violet-600', text: 'reviewed this puzzle' },
                       added_to_wishlist: { icon: Heart, color: 'text-rose-600', text: 'added to wishlist' },
                       started_solving: { icon: Clock, color: 'text-blue-600', text: 'started solving' }
-                    }[activity.type] || { icon: Activity, color: 'text-slate-600', text: activity.type }
+                    }
+                    const activityConfig = activityConfigMap[activity.type as keyof typeof activityConfigMap] || { icon: Activity, color: 'text-slate-600', text: activity.type }
 
                     return (
                       <div key={activity.id} className="flex items-center gap-3">

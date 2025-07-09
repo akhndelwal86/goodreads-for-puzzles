@@ -25,6 +25,16 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
   const [completionTime, setCompletionTime] = useState('')
   const [showRatingModal, setShowRatingModal] = useState(false)
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if any modal is open
+    if (showCompletionModal || showRatingModal) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+    onPuzzleClick(puzzle)
+  }
+
   // Check for existing log when component mounts
   useEffect(() => {
     checkForLog(puzzle.id)
@@ -238,7 +248,7 @@ export function PuzzleCard({ puzzle, onPuzzleClick, onStatusChange, onLogProgres
   }
 
   return (
-    <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer" onClick={() => onPuzzleClick(puzzle)}>
+    <div className="glass-card hover-lift border border-white/40 rounded-xl group cursor-pointer" onClick={handleCardClick}>
       <div className="p-5">
         <div className="space-y-4">
           {/* Premium Image Container */}

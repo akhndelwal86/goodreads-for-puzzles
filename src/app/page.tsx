@@ -9,7 +9,7 @@ import { SmartListsSection } from '@/components/home/smart-lists-section'
 import { CategoryBrowser } from '@/components/home/category-browser'
 import { PopularBrandsCarousel } from '@/components/home/popular-brands-carousel'
 import { ActivityFeed } from '@/components/home/activity-feed'
-import { Leaderboard } from '@/components/home/leaderboard'
+import { Leaderboard } from '@/components/home/Leaderboard'
 import { useUserSync } from '@/lib/auth-utils'
 
 export default function HomePage() {
