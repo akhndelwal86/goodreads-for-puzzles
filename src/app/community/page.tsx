@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users, MessageSquare, Heart, Star, Clock, Trophy, User, ChevronRight } from 'lucide-react'
+import CommunityActivityFeed from '@/components/home/ActivityFeed'
 
 export default function CommunityPage() {
   return (
@@ -53,89 +54,9 @@ export default function CommunityPage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Recent Discussions */}
+          {/* Community Activity Feed */}
           <div className="lg:col-span-2">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Recent Discussions</h2>
-              <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50">
-                View All
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  title: "Best 1000-piece puzzles for beginners?",
-                  author: "PuzzleMaster92",
-                  replies: 23,
-                  likes: 45,
-                  time: "2 hours ago",
-                  tags: ["beginner", "1000-piece"]
-                },
-                {
-                  title: "Organizing puzzle pieces - what's your strategy?",
-                  author: "SortedSolver",
-                  replies: 67,
-                  likes: 128,
-                  time: "4 hours ago",
-                  tags: ["tips", "organization"]
-                },
-                {
-                  title: "Ravensburger vs Buffalo Games - Quality comparison",
-                  author: "BrandExplorer",
-                  replies: 89,
-                  likes: 203,
-                  time: "6 hours ago",
-                  tags: ["brands", "comparison"]
-                },
-                {
-                  title: "Completed my first 2000-piece puzzle! 🎉",
-                  author: "FirstTimer",
-                  replies: 34,
-                  likes: 156,
-                  time: "8 hours ago",
-                  tags: ["achievement", "2000-piece"]
-                }
-              ].map((discussion, index) => (
-                <Card key={index} className="glass-card border border-white/40 hover:shadow-lg transition-all duration-200 cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-semibold text-slate-800 line-clamp-2">
-                        {discussion.title}
-                      </h3>
-                      <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0 ml-2" />
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
-                      <div className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {discussion.author}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageSquare className="w-4 h-4" />
-                        {discussion.replies} replies
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="w-4 h-4" />
-                        {discussion.likes}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {discussion.time}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {discussion.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs bg-slate-100 text-slate-600">
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <CommunityActivityFeed limit={8} showHeader={true} />
           </div>
 
           {/* Sidebar */}
