@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Star, CheckCircle, UserPlus } from 'lucide-react'
+import { Heart, MessageCircle, Star, CheckCircle, UserPlus, MessageSquare } from 'lucide-react'
 
 export interface Activity {
   id: string
-  type: 'review' | 'completion' | 'follow' | 'like'
+  type: 'review' | 'completion' | 'follow' | 'like' | 'post'
   user: {
     name: string
     username: string
@@ -23,6 +23,7 @@ export interface Activity {
   }
   content?: string
   timestamp: string
+  media_urls?: string[]
   stats?: {
     hours: number
     likes: number
@@ -177,6 +178,8 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
         return <CheckCircle className="w-4 h-4 text-emerald-500" />
       case 'follow':
         return <UserPlus className="w-4 h-4 text-blue-500" />
+      case 'post':
+        return <MessageSquare className="w-4 h-4 text-violet-500" />
       default:
         return <Heart className="w-4 h-4 text-rose-500" />
     }
@@ -202,6 +205,7 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
                 <span className="text-slate-500 text-sm">
                   {activity.type === 'review' ? 'reviewed' : 
                    activity.type === 'completion' ? 'completed' : 
+                   activity.type === 'post' ? 'posted an update' :
                    activity.type === 'follow' ? activity.content : 'liked'}
                 </span>
                 {activity.puzzle && (
@@ -259,6 +263,30 @@ export default function CommunityActivityFeed({ limit = 10, showHeader = true }:
                     </div>
                   )}
                   <p className="text-slate-700 leading-relaxed">{activity.content}</p>
+                </div>
+              )}
+
+              {/* Image Gallery for Posts */}
+              {activity.type === 'post' && activity.media_urls && activity.media_urls.length > 0 && (
+                <div className="mb-4">
+                  <div className={`grid gap-2 ${
+                    activity.media_urls.length === 1 ? 'grid-cols-1' :
+                    activity.media_urls.length === 2 ? 'grid-cols-2' :
+                    activity.media_urls.length === 3 ? 'grid-cols-3' :
+                    'grid-cols-2'
+                  }`}>
+                    {activity.media_urls.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={imageUrl}
+                          alt={`Post image ${index + 1}`}
+                          className={`w-full object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity ${
+                            activity.media_urls!.length === 1 ? 'h-64' : 'h-32'
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

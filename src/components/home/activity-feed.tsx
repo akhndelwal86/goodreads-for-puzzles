@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, MessageCircle, Star, CheckCircle, UserPlus } from 'lucide-react'
+import { Heart, MessageCircle, Star, CheckCircle, UserPlus, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 
 interface ActivityItem {
   id: string
-  type: 'review' | 'completion' | 'follow' | 'like'
+  type: 'review' | 'completion' | 'follow' | 'like' | 'post'
   user: {
     name: string
     username: string
@@ -26,6 +26,7 @@ interface ActivityItem {
   }
   content?: string
   timestamp: string
+  media_urls?: string[]
   stats?: {
     hours: number
     likes: number
@@ -129,6 +130,8 @@ export function ActivityFeed() {
         return <CheckCircle className="w-3 h-3 text-emerald-500" />
       case 'follow':
         return <UserPlus className="w-3 h-3 text-blue-500" />
+      case 'post':
+        return <MessageSquare className="w-3 h-3 text-violet-500" />
       default:
         return <Heart className="w-3 h-3 text-rose-500" />
     }
@@ -283,6 +286,77 @@ export function ActivityFeed() {
                 <span className="text-slate-500 text-xs">{activity.content}</span>
               </div>
               <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
+
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-1" />
+                  Like
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Comment
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (activity.type === 'post') {
+      return (
+        <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+          <div className="flex items-start space-x-3">
+            <Avatar className="w-7 h-7 border border-white shadow-sm">
+              <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium text-xs">
+                {activity.user.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex items-center space-x-1.5 mb-1">
+                {renderActivityIcon(activity.type)}
+                <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
+                <span className="text-slate-500 text-xs">posted an update</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
+              
+              {/* Post Content */}
+              {activity.content && (
+                <div className="mb-2">
+                  <p className="text-sm text-slate-700 leading-relaxed">{activity.content}</p>
+                </div>
+              )}
+
+              {/* Image Gallery */}
+              {activity.media_urls && activity.media_urls.length > 0 && (
+                <div className="mb-2">
+                  <div className={`grid gap-1.5 ${
+                    activity.media_urls.length === 1 ? 'grid-cols-1' :
+                    'grid-cols-2'
+                  }`}>
+                    {activity.media_urls.slice(0, 2).map((imageUrl, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={imageUrl}
+                          alt={`Post image ${index + 1}`}
+                          className={`w-full object-cover rounded border border-slate-200 ${
+                            activity.media_urls!.length === 1 ? 'h-32' : 'h-20'
+                          }`}
+                        />
+                        {activity.media_urls!.length > 2 && index === 1 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
+                            <span className="text-white text-xs font-medium">
+                              +{activity.media_urls!.length - 2} more
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center space-x-3">
                 <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">

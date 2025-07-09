@@ -109,6 +109,14 @@ export async function GET(request: NextRequest) {
             }
           }
 
+        case 'post':
+          return {
+            ...baseActivity,
+            type: 'post',
+            content: item.text || '',
+            media_urls: item.media_urls || []
+          }
+
         case 'add_to_list':
           return {
             ...baseActivity,
