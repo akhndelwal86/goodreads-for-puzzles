@@ -273,7 +273,7 @@ export function MyActivityTab() {
             {filteredActivities.map((activity, index) => (
               <div 
                 key={activity.id} 
-                className="flex items-start space-x-3 p-4 bg-white/30 rounded-xl hover:bg-white/50 transition-all duration-200"
+                className="flex items-start space-x-2 md:space-x-3 p-3 md:p-4 bg-white/30 rounded-xl hover:bg-white/50 transition-all duration-200"
               >
                 <div className="flex-shrink-0 mt-1">
                   {getActivityIcon(activity.type)}
@@ -336,17 +336,17 @@ export function MyActivityTab() {
                               <img
                                 src={activity.media_urls[0]}
                                 alt="Progress photo"
-                                className="w-full max-h-48 object-cover hover:scale-105 transition-transform duration-300"
+                                className="w-full max-h-36 md:max-h-48 object-cover hover:scale-105 transition-transform duration-300"
                               />
                             </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                               {activity.media_urls.slice(0, 4).map((imageUrl, index) => (
                                 <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                   <img
                                     src={imageUrl}
                                     alt={`Progress photo ${index + 1}`}
-                                    className="w-full h-32 object-cover hover:scale-105 transition-transform duration-200"
+                                    className="w-full h-24 md:h-32 object-cover hover:scale-105 transition-transform duration-200"
                                   />
                                   {index === 3 && activity.media_urls && activity.media_urls.length > 4 && (
                                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-semibold text-sm">

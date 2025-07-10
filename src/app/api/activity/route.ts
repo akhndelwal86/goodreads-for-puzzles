@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '8')
     const feedType = searchParams.get('type') || 'all'
+    const sortBy = searchParams.get('sort') || 'recent' // 'recent' or 'trending'
     const { userId: clerkUserId } = await auth()
 
     // Build base query
@@ -282,7 +283,17 @@ export async function GET(request: NextRequest) {
       }
     }) || []
 
-    return NextResponse.json({ activities })
+    // Apply trending algorithm if requested
+    let sortedActivities = activities
+    if (sortBy === 'trending') {
+      sortedActivities = activities.sort((a, b) => {
+        const trendingScoreA = calculateTrendingScore(a)
+        const trendingScoreB = calculateTrendingScore(b)
+        return trendingScoreB - trendingScoreA
+      })
+    }
+
+    return NextResponse.json({ activities: sortedActivities })
 
   } catch (error) {
     console.error('Error in activity feed API:', error)
@@ -331,4 +342,51 @@ function formatSolveTime(seconds: number): string {
   } else {
     return '< 1m'
   }
+}
+
+// Helper function to calculate trending score
+function calculateTrendingScore(activity: any): number {
+  const now = new Date()
+  const activityTime = new Date(activity.timestamp.replace(/(\d+)([mhd])\s+ago/, (match: string, num: string, unit: string) => {
+    const value = parseInt(num)
+    switch (unit) {
+      case 'm': return new Date(now.getTime() - value * 60 * 1000).toISOString()
+      case 'h': return new Date(now.getTime() - value * 60 * 60 * 1000).toISOString()
+      case 'd': return new Date(now.getTime() - value * 24 * 60 * 60 * 1000).toISOString()
+      default: return new Date(now.getTime() - 1000).toISOString()
+    }
+  }))
+  
+  // Time decay factor (newer activities score higher)
+  const hoursAgo = Math.max(1, (now.getTime() - activityTime.getTime()) / (1000 * 60 * 60))
+  const timeDecay = Math.max(0.1, 1 / Math.log(hoursAgo + 1))
+  
+  // Engagement score (likes + comments)
+  const engagementScore = (activity.stats?.likes || 0) + (activity.stats?.comments || 0) * 2
+  
+  // Activity type weighting
+  const typeWeights = {
+    'completion': 3.0,    // Puzzle completions are highly valued
+    'review': 2.5,        // Reviews are important
+    'post': 2.0,          // User posts are good
+    'follow': 1.0         // Follows are less important
+  }
+  const typeWeight = typeWeights[activity.type as keyof typeof typeWeights] || 1.0
+  
+  // Quality indicators
+  let qualityBonus = 0
+  if (activity.puzzle?.pieceCount && activity.puzzle.pieceCount >= 1000) {
+    qualityBonus += 0.5 // Bonus for challenging puzzles
+  }
+  if (activity.metadata?.rating && activity.metadata.rating >= 4) {
+    qualityBonus += 0.3 // Bonus for high ratings
+  }
+  if (activity.metadata?.solveTime) {
+    qualityBonus += 0.2 // Bonus for tracked solve times
+  }
+  
+  // Calculate final trending score
+  const trendingScore = (engagementScore * typeWeight * timeDecay) + qualityBonus
+  
+  return trendingScore
 } 

@@ -1,5 +1,7 @@
 // Database Types for Goodreads for Jigsaw Puzzles
 
+export type PuzzleStatus = 'wishlist' | 'library' | 'in-progress' | 'completed' | 'abandoned';
+
 export interface User {
     id: string;
     clerk_id: string;
@@ -99,6 +101,7 @@ export interface User {
     user?: User; // For joined queries
     puzzle_id: string;
     puzzle?: Puzzle; // For joined queries
+    status?: 'wishlist' | 'library' | 'in-progress' | 'completed' | 'abandoned';
     solve_time_seconds: number | null;
     note: string | null;
     photo_urls: string[];

@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest) {
     // Check if puzzle log already exists
     const { data: existingLog, error: checkError } = await serviceClient
       .from('puzzle_logs')
-      .select('id, status, started_at')
+      .select('id, status, started_at, logged_at, progress_percentage')
       .eq('user_id', userData.id)
       .eq('puzzle_id', puzzleId)
       .single()
@@ -61,7 +61,20 @@ export async function PATCH(request: NextRequest) {
 
     if (existingLog) {
       // Update existing puzzle log
-      const oldStatus = existingLog.status
+      // Derive old status from existing fields since status column may not exist
+      let oldStatus = existingLog.status
+      if (!oldStatus) {
+        // Derive status from existing fields
+        if (existingLog.logged_at) {
+          oldStatus = 'completed'
+        } else if (existingLog.started_at) {
+          oldStatus = 'in-progress'
+        } else if (existingLog.progress_percentage > 0) {
+          oldStatus = 'in-progress'
+        } else {
+          oldStatus = 'library'
+        }
+      }
       const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString()

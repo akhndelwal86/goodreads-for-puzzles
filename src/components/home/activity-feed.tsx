@@ -42,7 +42,7 @@ export function ActivityFeed() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const response = await fetch('/api/activity?limit=6')
+        const response = await fetch('/api/activity?limit=6&sort=trending')
         const data = await response.json()
         
         if (data.activities && data.activities.length > 0) {
@@ -141,8 +141,8 @@ export function ActivityFeed() {
     if (activity.type === 'review' && activity.puzzle) {
       return (
         <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
-          <div className="flex items-start space-x-3">
-            <Avatar className="w-7 h-7 border border-white shadow-sm">
+          <div className="flex items-start space-x-2 md:space-x-3">
+            <Avatar className="w-6 h-6 md:w-7 md:h-7 border border-white shadow-sm flex-shrink-0">
               <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
               <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium text-xs">
                 {activity.user.name.split(' ').map(n => n[0]).join('')}
@@ -159,16 +159,16 @@ export function ActivityFeed() {
               <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
               
               {/* Puzzle Info */}
-              <div className="bg-slate-50/50 rounded-lg p-2.5 mb-2">
-                <div className="flex items-center space-x-2.5">
+              <div className="bg-slate-50/50 rounded-lg p-2 md:p-2.5 mb-2">
+                <div className="flex items-center space-x-2 md:space-x-2.5">
                   <img 
                     src={activity.puzzle.image} 
                     alt={activity.puzzle.title}
-                    className="w-9 h-9 rounded-lg object-cover"
+                    className="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm text-slate-900">{activity.puzzle.title}</h4>
-                    <p className="text-xs text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm text-slate-900 truncate">{activity.puzzle.title}</h4>
+                    <p className="text-xs text-slate-600 truncate">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
                     <div className="flex items-center space-x-1 mt-0.5">
                       <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                         activity.puzzle.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
@@ -196,14 +196,14 @@ export function ActivityFeed() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
-                  <Heart className="w-3 h-3 mr-1" />
-                  Like
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Like</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Comment
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Comment</span>
                 </Button>
               </div>
             </div>
@@ -215,15 +215,15 @@ export function ActivityFeed() {
     if (activity.type === 'completion' && activity.puzzle) {
       return (
         <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
-          <div className="flex items-start space-x-3">
-            <Avatar className="w-7 h-7 border border-white shadow-sm">
+          <div className="flex items-start space-x-2 md:space-x-3">
+            <Avatar className="w-6 h-6 md:w-7 md:h-7 border border-white shadow-sm flex-shrink-0">
               <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-medium text-xs">
                 {activity.user.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-1.5 mb-1">
                 {renderActivityIcon(activity.type)}
                 <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
@@ -232,16 +232,16 @@ export function ActivityFeed() {
               </div>
               <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
               
-              <div className="bg-slate-50/50 rounded-lg p-2.5 mb-2">
-                <div className="flex items-center space-x-2.5">
+              <div className="bg-slate-50/50 rounded-lg p-2 md:p-2.5 mb-2">
+                <div className="flex items-center space-x-2 md:space-x-2.5">
                   <img 
                     src={activity.puzzle.image} 
                     alt={activity.puzzle.title}
-                    className="w-9 h-9 rounded-lg object-cover"
+                    className="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm text-slate-900">{activity.puzzle.title}</h4>
-                    <p className="text-xs text-slate-600">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm text-slate-900 truncate">{activity.puzzle.title}</h4>
+                    <p className="text-xs text-slate-600 truncate">{activity.puzzle.brand} • {activity.puzzle.pieceCount} pieces</p>
                     <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mt-0.5 ${
                       activity.puzzle.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700' :
                       'bg-amber-100 text-amber-700'
@@ -252,14 +252,14 @@ export function ActivityFeed() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
-                  <Heart className="w-3 h-3 mr-1" />
-                  Like
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Like</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Comment
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Comment</span>
                 </Button>
               </div>
             </div>
@@ -271,15 +271,15 @@ export function ActivityFeed() {
     if (activity.type === 'follow') {
       return (
         <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
-          <div className="flex items-start space-x-3">
-            <Avatar className="w-7 h-7 border border-white shadow-sm">
+          <div className="flex items-start space-x-2 md:space-x-3">
+            <Avatar className="w-6 h-6 md:w-7 md:h-7 border border-white shadow-sm flex-shrink-0">
               <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-medium text-xs">
                 {activity.user.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-1.5 mb-1">
                 {renderActivityIcon(activity.type)}
                 <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
@@ -287,14 +287,14 @@ export function ActivityFeed() {
               </div>
               <p className="text-slate-500 text-xs mb-2">{activity.timestamp}</p>
 
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
-                  <Heart className="w-3 h-3 mr-1" />
-                  Like
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Like</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Comment
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Comment</span>
                 </Button>
               </div>
             </div>
@@ -306,15 +306,15 @@ export function ActivityFeed() {
     if (activity.type === 'post') {
       return (
         <div key={activity.id} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
-          <div className="flex items-start space-x-3">
-            <Avatar className="w-7 h-7 border border-white shadow-sm">
+          <div className="flex items-start space-x-2 md:space-x-3">
+            <Avatar className="w-6 h-6 md:w-7 md:h-7 border border-white shadow-sm flex-shrink-0">
               <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
               <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium text-xs">
                 {activity.user.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-1.5 mb-1">
                 {renderActivityIcon(activity.type)}
                 <span className="font-medium text-sm text-slate-900">{activity.user.name}</span>
@@ -332,7 +332,7 @@ export function ActivityFeed() {
               {/* Image Gallery */}
               {activity.media_urls && activity.media_urls.length > 0 && (
                 <div className="mb-2">
-                  <div className={`grid gap-1.5 ${
+                  <div className={`grid gap-1 md:gap-1.5 ${
                     activity.media_urls.length === 1 ? 'grid-cols-1' :
                     'grid-cols-2'
                   }`}>
@@ -342,7 +342,7 @@ export function ActivityFeed() {
                           src={imageUrl}
                           alt={`Post image ${index + 1}`}
                           className={`w-full object-cover rounded border border-slate-200 ${
-                            activity.media_urls!.length === 1 ? 'h-32' : 'h-20'
+                            activity.media_urls!.length === 1 ? 'h-28 md:h-32' : 'h-16 md:h-20'
                           }`}
                         />
                         {activity.media_urls!.length > 2 && index === 1 && (
@@ -358,14 +358,14 @@ export function ActivityFeed() {
                 </div>
               )}
 
-              <div className="flex items-center space-x-3">
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-rose-600 text-xs">
-                  <Heart className="w-3 h-3 mr-1" />
-                  Like
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-rose-600 text-xs">
+                  <Heart className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Like</span>
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 px-2 text-slate-600 hover:text-blue-600 text-xs">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  Comment
+                <Button variant="ghost" size="sm" className="h-6 px-1.5 md:px-2 text-slate-600 hover:text-blue-600 text-xs">
+                  <MessageCircle className="w-3 h-3 mr-0.5 md:mr-1" />
+                  <span className="hidden sm:inline">Comment</span>
                 </Button>
               </div>
             </div>
@@ -381,7 +381,12 @@ export function ActivityFeed() {
     <Card className="glass-card border-white/40">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-medium text-slate-800">Activity Feed</CardTitle>
+          <div className="flex items-center space-x-2">
+            <CardTitle className="text-base font-medium text-slate-800">Trending Activity</CardTitle>
+            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 rounded-full">
+              🔥 Hot
+            </span>
+          </div>
           <Link href="/community" className="text-xs font-medium text-violet-600 hover:text-violet-700">
             View All
           </Link>

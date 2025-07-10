@@ -2,8 +2,9 @@
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { PuzzleStatus } from '@/types/database'
 
-export type PuzzleStatus = 'want-to-do' | 'in-progress' | 'completed' | 'abandoned'
+export type { PuzzleStatus }
 
 interface StatusSelectorProps {
   value: PuzzleStatus
@@ -12,11 +13,17 @@ interface StatusSelectorProps {
 }
 
 const statusConfig = {
-  'want-to-do': {
-    label: 'Want to Do',
+  'wishlist': {
+    label: 'Wishlist',
     color: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
     icon: '⭐',
-    description: 'Add to your wishlist'
+    description: 'Want to get this puzzle'
+  },
+  'library': {
+    label: 'My Library',
+    color: 'bg-purple-100 text-purple-800 hover:bg-purple-200',
+    icon: '📚',
+    description: 'I own this puzzle'
   },
   'in-progress': {
     label: 'In Progress',
@@ -44,7 +51,7 @@ export function StatusSelector({ value, onChange, className }: StatusSelectorPro
       <label className="text-sm font-medium text-foreground">
         Status
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {(Object.keys(statusConfig) as PuzzleStatus[]).map((status) => {
           const config = statusConfig[status]
           const isSelected = value === status

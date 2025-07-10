@@ -150,12 +150,12 @@ export function Leaderboard() {
           </div>
         ))}
 
-        {/* View Full Leaderboard Link */}
+        {/* View Community Feed Link */}
         <Link 
-          href="/leaderboard"
+          href="/community"
           className="flex items-center justify-center space-x-1.5 w-full p-2 mt-3 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-all duration-200 group"
         >
-          <span>View Full Leaderboard</span>
+          <span>View Community Feed</span>
           <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
         </Link>
       </CardContent>
