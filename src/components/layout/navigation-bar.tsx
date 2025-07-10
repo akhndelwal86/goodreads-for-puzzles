@@ -30,8 +30,8 @@ export function NavigationBar() {
 
   const browseDropdownItems = [
     { href: '/puzzles/browse', label: 'All Puzzles', icon: Grid3X3 },
-    { href: '/lists', label: 'Lists', icon: List },
-    { href: '/collections', label: 'Collections', icon: FolderOpen },
+    { href: '/lists', label: 'Lists (don\'t open)', icon: List, disabled: true },
+    { href: '/collections', label: 'Collections (don\'t open)', icon: FolderOpen, disabled: true },
   ]
 
   return (
@@ -73,14 +73,21 @@ export function NavigationBar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
                 {browseDropdownItems.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link 
-                      href={item.href}
-                      className="flex items-center space-x-2 w-full cursor-pointer"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </Link>
+                  <DropdownMenuItem key={item.href} asChild={!item.disabled}>
+                    {item.disabled ? (
+                      <div className="flex items-center space-x-2 w-full cursor-not-allowed opacity-50">
+                        <item.icon className="w-4 h-4 text-red-500" />
+                        <span className="text-red-500">{item.label}</span>
+                      </div>
+                    ) : (
+                      <Link 
+                        href={item.href}
+                        className="flex items-center space-x-2 w-full cursor-pointer"
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    )}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -163,15 +170,25 @@ export function NavigationBar() {
                       <span className="text-lg">Browse</span>
                     </div>
                     {browseDropdownItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-2 pl-8 rounded-lg hover:bg-gray-50"
-                      >
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </Link>
+                      item.disabled ? (
+                        <div
+                          key={item.href}
+                          className="flex items-center space-x-3 text-red-500 p-2 pl-8 rounded-lg cursor-not-allowed opacity-50"
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </div>
+                      ) : (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-2 pl-8 rounded-lg hover:bg-gray-50"
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )
                     ))}
                   </div>
                   
