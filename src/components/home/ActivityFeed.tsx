@@ -10,7 +10,7 @@ import Link from 'next/link'
 
 export interface Activity {
   id: string
-  type: 'review' | 'completion' | 'follow' | 'like' | 'post'
+  type: 'review' | 'completion' | 'follow' | 'like' | 'post' | 'puzzle_log'
   user: {
     id: string
     name: string
@@ -33,6 +33,11 @@ export interface Activity {
     hours: number
     likes: number
     comments: number
+  }
+  metadata?: {
+    rating?: number
+    solveTime?: string
+    progress?: number
   }
 }
 
@@ -327,18 +332,49 @@ export default function CommunityActivityFeed({
                     </div>
                   )}
                   <p className="text-slate-700 leading-relaxed text-sm">{activity.content}</p>
+                  
+                  {/* Progress Bar for puzzle log activities */}
+                  {activity.metadata?.progress && activity.metadata.progress > 0 && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                        <span>Progress</span>
+                        <span>{activity.metadata.progress}% complete</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-violet-500 to-violet-600 h-2 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${Math.min(activity.metadata.progress, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Metadata Display */}
+                  {activity.metadata && (activity.metadata.rating || activity.metadata.solveTime) && (
+                    <div className="flex items-center space-x-3 text-xs text-slate-500 mt-2">
+                      {activity.metadata.rating && (
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 text-amber-400 fill-current" />
+                          <span>{activity.metadata.rating}/5</span>
+                        </div>
+                      )}
+                      {activity.metadata.solveTime && (
+                        <span>Solved in {activity.metadata.solveTime}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Image Gallery for Posts */}
-              {activity.type === 'post' && activity.media_urls && activity.media_urls.length > 0 && (
+              {/* Image Gallery for Posts and Progress Photos */}
+              {(activity.type === 'post' || activity.type === 'completion' || activity.type === 'puzzle_log') && activity.media_urls && activity.media_urls.length > 0 && (
                 <div className="mb-4">
                   {activity.media_urls.length === 1 ? (
                     // Single image - responsive with max height
                     <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                       <img
                         src={activity.media_urls[0]}
-                        alt="Post image"
+                        alt={activity.type === 'post' ? 'Post image' : 'Progress photo'}
                         className="w-full max-h-80 object-cover hover:scale-105 transition-transform duration-300"
                         style={{ 
                           aspectRatio: 'auto',
@@ -366,7 +402,7 @@ export default function CommunityActivityFeed({
                         <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                           <img
                             src={imageUrl}
-                            alt={`Post image ${index + 1}`}
+                            alt={activity.type === 'post' ? `Post image ${index + 1}` : `Progress photo ${index + 1}`}
                             className="w-full h-52 object-cover hover:scale-105 transition-transform duration-200"
                           />
                         </div>
@@ -401,7 +437,7 @@ export default function CommunityActivityFeed({
                         <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                           <img
                             src={imageUrl}
-                            alt={`Post image ${index + 1}`}
+                            alt={activity.type === 'post' ? `Post image ${index + 1}` : `Progress photo ${index + 1}`}
                             className="w-full h-44 object-cover hover:scale-105 transition-transform duration-200"
                           />
                           {/* Show +N overlay on last image if there are more than 4 images */}

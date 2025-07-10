@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { Suspense, useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
@@ -333,7 +333,7 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
   )
 }
 
-export default function BrowsePuzzlesPage() {
+function BrowsePuzzlesPageContent() {
   const { user } = useUser()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -729,4 +729,19 @@ export default function BrowsePuzzlesPage() {
       </div>
     </div>
   )
-} 
+}
+
+export default function BrowsePuzzlesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading puzzles...</p>
+        </div>
+      </div>
+    }>
+      <BrowsePuzzlesPageContent />
+    </Suspense>
+  )
+}

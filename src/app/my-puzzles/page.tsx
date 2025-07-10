@@ -13,6 +13,7 @@ import { PuzzleGrid } from './components/puzzle-grid'
 import { PuzzleLoggingModal } from './components/puzzle-logging-modal'
 import { EmptyState } from './components/empty-state'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
+import { MyActivityTab } from './components/my-activity-tab'
 
 export default function MyPuzzlesPage() {
   // Get user from Clerk
@@ -264,16 +265,18 @@ export default function MyPuzzlesPage() {
           <div className="flex-1">
             {/* Glass Container for Filters and Content */}
             <div className="glass-card border-white/30 rounded-2xl p-4 space-y-4">
-              {/* Filters and Search */}
-              <PuzzleFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                brandFilter={brandFilter}
-                onBrandChange={setBrandFilter}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                availableBrands={availableBrands}
-              />
+              {/* Filters and Search - Only show for puzzle tabs */}
+              {activeTab !== 'activity' && (
+                <PuzzleFilters
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  brandFilter={brandFilter}
+                  onBrandChange={setBrandFilter}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  availableBrands={availableBrands}
+                />
+              )}
 
               {/* Status Tabs */}
               <StatusTabs
@@ -284,30 +287,35 @@ export default function MyPuzzlesPage() {
                 onViewChange={setView}
               />
 
-              {/* Puzzle Grid */}
-              {filteredPuzzles.length > 0 ? (
-                <PuzzleGrid
-                  puzzles={filteredPuzzles}
-                  onPuzzleClick={handlePuzzleClick}
-                  onStatusChange={handleStatusChange}
-                  onLogProgress={handleLogProgress}
-                  view={view}
-                />
+              {/* Content Based on Active Tab */}
+              {activeTab === 'activity' ? (
+                <MyActivityTab />
               ) : (
-                <EmptyState 
-                  status={searchTerm || brandFilter !== 'all' ? 'filtered' : activeTab}
-                  onAction={() => {
-                    if (searchTerm || brandFilter !== 'all') {
-                      // Clear filters
-                      setSearchTerm('')
-                      setBrandFilter('all')
-                      setActiveTab('all')
-                    } else {
-                      // Navigate to browse puzzles
-                      window.location.href = '/puzzles/browse'
-                    }
-                  }}
-                />
+                /* Puzzle Grid */
+                filteredPuzzles.length > 0 ? (
+                  <PuzzleGrid
+                    puzzles={filteredPuzzles}
+                    onPuzzleClick={handlePuzzleClick}
+                    onStatusChange={handleStatusChange}
+                    onLogProgress={handleLogProgress}
+                    view={view}
+                  />
+                ) : (
+                  <EmptyState 
+                    status={searchTerm || brandFilter !== 'all' ? 'filtered' : activeTab}
+                    onAction={() => {
+                      if (searchTerm || brandFilter !== 'all') {
+                        // Clear filters
+                        setSearchTerm('')
+                        setBrandFilter('all')
+                        setActiveTab('all')
+                      } else {
+                        // Navigate to browse puzzles
+                        window.location.href = '/puzzles/browse'
+                      }
+                    }}
+                  />
+                )
               )}
             </div>
           </div>

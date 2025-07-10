@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { createFeedItem } from '@/lib/activity-feed'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -108,6 +109,20 @@ export async function POST(request: Request) {
 
     // Update puzzle aggregates
     await updatePuzzleAggregates(puzzle_id)
+
+    // Create feed item for the review (async, don't wait for it)
+    if (!existingReview) {
+      // Only create feed item for new reviews, not updates
+      createFeedItem({
+        userId: user.id,
+        type: 'review',
+        puzzleId: puzzle_id,
+        reviewId: result.id,
+        text: review_text?.trim() || `Rated this puzzle ${rating} stars`
+      }).catch(error => {
+        console.error('⚠️ Failed to create feed item for review:', error)
+      })
+    }
 
     return NextResponse.json({ 
       success: true, 

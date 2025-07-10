@@ -11,6 +11,7 @@ interface Activity {
   id: string
   type: 'review' | 'completion' | 'follow' | 'like' | 'post'
   user: {
+    id: string
     name: string
     username: string
     avatar: string
@@ -78,6 +79,7 @@ export function PostCreationBox({ onOptimisticPost, onPostCreated, onPostError }
       id: tempId,
       type: 'post',
       user: {
+        id: user.id,
         name: displayName,
         username: user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'user',
         avatar: user.imageUrl || ''
@@ -124,6 +126,7 @@ export function PostCreationBox({ onOptimisticPost, onPostCreated, onPostError }
         id: result.post.id,
         type: 'post',
         user: {
+          id: result.post.user.id || user.id,
           name: result.post.user.name || result.post.user.username || 'User',
           username: result.post.user.username || 'user',
           avatar: result.post.user.avatar || ''

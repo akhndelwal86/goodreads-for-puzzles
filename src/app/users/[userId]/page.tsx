@@ -381,7 +381,7 @@ export default function UserProfilePage() {
                         {Array.isArray(following) && following.length > 0 ? (
                           <div className="space-y-3">
                             {following.map((follow) => {
-                              const followingUser = follow.followed_user
+                              const followingUser = follow.following
                               if (!followingUser) return null
                               
                               return (

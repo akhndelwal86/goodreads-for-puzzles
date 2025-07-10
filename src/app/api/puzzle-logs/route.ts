@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase'
 import { logger } from '@/lib/utils'
 import type { CreatePuzzleLogRequest } from '@/lib/supabase'
+import { createPuzzleLogFeedItems } from '@/lib/activity-feed'
 
 // ============================
 // POST /api/puzzle-logs
@@ -97,6 +98,21 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('✅ Updated existing puzzle log:', updatedLog.id)
+
+      // Create feed items for this activity (async, don't wait for it)
+      createPuzzleLogFeedItems(
+        userData.id,
+        existingLog.id,
+        puzzleId,
+        status,
+        undefined, // We don't track old status in this API
+        progressPercentage || (status === 'completed' ? 100 : 0),
+        timeSpent,
+        photos
+      ).catch(error => {
+        console.error('⚠️ Failed to create feed items:', error)
+      })
+
       return NextResponse.json({ success: true, log: updatedLog }, { status: 200 })
     }
 
@@ -140,6 +156,20 @@ export async function POST(request: NextRequest) {
     }
 
     logger.success('Puzzle log created successfully:', newLog.id)
+
+    // Create feed items for this activity (async, don't wait for it)
+    createPuzzleLogFeedItems(
+      userData.id,
+      newLog.id,
+      puzzleId,
+      status,
+      undefined, // no old status for new logs
+      progressPercentage || (status === 'completed' ? 100 : 0),
+      timeSpent,
+      photos
+    ).catch(error => {
+      console.error('⚠️ Failed to create feed items:', error)
+    })
 
     // Transform the response to match our UserPuzzle type
     const response = {

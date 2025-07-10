@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase'
+import { createPuzzleLogFeedItems } from '@/lib/activity-feed'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -60,6 +61,7 @@ export async function PATCH(request: NextRequest) {
 
     if (existingLog) {
       // Update existing puzzle log
+      const oldStatus = existingLog.status
       const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString()
@@ -93,6 +95,20 @@ export async function PATCH(request: NextRequest) {
       }
 
       console.log('✅ Updated puzzle log status:', updatedLog.id, 'to', newStatus)
+
+      // Create feed items for this activity (async, don't wait for it)
+      createPuzzleLogFeedItems(
+        userData.id,
+        existingLog.id,
+        puzzleId,
+        newStatus,
+        oldStatus,
+        updateData.progress_percentage,
+        completionTime
+      ).catch(error => {
+        console.error('⚠️ Failed to create feed items:', error)
+      })
+
       return NextResponse.json({ success: true, log: updatedLog }, { status: 200 })
 
     } else {
@@ -130,6 +146,20 @@ export async function PATCH(request: NextRequest) {
       }
 
       console.log('✅ Created new puzzle log:', newLog.id, 'with status', newStatus)
+
+      // Create feed items for this activity (async, don't wait for it)
+      createPuzzleLogFeedItems(
+        userData.id,
+        newLog.id,
+        puzzleId,
+        newStatus,
+        undefined, // no old status for new logs
+        logData.progress_percentage,
+        completionTime
+      ).catch(error => {
+        console.error('⚠️ Failed to create feed items:', error)
+      })
+
       return NextResponse.json({ success: true, log: newLog }, { status: 201 })
     }
 

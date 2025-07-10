@@ -2,7 +2,7 @@
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { UserPuzzle, UserPuzzleStatus } from '@/lib/supabase'
-import { Layers, Heart, Archive, PlayCircle, CheckCircle, XCircle } from 'lucide-react'
+import { Layers, Heart, Archive, PlayCircle, CheckCircle, XCircle, Activity } from 'lucide-react'
 import { ViewToggle } from './view-toggle'
 
 interface StatusTabsProps {
@@ -67,18 +67,29 @@ export function StatusTabs({ activeTab, onTabChange, puzzles, view, onViewChange
       count: counts.abandoned, 
       colors: 'from-gray-500 to-gray-600 border-gray-200 text-gray-700' 
     },
+    { 
+      key: 'activity', 
+      label: 'My Activity', 
+      icon: Activity, 
+      count: '∞', 
+      colors: 'from-violet-500 to-violet-600 border-violet-200 text-violet-700' 
+    },
   ]
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-700">Puzzle Collection</h2>
-        <ViewToggle view={view} onViewChange={onViewChange} />
+        <h2 className="text-xl font-semibold text-slate-700">
+          {activeTab === 'activity' ? 'My Activity' : 'Puzzle Collection'}
+        </h2>
+        {activeTab !== 'activity' && (
+          <ViewToggle view={view} onViewChange={onViewChange} />
+        )}
       </div>
       
       {/* Premium Status Tabs */}
       <div className="glass-card border-white/30 rounded-xl p-2">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1.5">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key
             const [fromColor, toColor, borderColor, textColor] = tab.colors.split(' ')

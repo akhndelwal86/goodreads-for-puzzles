@@ -108,16 +108,16 @@ export function RatingModal({ isOpen, onClose, puzzle, onSubmit }: RatingModalPr
         console.log('🎯 [DEBUG] Using default API call')
         
         const requestData = {
-          puzzleId: puzzle.id,
+          puzzle_id: puzzle.id,
           rating: formData.rating,
-          reviewText: formData.reviewText,
-          looseFit: formData.looseFit,
-          falseFit: formData.falseFit,
-          shapeVersatility: formData.shapeVersatility,
+          review_text: formData.reviewText,
+          loose_fit: formData.looseFit,
+          false_fit: formData.falseFit,
+          shape_versatility: formData.shapeVersatility,
           finish: formData.finish,
-          pickTest: formData.pickTest,
-          pickTestExplanation: formData.pickTestExplanation,
-          otherMetadataNotes: formData.otherNotes
+          pick_test: formData.pickTest,
+          pick_test_explanation: formData.pickTestExplanation,
+          other_metadata_notes: formData.otherNotes
         }
         
         console.log('🎯 [DEBUG] Request payload:', requestData)

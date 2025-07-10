@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { auth } from '@clerk/nextjs/server'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient()
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '8')
+    const feedType = searchParams.get('type') || 'all'
+    const { userId: clerkUserId } = await auth()
 
-    // Fetch recent activity from feed_items with user and target data
-    const { data: feedItems, error: feedError } = await supabase
+    // Build base query
+    let query = supabase
       .from('feed_items')
       .select(`
         id,
@@ -17,6 +20,7 @@ export async function GET(request: NextRequest) {
         image_url,
         media_urls,
         created_at,
+        user_id,
         user:users!user_id(
           id,
           username,
@@ -42,9 +46,55 @@ export async function GET(request: NextRequest) {
           status,
           solve_time_seconds,
           difficulty_rating,
-          user_rating
+          user_rating,
+          progress_percentage
         )
       `)
+
+    // Apply filters based on feed type
+    if (feedType === 'following' && clerkUserId) {
+      // Get the user's internal ID
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('clerk_id', clerkUserId)
+        .single()
+
+      if (userData) {
+        // Get users that the current user follows
+        const { data: followingUsers } = await supabase
+          .from('follows')
+          .select('followed_user_id')
+          .eq('follower_id', userData.id)
+
+        const followingUserIds = followingUsers?.map(f => f.followed_user_id) || []
+        
+        if (followingUserIds.length > 0) {
+          query = query.in('user_id', followingUserIds)
+        } else {
+          // If not following anyone, return empty result
+          return NextResponse.json({ activities: [] })
+        }
+      }
+    } else if (feedType === 'personal' && clerkUserId) {
+      // Get the user's internal ID
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('clerk_id', clerkUserId)
+        .single()
+
+      if (userData) {
+        query = query.eq('user_id', userData.id)
+      } else {
+        // If user not found, return empty result
+        return NextResponse.json({ activities: [] })
+      }
+    }
+    // For 'all' type, no additional filtering needed
+
+    // Execute the query
+    const { data: feedItems, error: feedError } = await query
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -86,13 +136,6 @@ export async function GET(request: NextRequest) {
 
     // Format activities for the frontend
     const activities = feedItems?.map(item => {
-      // Debug logging - check if user is array or object
-      console.log('🔍 Debug user data for activity:', item.id, {
-        raw_user: item.user,
-        is_array: Array.isArray(item.user),
-        username_array: item.user?.[0]?.username,
-        email_array: item.user?.[0]?.email
-      })
       
       // Handle both array and object cases
       const userData = Array.isArray(item.user) ? item.user[0] : item.user
@@ -114,42 +157,57 @@ export async function GET(request: NextRequest) {
       // Handle different activity types
       switch (item.type) {
         case 'review':
+          const reviewPuzzle = Array.isArray(item.target_puzzle) ? item.target_puzzle[0] : item.target_puzzle
+          const reviewBrand = reviewPuzzle?.brand ? (Array.isArray(reviewPuzzle.brand) ? reviewPuzzle.brand[0] : reviewPuzzle.brand) : null
+          const reviewData = Array.isArray(item.target_review) ? item.target_review[0] : item.target_review
+          
           return {
             ...baseActivity,
-            puzzle: item.target_puzzle?.[0] ? {
-              id: item.target_puzzle[0].id,
-              title: item.target_puzzle[0].title,
-              brand: item.target_puzzle[0].brand?.[0]?.name || 'Unknown Brand',
-              image: item.target_puzzle[0].image_url || '/placeholder-puzzle.svg',
-              pieceCount: item.target_puzzle[0].piece_count || 0,
-              difficulty: getDifficultyFromRating(item.target_review?.[0]?.rating),
-              rating: item.target_review?.[0]?.rating || 0
+            puzzle: reviewPuzzle ? {
+              id: reviewPuzzle.id,
+              title: reviewPuzzle.title,
+              brand: reviewBrand?.name || 'Unknown Brand',
+              image: reviewPuzzle.image_url || '/placeholder-puzzle.svg',
+              pieceCount: reviewPuzzle.piece_count || 0,
+              difficulty: getDifficultyFromRating(reviewData?.rating),
+              rating: reviewData?.rating || 0
             } : null,
             stats: {
               hours: 0, // Will be calculated from solve time if available
               likes: likeCounts.get(item.id) || 0,
               comments: commentCounts.get(item.id) || 0
+            },
+            metadata: {
+              rating: reviewData?.rating
             }
           }
 
         case 'solved':
+          const solvedPuzzle = Array.isArray(item.target_puzzle) ? item.target_puzzle[0] : item.target_puzzle
+          const solvedBrand = solvedPuzzle?.brand ? (Array.isArray(solvedPuzzle.brand) ? solvedPuzzle.brand[0] : solvedPuzzle.brand) : null
+          const solvedLog = Array.isArray(item.target_puzzle_log) ? item.target_puzzle_log[0] : item.target_puzzle_log
+          
           return {
             ...baseActivity,
             type: 'completion',
-            puzzle: item.target_puzzle?.[0] ? {
-              id: item.target_puzzle[0].id,
-              title: item.target_puzzle[0].title,
-              brand: item.target_puzzle[0].brand?.[0]?.name || 'Unknown Brand',
-              image: item.target_puzzle[0].image_url || '/placeholder-puzzle.svg',
-              pieceCount: item.target_puzzle[0].piece_count || 0,
-              difficulty: getDifficultyFromRating(item.target_puzzle_log?.[0]?.difficulty_rating),
-              rating: item.target_puzzle_log?.[0]?.user_rating || 0
+            puzzle: solvedPuzzle ? {
+              id: solvedPuzzle.id,
+              title: solvedPuzzle.title,
+              brand: solvedBrand?.name || 'Unknown Brand',
+              image: solvedPuzzle.image_url || '/placeholder-puzzle.svg',
+              pieceCount: solvedPuzzle.piece_count || 0,
+              difficulty: getDifficultyFromRating(solvedLog?.difficulty_rating),
+              rating: solvedLog?.user_rating || 0
             } : null,
             stats: {
-              hours: item.target_puzzle_log?.[0]?.solve_time_seconds ? 
-                Math.round(item.target_puzzle_log[0].solve_time_seconds / 3600) : 0,
+              hours: solvedLog?.solve_time_seconds ? 
+                Math.round(solvedLog.solve_time_seconds / 3600) : 0,
               likes: likeCounts.get(item.id) || 0,
               comments: commentCounts.get(item.id) || 0
+            },
+            metadata: {
+              rating: solvedLog?.user_rating,
+              solveTime: solvedLog?.solve_time_seconds ? formatSolveTime(solvedLog.solve_time_seconds) : null
             }
           }
 
@@ -182,23 +240,32 @@ export async function GET(request: NextRequest) {
             }
           } else {
             // Regular puzzle log activity
+            const logPuzzle = Array.isArray(item.target_puzzle) ? item.target_puzzle[0] : item.target_puzzle
+            const logBrand = logPuzzle?.brand ? (Array.isArray(logPuzzle.brand) ? logPuzzle.brand[0] : logPuzzle.brand) : null
+            const logData = Array.isArray(item.target_puzzle_log) ? item.target_puzzle_log[0] : item.target_puzzle_log
+            
             return {
               ...baseActivity,
               type: 'completion',
-              puzzle: item.target_puzzle?.[0] ? {
-                id: item.target_puzzle[0].id,
-                title: item.target_puzzle[0].title,
-                brand: item.target_puzzle[0].brand?.[0]?.name || 'Unknown Brand',
-                image: item.target_puzzle[0].image_url || '/placeholder-puzzle.svg',
-                pieceCount: item.target_puzzle[0].piece_count || 0,
-                difficulty: getDifficultyFromRating(item.target_puzzle_log?.[0]?.difficulty_rating),
-                rating: item.target_puzzle_log?.[0]?.user_rating || 0
+              puzzle: logPuzzle ? {
+                id: logPuzzle.id,
+                title: logPuzzle.title,
+                brand: logBrand?.name || 'Unknown Brand',
+                image: logPuzzle.image_url || '/placeholder-puzzle.svg',
+                pieceCount: logPuzzle.piece_count || 0,
+                difficulty: getDifficultyFromRating(logData?.difficulty_rating),
+                rating: logData?.user_rating || 0
               } : null,
               stats: {
-                hours: item.target_puzzle_log?.[0]?.solve_time_seconds ? 
-                  Math.round(item.target_puzzle_log[0].solve_time_seconds / 3600) : 0,
+                hours: logData?.solve_time_seconds ? 
+                  Math.round(logData.solve_time_seconds / 3600) : 0,
                 likes: likeCounts.get(item.id) || 0,
                 comments: commentCounts.get(item.id) || 0
+              },
+              metadata: {
+                progress: logData?.progress_percentage,
+                rating: logData?.user_rating,
+                solveTime: logData?.solve_time_seconds ? formatSolveTime(logData.solve_time_seconds) : null
               }
             }
           }
@@ -250,4 +317,18 @@ function getDifficultyFromRating(rating?: number): string {
   if (rating <= 2) return 'Easy'
   if (rating <= 4) return 'Medium'
   return 'Hard'
+}
+
+// Helper function to format solve time
+function formatSolveTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  } else if (minutes > 0) {
+    return `${minutes}m`
+  } else {
+    return '< 1m'
+  }
 } 
