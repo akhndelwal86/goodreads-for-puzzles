@@ -195,3 +195,11 @@ src/components/
 - Optimize bundle size with proper imports
 
 This architecture supports a rich social platform for puzzle enthusiasts with comprehensive tracking, discovery, and community features.
+
+# Next.js Development Guidelines
+- Always stop the dev server before making config changes
+- Never modify next.config.js, tailwind.config.ts, and package.json simultaneously
+- After package installations, always restart the dev server
+- Use 'npm run fresh' when experiencing cache issues
+- Disable Turbopack in development to prevent cache corruption
+- Test builds regularly with 'npm run build'

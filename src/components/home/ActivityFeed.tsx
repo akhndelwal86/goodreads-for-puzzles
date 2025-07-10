@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Heart, MessageCircle, Star, CheckCircle, UserPlus, MessageSquare, Loader2 } from 'lucide-react'
 import { LikeButton } from '@/components/community/like-button'
 import { CommentSection } from '@/components/community/comment-section'
+import { FollowButton } from '@/components/shared/follow-button'
+import Link from 'next/link'
 
 export interface Activity {
   id: string
   type: 'review' | 'completion' | 'follow' | 'like' | 'post'
   user: {
+    id: string
     name: string
     username: string
     avatar: string
@@ -106,8 +109,9 @@ export default function CommunityActivityFeed({
       id: '1',
       type: 'review',
       user: {
-        name: 'Sarah Johnson',
-        username: 'sarahj',
+        id: 'user_2example1',
+        name: 'Puzzle Master',
+        username: 'puzzlemaster',
         avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
@@ -131,8 +135,9 @@ export default function CommunityActivityFeed({
       id: '2',
       type: 'completion',
       user: {
-        name: 'Mike Rodriguez',
-        username: 'mikerod',
+        id: 'user_2example2',
+        name: 'Jigsaw Jenny',
+        username: 'jigsawjenny',
         avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
@@ -151,8 +156,9 @@ export default function CommunityActivityFeed({
       id: '3',
       type: 'follow',
       user: {
-        name: 'Alex Chen',
-        username: 'alexchen',
+        id: 'user_2example3',
+        name: 'Puzzle Pro',
+        username: 'puzzlepro',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face'
       },
       content: 'started following Sarah Johnson',
@@ -162,8 +168,9 @@ export default function CommunityActivityFeed({
       id: '4',
       type: 'review',
       user: {
-        name: 'Emma Wilson',
-        username: 'emmaw',
+        id: 'user_2example4',
+        name: 'Art Lover',
+        username: 'artlover99',
         avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
@@ -187,8 +194,9 @@ export default function CommunityActivityFeed({
       id: '5',
       type: 'completion',
       user: {
-        name: 'David Park',
-        username: 'davidp',
+        id: 'user_puzzle_master_2024',
+        name: 'Sarah Puzzle Master',
+        username: 'puzzle_master_sarah',
         avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=50&h=50&fit=crop&crop=face'
       },
       puzzle: {
@@ -225,21 +233,34 @@ export default function CommunityActivityFeed({
       <div className="bg-white hover:bg-slate-50/50 transition-all duration-300 border-b border-slate-100 last:border-b-0 hover:shadow-sm">
         <div className="p-4">
           <div className="flex items-start space-x-3">
-            <Avatar className="w-12 h-12 ring-2 ring-white shadow-sm hover:shadow-md transition-shadow duration-200 hover:scale-105 transform">
-              <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
-              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium">
-                {activity.user.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
+            <Link href={`/users/${activity.user.id}`}>
+              <Avatar className="w-12 h-12 ring-2 ring-white shadow-sm hover:shadow-md transition-shadow duration-200 hover:scale-105 transform cursor-pointer">
+                <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-medium">
+                  {activity.user.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
             
             <div className="flex-1 min-w-0">
               {/* User Header */}
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-slate-900 hover:text-violet-600 cursor-pointer transition-colors duration-200">
-                  {activity.user.name}
-                </span>
-                <span className="text-slate-400">·</span>
-                <span className="text-slate-500 text-sm hover:text-slate-600 transition-colors duration-200">{activity.timestamp}</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center space-x-2">
+                  <Link 
+                    href={`/users/${activity.user.id}`}
+                    className="font-semibold text-slate-900 hover:text-violet-600 cursor-pointer transition-colors duration-200"
+                  >
+                    {activity.user.name}
+                  </Link>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-slate-500 text-sm hover:text-slate-600 transition-colors duration-200">{activity.timestamp}</span>
+                </div>
+                <FollowButton 
+                  userId={activity.user.id} 
+                  size="sm"
+                  variant="outline"
+                  className="text-xs px-2 py-1"
+                />
               </div>
               
               {/* Activity Description */}

@@ -8,12 +8,14 @@ import CommunityActivityFeed from '@/components/home/ActivityFeed'
 import { PostCreationBox } from '@/components/community/post-creation-box'
 import { SidebarStats } from '@/components/community/sidebar-stats'
 import { SidebarLeaderboards } from '@/components/community/sidebar-leaderboards'
+import { FollowProvider } from '@/contexts/follow-context'
 
 // Activity interface
 interface Activity {
   id: string
   type: 'review' | 'completion' | 'follow' | 'like' | 'post'
   user: {
+    id: string
     name: string
     username: string
     avatar: string
@@ -87,7 +89,8 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
+    <FollowProvider>
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -149,6 +152,7 @@ export default function CommunityPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </FollowProvider>
   )
 }

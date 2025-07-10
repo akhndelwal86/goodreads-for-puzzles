@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { 
   Menu, Home, Search, BookOpen, User, Plus, Users, Building2, 
-  ChevronDown, Grid3X3, List, FolderOpen 
+  ChevronDown, Grid3X3, List, FolderOpen, MessageSquare, UserSearch 
 } from 'lucide-react'
 
 export function NavigationBar() {
@@ -22,9 +22,10 @@ export function NavigationBar() {
 
   const navigationItems = [
     { href: '/', label: 'Home', icon: Home },
+    { href: '/community', label: 'Feeds', icon: MessageSquare },
     { href: '/my-puzzles', label: 'My Puzzles', icon: BookOpen },
-    { href: '/community', label: 'Community', icon: Users },
-    { href: '/brands', label: 'Brands', icon: Building2 },
+    { href: '/discover', label: 'Community', icon: UserSearch },
+    // { href: '/brands', label: 'Brands', icon: Building2 }, // Commented out for now
   ]
 
   const browseDropdownItems = [
@@ -49,23 +50,21 @@ export function NavigationBar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200"
-              >
-                <item.icon className="w-4 h-4" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            ))}
+            {/* Home */}
+            <Link
+              href="/"
+              className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </Link>
 
             {/* Browse Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-0 h-auto font-medium hover:bg-transparent"
+                  className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-0 h-auto hover:bg-transparent"
                 >
                   <Search className="w-4 h-4" />
                   <span>Browse</span>
@@ -86,6 +85,18 @@ export function NavigationBar() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Rest of navigation items (skipping Home since we handled it above) */}
+            {navigationItems.slice(1).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center space-x-1 text-gray-600 hover:text-violet-600 transition-colors duration-200"
+              >
+                <item.icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
 
           {/* Right side */}
@@ -141,13 +152,13 @@ export function NavigationBar() {
                       className="flex items-center space-x-3 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-50"
                     >
                       <item.icon className="w-5 h-5" />
-                      <span className="font-medium text-lg">{item.label}</span>
+                      <span className="text-lg">{item.label}</span>
                     </Link>
                   ))}
                   
                   {/* Mobile Browse Section */}
                   <div className="border-t pt-4">
-                    <div className="flex items-center space-x-3 text-gray-800 font-semibold p-2">
+                    <div className="flex items-center space-x-3 text-gray-800 p-2">
                       <Search className="w-5 h-5" />
                       <span className="text-lg">Browse</span>
                     </div>
@@ -159,7 +170,7 @@ export function NavigationBar() {
                         className="flex items-center space-x-3 text-gray-600 hover:text-violet-600 transition-colors duration-200 p-2 pl-8 rounded-lg hover:bg-gray-50"
                       >
                         <item.icon className="w-4 h-4" />
-                        <span className="font-medium">{item.label}</span>
+                        <span>{item.label}</span>
                       </Link>
                     ))}
                   </div>

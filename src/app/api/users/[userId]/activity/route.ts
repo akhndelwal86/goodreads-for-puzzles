@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
   try {
     const supabase = createServiceClient()
+    const { userId: targetUserId } = await params
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '8')
+    const limit = parseInt(searchParams.get('limit') || '10')
 
-    // Fetch recent activity from feed_items with user and target data
+    // First, get the user's database ID from their clerk_id
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_id', targetUserId)
+      .single()
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Fetch user's recent activity from feed_items
     const { data: feedItems, error: feedError } = await supabase
       .from('feed_items')
       .select(`
@@ -45,12 +60,13 @@ export async function GET(request: NextRequest) {
           user_rating
         )
       `)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit)
 
     if (feedError) {
-      console.error('Error fetching feed items:', feedError)
-      return NextResponse.json({ error: 'Failed to fetch activity feed' }, { status: 500 })
+      console.error('Error fetching user feed items:', feedError)
+      return NextResponse.json({ error: 'Failed to fetch user activity' }, { status: 500 })
     }
 
     // Get like and comment counts for all feed items
@@ -86,15 +102,7 @@ export async function GET(request: NextRequest) {
 
     // Format activities for the frontend
     const activities = feedItems?.map(item => {
-      // Debug logging - check if user is array or object
-      console.log('🔍 Debug user data for activity:', item.id, {
-        raw_user: item.user,
-        is_array: Array.isArray(item.user),
-        username_array: item.user?.[0]?.username,
-        email_array: item.user?.[0]?.email
-      })
-      
-      // Handle both array and object cases
+      // Handle both array and object cases for user data
       const userData = Array.isArray(item.user) ? item.user[0] : item.user
       
       const baseActivity = {
@@ -126,7 +134,7 @@ export async function GET(request: NextRequest) {
               rating: item.target_review?.[0]?.rating || 0
             } : null,
             stats: {
-              hours: 0, // Will be calculated from solve time if available
+              hours: 0,
               likes: likeCounts.get(item.id) || 0,
               comments: commentCounts.get(item.id) || 0
             }
@@ -167,7 +175,7 @@ export async function GET(request: NextRequest) {
           }
 
         case 'puzzle_log':
-          // Check if this is actually a user post (has text content) from before we had 'post' type
+          // Check if this is actually a user post (has text content)
           if (item.text && item.text.trim()) {
             return {
               ...baseActivity,
@@ -203,13 +211,6 @@ export async function GET(request: NextRequest) {
             }
           }
 
-        case 'add_to_list':
-          return {
-            ...baseActivity,
-            type: 'follow', // Map to existing UI type for now
-            content: item.text || 'added a puzzle to their list'
-          }
-
         default:
           return baseActivity
       }
@@ -218,7 +219,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ activities })
 
   } catch (error) {
-    console.error('Error in activity feed API:', error)
+    console.error('Error in user activity API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -250,4 +251,4 @@ function getDifficultyFromRating(rating?: number): string {
   if (rating <= 2) return 'Easy'
   if (rating <= 4) return 'Medium'
   return 'Hard'
-} 
+}

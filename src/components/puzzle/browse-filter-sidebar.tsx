@@ -152,7 +152,7 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
             <SlidersHorizontal className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold gradient-text">Advanced Filters</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Advanced Filters</h2>
             <p className="text-sm text-slate-500">
               {getActiveFilterCount()} filter{getActiveFilterCount() !== 1 ? 's' : ''} active
             </p>
@@ -436,7 +436,7 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, onClearFilters, 
           </SheetTrigger>
           <SheetContent side="right" className="w-80 overflow-y-auto bg-gradient-to-br from-slate-50 via-violet-50/30 to-emerald-50/20">
             <SheetHeader>
-              <SheetTitle className="gradient-text">Advanced Filters</SheetTitle>
+              <SheetTitle className="text-slate-900">Advanced Filters</SheetTitle>
             </SheetHeader>
             <div className="mt-6">
               {filterContent}
