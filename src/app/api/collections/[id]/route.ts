@@ -4,10 +4,16 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const resolvedParams = await params
+    const id = resolvedParams.id
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
+    }
+
     const supabase = createServiceClient()
 
     // Get collection with detailed information
@@ -112,10 +118,16 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const resolvedParams = await params
+    const id = resolvedParams.id
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
+    }
+
     const { userId: clerkUserId } = await auth()
     
     if (!clerkUserId) {
@@ -199,10 +211,16 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const resolvedParams = await params
+    const id = resolvedParams.id
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
+    }
+
     const { userId: clerkUserId } = await auth()
     
     if (!clerkUserId) {

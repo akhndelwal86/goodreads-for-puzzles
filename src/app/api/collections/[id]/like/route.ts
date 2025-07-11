@@ -4,14 +4,20 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: collectionId } = params
     const { userId: clerkUserId } = await auth()
     
     if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const resolvedParams = await params
+    const collectionId = resolvedParams.id
+    
+    if (!collectionId) {
+      return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
     }
 
     const supabase = createServiceClient()
@@ -88,14 +94,20 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: collectionId } = params
     const { userId: clerkUserId } = await auth()
     
     if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const resolvedParams = await params
+    const collectionId = resolvedParams.id
+    
+    if (!collectionId) {
+      return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
     }
 
     const supabase = createServiceClient()
