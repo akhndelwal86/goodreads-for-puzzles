@@ -43,7 +43,6 @@ export async function createFeedItem(options: CreateFeedItemOptions) {
       return { success: false, error }
     }
 
-    console.log('✅ Created feed item:', feedItem.id, 'type:', options.type, 'created_at:', feedItem.created_at)
     return { success: true, feedItem }
 
   } catch (error) {
@@ -65,16 +64,6 @@ export async function createPuzzleLogFeedItems(
   solveTimeSeconds?: number,
   mediaUrls?: string[]
 ) {
-  console.log('🎯 createPuzzleLogFeedItems called with:', {
-    userId,
-    puzzleLogId,
-    puzzleId,
-    status,
-    oldStatus,
-    progressPercentage,
-    hasMediaUrls: mediaUrls && mediaUrls.length > 0,
-    mediaUrlsCount: mediaUrls?.length || 0
-  })
   
   const results = []
 
@@ -224,7 +213,6 @@ export async function createPuzzleLogFeedItems(
       text = `📸 Shared new photos of this puzzle`
     }
     
-    console.log('📸 Creating feed item for photo update:', text)
     
     const result = await createFeedItem({
       userId,
@@ -251,7 +239,6 @@ export async function createPuzzleLogFeedItems(
       text = `🚀 Getting started! ${progressPercentage}% complete on this puzzle`
     }
     
-    console.log('📈 Creating feed item for progress update:', text)
     
     const result = await createFeedItem({
       userId,

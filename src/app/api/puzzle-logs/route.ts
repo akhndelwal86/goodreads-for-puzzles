@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (fetchError) {
-        console.log('❌ Error fetching full existing log:', fetchError)
         return NextResponse.json({ error: 'Failed to fetch existing puzzle log' }, { status: 500 })
       }
 
@@ -95,11 +94,6 @@ export async function POST(request: NextRequest) {
       const newPhotos = photos || []
       const combinedPhotos = [...existingPhotos, ...newPhotos]
       
-      console.log('📸 Photo handling:', {
-        existingPhotosCount: existingPhotos.length,
-        newPhotosCount: newPhotos.length,
-        totalPhotosAfter: combinedPhotos.length
-      })
       
       // Update existing log instead of creating new one
       const { data: updatedLog, error: updateError } = await supabase
@@ -120,11 +114,8 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (updateError) {
-        console.log('❌ Error updating puzzle log:', updateError)
         return NextResponse.json({ error: 'Failed to update puzzle log' }, { status: 500 })
       }
-
-      console.log('✅ Updated existing puzzle log:', updatedLog.id)
 
       // Determine if this update warrants a new feed item
       const hasNewPhotos = newPhotos && newPhotos.length > 0
@@ -141,26 +132,9 @@ export async function POST(request: NextRequest) {
         hasNewRating           // New rating always deserves a feed item
       )
       
-      console.log('🔍 Feed item criteria check:', {
-        hasNewPhotos,
-        hasSignificantProgress,
-        hasNewNotes,
-        hasNewRating,
-        isCompletion,
-        willCreateFeedItem: isSignificantProgressUpdate
-      })
 
       // Create feed items for significant updates (async, don't wait for it)
       if (isSignificantProgressUpdate) {
-        console.log('📝 Creating new feed item for significant update:', {
-          hasPhotos: photos && photos.length > 0,
-          statusValue: status,
-          progressIncrease: newProgress - currentProgress,
-          hasNotes: notes && notes.trim().length > 0,
-          hasRating: rating && rating > 0,
-          currentProgress,
-          newProgress
-        })
         createPuzzleLogFeedItems(
           userData.id,
           existingLog.id,
@@ -170,19 +144,11 @@ export async function POST(request: NextRequest) {
           newProgress,
           timeSpent,
           newPhotos  // Pass only the new photos for the feed item
-        ).catch(error => {
-          console.error('⚠️ Failed to create feed items:', error)
+        ).catch(() => {
+          // Silently handle feed item creation errors
         })
       } else {
-        console.log('⏸️ Skipping feed item creation for minor update:', {
-          hasPhotos: photos && photos.length > 0,
-          statusValue: status,
-          progressIncrease: newProgress - currentProgress,
-          hasNotes: notes && notes.trim().length > 0,
-          hasRating: rating && rating > 0,
-          currentProgress,
-          newProgress
-        })
+        // Skipping feed item creation for minor update
       }
 
       return NextResponse.json({ success: true, log: updatedLog }, { status: 200 })

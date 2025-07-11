@@ -61,7 +61,6 @@ export async function GET(request: NextRequest) {
           })
         }
       } catch (tableError) {
-        console.log(`Table ${tableName} not accessible:`, tableError)
         // Skip tables we can't access
       }
     }
@@ -85,7 +84,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error in schema API:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -150,7 +149,6 @@ async function getTableColumns(supabase: any, tableName: string) {
     return columns
     
   } catch (error) {
-    console.error(`Error getting columns for ${tableName}:`, error)
     return []
   }
 }
@@ -215,7 +213,6 @@ async function getTableInfo(supabase: any, tableName: string) {
       .select('*', { count: 'exact', head: true })
     count = result.count || 0
   } catch (error) {
-    console.log(`Could not get count for ${tableName}:`, error)
     count = 0
   }
   
