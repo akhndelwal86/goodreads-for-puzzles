@@ -43,6 +43,24 @@ export interface User {
     updated_at: string;
     tags?: Tag[]; // For joined queries
     stats?: PuzzleStats; // For aggregated data
+    
+    // New specification fields
+    finished_size_width?: number | null;
+    finished_size_height?: number | null;
+    age_range_min?: number | null;
+    age_range_max?: number | null;
+    surface_finish?: string | null;
+    sku?: string | null;
+    included_items?: string[] | null;
+    key_features?: Array<{
+      title: string;
+      description: string;
+      icon: string;
+    }> | null;
+    box_width?: number | null;
+    box_height?: number | null;
+    box_depth?: number | null;
+    weight_grams?: number | null;
   }
   
   export interface PuzzleStats {

@@ -140,8 +140,8 @@ export default function UserProfilePage() {
   const { user, stats } = profileData
 
   // Safe access with defaults
-  const safeUser = user || {}
-  const safeStats = stats || {}
+  const safeUser: Partial<User> = user || {}
+  const safeStats: Partial<UserStats> = stats || {}
   const displayName = safeUser.username || safeUser.email?.split('@')[0] || 'Unknown User'
   const avatarUrl = safeUser.avatar_url || ''
   const userBio = safeUser.bio || null
@@ -230,7 +230,7 @@ export default function UserProfilePage() {
                       <span className="text-slate-600">Reviews</span>
                       <span className="font-medium text-sm">{safeStats.reviews_count || 0}</span>
                     </div>
-                    {safeStats.avg_rating > 0 && (
+                    {safeStats.avg_rating && safeStats.avg_rating > 0 && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Avg Rating</span>
                         <div className="flex items-center space-x-1">
@@ -341,7 +341,7 @@ export default function UserProfilePage() {
                                       <Avatar className="w-10 h-10 cursor-pointer hover:scale-105 transition-transform">
                                         <AvatarImage src={followerUser.avatar_url || ''} alt={followerUser.username || 'User'} />
                                         <AvatarFallback>
-                                          {(followerUser.username || followerUser.email)?.charAt(0).toUpperCase()}
+                                          {(followerUser.username || followerUser.email || 'U')?.charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                       </Avatar>
                                     </Link>
@@ -350,7 +350,7 @@ export default function UserProfilePage() {
                                         href={`/users/${followerUser.clerk_id}`}
                                         className="text-sm text-slate-900 hover:text-violet-600 transition-colors"
                                       >
-                                        {followerUser.username || followerUser.email.split('@')[0]}
+                                        {followerUser.username || followerUser.email?.split('@')[0] || 'User'}
                                       </Link>
                                       <p className="text-sm text-slate-500">
                                         {followerUser.followers_count} followers
@@ -391,7 +391,7 @@ export default function UserProfilePage() {
                                       <Avatar className="w-10 h-10 cursor-pointer hover:scale-105 transition-transform">
                                         <AvatarImage src={followingUser.avatar_url || ''} alt={followingUser.username || 'User'} />
                                         <AvatarFallback>
-                                          {(followingUser.username || followingUser.email)?.charAt(0).toUpperCase()}
+                                          {(followingUser.username || followingUser.email || 'U')?.charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                       </Avatar>
                                     </Link>
@@ -400,7 +400,7 @@ export default function UserProfilePage() {
                                         href={`/users/${followingUser.clerk_id}`}
                                         className="text-sm text-slate-900 hover:text-violet-600 transition-colors"
                                       >
-                                        {followingUser.username || followingUser.email.split('@')[0]}
+                                        {followingUser.username || followingUser.email?.split('@')[0] || 'User'}
                                       </Link>
                                       <p className="text-sm text-slate-500">
                                         {followingUser.followers_count} followers

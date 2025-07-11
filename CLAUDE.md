@@ -203,3 +203,195 @@ This architecture supports a rich social platform for puzzle enthusiasts with co
 - Use 'npm run fresh' when experiencing cache issues
 - Disable Turbopack in development to prevent cache corruption
 - Test builds regularly with 'npm run build'
+
+# Next.js Development Server - Clean & Restart Protocol
+
+## 🔄 Standard Clean & Restart Protocol
+
+Use this when experiencing webpack errors, Fast Refresh issues, or build cache corruption.
+
+### Step 1: Stop Server
+```bash
+pkill -f "next" && sleep 2
+```
+- Kills all Next.js processes
+- Adds sleep to ensure clean termination
+
+### Step 2: Remove Build Caches
+```bash
+rm -rf .next .swc .turbo out dist build node_modules/.cache
+```
+**What each directory is:**
+- `.next` - Next.js build cache (main culprit for webpack errors)
+- `.swc` - SWC compiler cache  
+- `.turbo` - Turbopack cache
+- `out`, `dist`, `build` - Other build output directories
+- `node_modules/.cache` - Node modules cache
+
+### Step 3: Clear npm Cache
+```bash
+npm cache clean --force
+```
+- Clears npm's package cache
+- `--force` ensures thorough cleanup
+
+### Step 4: Restart Development Server
+```bash
+npm run dev
+```
+- Starts fresh server in background
+
+### Step 5: Verify Working
+```bash
+# Test main endpoints (wait 10-15 seconds for startup)
+curl -I http://localhost:3000 | head -3
+curl -I http://localhost:3000/community | head -3
+curl -I http://localhost:3000/api/activity | head -3
+```
+
+---
+
+## 🚨 Nuclear Option - For Severe Corruption
+
+Use this when the standard protocol fails or you see persistent errors.
+
+### Complete Reset Protocol
+```bash
+# 1. Stop server
+pkill -f "next" && sleep 3
+
+# 2. Remove ALL caches and dependencies
+rm -rf .next .swc .turbo out dist build node_modules/.cache
+
+# 3. Remove dependencies (use sudo if permission issues)
+rm -rf node_modules package-lock.json
+# If permission denied: sudo rm -rf node_modules package-lock.json
+
+# 4. Clear caches
+npm cache clean --force
+
+# 5. Fresh install and start
+npm install
+npm run dev
+```
+
+
+---
+
+## ✅ Success Indicators
+
+After cleanup, you should see:
+- **Clean startup**: No webpack errors in logs
+- **HTTP 200 responses**: All test endpoints working
+- **Fast compilation**: Quick subsequent builds
+- **No Fast Refresh warnings**: Smooth hot reloading
+
+---
+
+## 📋 Quick Reference Commands
+
+### Stop Server Only
+```bash
+pkill -f "next"
+```
+
+### Clean Cache Only
+```bash
+rm -rf .next .swc .turbo node_modules/.cache && npm cache clean --force
+```
+
+### Full Reset (One-liner)
+```bash
+pkill -f "next" && rm -rf .next .swc .turbo out dist build node_modules/.cache && npm cache clean --force && npm run dev
+```
+
+### Nuclear Reset (One-liner)
+```bash
+pkill -f "next" && rm -rf .next .swc .turbo out dist build node_modules/.cache node_modules package-lock.json && npm cache clean --force && npm install && npm run dev
+```
+
+---
+
+## 🔧 Why This Works
+
+- **Webpack chunk errors** = `.next` directory corruption
+- **"Fast Refresh reload"** = Build cache inconsistency  
+- **"Cannot find module"** = Module resolution cache corruption
+- **500 errors on static assets** = Build manifest corruption
+
+This protocol resolves **95% of Next.js development server issues** by ensuring a completely clean build state.
+
+---
+
+## 💡 Pro Tips
+
+1. **Always wait 10-15 seconds** after `npm run dev` before testing
+2. **Use `curl` commands** to verify server is responding properly
+3. **Check process list** with `ps aux | grep next` to confirm clean shutdown
+4. **For persistent issues**, try the nuclear option - it's faster than debugging
+5. **Keep this protocol handy** - you'll use it often in Next.js development!
+
+---
+
+## 🚀 Ready Commands for Copy-Paste
+
+**Standard Clean & Restart:**
+```bash
+pkill -f "next" && sleep 2 && rm -rf .next .swc .turbo out dist build node_modules/.cache && npm cache clean --force && npm run dev
+```
+
+**Nuclear Reset:**
+```bash
+pkill -f "next" && sleep 3 && rm -rf .next .swc .turbo out dist build node_modules/.cache node_modules package-lock.json && npm cache clean --force && npm install && npm run dev
+```
+
+---
+
+## ⚠️ CRITICAL: Claude Code Timeout Issue
+
+**IMPORTANT FOR CLAUDE CODE USAGE:**
+
+When using Claude Code's Bash tool to start the development server:
+
+### The Problem
+- The Bash tool has a timeout mechanism (default 2 minutes, max 10 minutes)
+- `npm run dev` is a long-running process that needs to stay active
+- When the timeout expires, it kills the Next.js server process
+- This makes it appear the server is "running" when it's actually terminated
+
+### The Solution
+1. **Use one-liner commands** that complete quickly:
+   ```bash
+   pkill -f "next" && sleep 2 && rm -rf .next && npm run dev &
+   ```
+
+2. **For verification, use separate commands:**
+   ```bash
+   # Check if process is running
+   ps aux | grep -E "(next|node)" | grep -v grep
+   
+   # Test HTTP response (wait 15 seconds after start)
+   sleep 15 && curl -s -I http://localhost:3000
+   ```
+
+3. **NEVER rely on timeout-based server starts** - they will fail
+4. **ALWAYS verify with HTTP requests** - don't trust "Ready" messages alone
+5. **Be honest about server status** - if curl returns 000 or error, server is NOT running
+
+### Verification Checklist
+- [ ] `ps aux | grep next` shows active Node.js process
+- [ ] `curl -s -I http://localhost:3000` returns HTTP/1.1 200 or similar
+- [ ] No 500 errors in development logs
+- [ ] Compilation completes without module resolution errors
+
+### Failed Startup Indicators
+- `curl` returns `000` error code
+- No Node.js/Next.js processes in `ps aux`
+- Module resolution errors (missing Supabase modules, etc.)
+- Build cache corruption warnings
+
+**Remember: The development server MUST be running continuously in the background. If commands timeout, the server dies.**
+
+---
+
+#

@@ -68,21 +68,48 @@ export async function POST(request: NextRequest) {
     // Check if log already exists - if it does, update it instead of creating new one
     const { data: existingLog } = await supabase
       .from('puzzle_logs')
-      .select('id')
+      .select('id, progress_percentage')
       .eq('user_id', userData.id)
       .eq('puzzle_id', puzzleId)
       .single()
 
     if (existingLog) {
+      // Get the full existing log to preserve data
+      const { data: fullExistingLog, error: fetchError } = await supabase
+        .from('puzzle_logs')
+        .select('*')
+        .eq('id', existingLog.id)
+        .single()
+
+      if (fetchError) {
+        console.log('❌ Error fetching full existing log:', fetchError)
+        return NextResponse.json({ error: 'Failed to fetch existing puzzle log' }, { status: 500 })
+      }
+
+      // Get current progress to compare with new progress
+      const currentProgress = fullExistingLog.progress_percentage || 0
+      const newProgress = progressPercentage || (status === 'completed' ? 100 : 0)
+      
+      // Preserve existing photos and append new ones
+      const existingPhotos = fullExistingLog.photo_urls || []
+      const newPhotos = photos || []
+      const combinedPhotos = [...existingPhotos, ...newPhotos]
+      
+      console.log('📸 Photo handling:', {
+        existingPhotosCount: existingPhotos.length,
+        newPhotosCount: newPhotos.length,
+        totalPhotosAfter: combinedPhotos.length
+      })
+      
       // Update existing log instead of creating new one
       const { data: updatedLog, error: updateError } = await supabase
         .from('puzzle_logs')
         .update({
           solve_time_seconds: timeSpent,
           note: notes,
-          photo_urls: photos,
+          photo_urls: combinedPhotos,
           video_urls: [],
-          progress_percentage: progressPercentage || (status === 'completed' ? 100 : 0),
+          progress_percentage: newProgress,
           user_rating: rating,
           difficulty_rating: difficulty,
           is_private: isPrivate,
@@ -99,19 +126,64 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Updated existing puzzle log:', updatedLog.id)
 
-      // Create feed items for this activity (async, don't wait for it)
-      createPuzzleLogFeedItems(
-        userData.id,
-        existingLog.id,
-        puzzleId,
-        status,
-        undefined, // We don't track old status in this API
-        progressPercentage || (status === 'completed' ? 100 : 0),
-        timeSpent,
-        photos
-      ).catch(error => {
-        console.error('⚠️ Failed to create feed items:', error)
+      // Determine if this update warrants a new feed item
+      const hasNewPhotos = newPhotos && newPhotos.length > 0
+      const hasSignificantProgress = (newProgress - currentProgress >= 15)
+      const hasNewNotes = notes && notes.trim().length > 0
+      const hasNewRating = rating && rating > 0
+      const isCompletion = status === 'completed'
+      
+      const isSignificantProgressUpdate = (
+        hasNewPhotos ||        // New photos/media always deserve a feed item
+        isCompletion ||        // Completion always deserves a feed item
+        hasSignificantProgress ||  // Significant progress increase (15% or more)
+        hasNewNotes ||         // New notes/content always deserve a feed item
+        hasNewRating           // New rating always deserves a feed item
+      )
+      
+      console.log('🔍 Feed item criteria check:', {
+        hasNewPhotos,
+        hasSignificantProgress,
+        hasNewNotes,
+        hasNewRating,
+        isCompletion,
+        willCreateFeedItem: isSignificantProgressUpdate
       })
+
+      // Create feed items for significant updates (async, don't wait for it)
+      if (isSignificantProgressUpdate) {
+        console.log('📝 Creating new feed item for significant update:', {
+          hasPhotos: photos && photos.length > 0,
+          statusValue: status,
+          progressIncrease: newProgress - currentProgress,
+          hasNotes: notes && notes.trim().length > 0,
+          hasRating: rating && rating > 0,
+          currentProgress,
+          newProgress
+        })
+        createPuzzleLogFeedItems(
+          userData.id,
+          existingLog.id,
+          puzzleId,
+          status,
+          undefined, // We don't track old status in this API
+          newProgress,
+          timeSpent,
+          newPhotos  // Pass only the new photos for the feed item
+        ).catch(error => {
+          console.error('⚠️ Failed to create feed items:', error)
+        })
+      } else {
+        console.log('⏸️ Skipping feed item creation for minor update:', {
+          hasPhotos: photos && photos.length > 0,
+          statusValue: status,
+          progressIncrease: newProgress - currentProgress,
+          hasNotes: notes && notes.trim().length > 0,
+          hasRating: rating && rating > 0,
+          currentProgress,
+          newProgress
+        })
+      }
 
       return NextResponse.json({ success: true, log: updatedLog }, { status: 200 })
     }

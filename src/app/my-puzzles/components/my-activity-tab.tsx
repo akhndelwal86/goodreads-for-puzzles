@@ -332,24 +332,79 @@ export function MyActivityTab() {
                       {activity.media_urls && activity.media_urls.length > 0 && (
                         <div className="mt-3">
                           {activity.media_urls.length === 1 ? (
-                            <div className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                            // Single image - responsive with natural aspect ratio
+                            <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                               <img
                                 src={activity.media_urls[0]}
                                 alt="Progress photo"
-                                className="w-full max-h-36 md:max-h-48 object-cover hover:scale-105 transition-transform duration-300"
+                                className="w-full max-h-80 object-cover hover:scale-105 transition-transform duration-300"
+                                style={{ 
+                                  aspectRatio: 'auto',
+                                  minHeight: '200px' 
+                                }}
+                                onLoad={(e) => {
+                                  const img = e.target as HTMLImageElement
+                                  const aspectRatio = img.naturalWidth / img.naturalHeight
+                                  
+                                  // For very wide images, limit height more
+                                  if (aspectRatio > 2) {
+                                    img.style.maxHeight = '240px'
+                                  }
+                                  // For very tall images, limit height less
+                                  else if (aspectRatio < 0.75) {
+                                    img.style.maxHeight = '400px'
+                                  }
+                                }}
                               />
                             </div>
+                          ) : activity.media_urls.length === 2 ? (
+                            // Two images - side by side with consistent height
+                            <div className="grid grid-cols-2 gap-2">
+                              {activity.media_urls.map((imageUrl, index) => (
+                                <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Progress photo ${index + 1}`}
+                                    className="w-full h-52 object-cover hover:scale-105 transition-transform duration-200"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : activity.media_urls.length === 3 ? (
+                            // Three images - one large, two small
+                            <div className="grid grid-cols-2 gap-2 h-60">
+                              <div className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                <img
+                                  src={activity.media_urls[0]}
+                                  alt="Progress photo 1"
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                                />
+                              </div>
+                              <div className="grid grid-rows-2 gap-2">
+                                {activity.media_urls.slice(1, 3).map((imageUrl, index) => (
+                                  <div key={index + 1} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`Progress photo ${index + 2}`}
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-1.5 md:gap-2">
+                            // Four or more images - 2x2 grid with overflow indicator
+                            <div className="grid grid-cols-2 gap-2">
                               {activity.media_urls.slice(0, 4).map((imageUrl, index) => (
                                 <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                   <img
                                     src={imageUrl}
                                     alt={`Progress photo ${index + 1}`}
-                                    className="w-full h-24 md:h-32 object-cover hover:scale-105 transition-transform duration-200"
+                                    className="w-full h-44 object-cover hover:scale-105 transition-transform duration-200"
                                   />
+                                  {/* Show +N overlay on last image if there are more than 4 images */}
                                   {index === 3 && activity.media_urls && activity.media_urls.length > 4 && (
-                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-semibold text-sm">
+                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-semibold text-lg">
                                       +{activity.media_urls.length - 4}
                                     </div>
                                   )}

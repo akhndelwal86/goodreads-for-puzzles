@@ -78,6 +78,23 @@ interface PuzzleDetail {
       avg_rating: number
       review_count: number
     }
+    // New specification fields
+    finished_size_width?: number
+    finished_size_height?: number
+    age_range_min?: number
+    age_range_max?: number
+    surface_finish?: string
+    sku?: string
+    included_items?: string[]
+    key_features?: Array<{
+      title: string
+      description: string
+      icon: string
+    }>
+    box_width?: number
+    box_height?: number
+    box_depth?: number
+    weight_grams?: number
   }
   communityStats?: {
     timesCompleted: number
@@ -119,6 +136,11 @@ export default function PuzzleDetailPage() {
   const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<any>(null)
   const [relatedPuzzlesLoading, setRelatedPuzzlesLoading] = useState(true)
   const [relatedPuzzlesError, setRelatedPuzzlesError] = useState<string | null>(null)
+  
+  // Browse similar state
+  const [browseSimilarData, setBrowseSimilarData] = useState<any>(null)
+  const [browseSimilarLoading, setBrowseSimilarLoading] = useState(true)
+  const [browseSimilarError, setBrowseSimilarError] = useState<string | null>(null)
 
   useEffect(() => {
     if (params.id) {
@@ -126,6 +148,7 @@ export default function PuzzleDetailPage() {
       fetchActivityData(params.id as string)
       fetchReviewsData(params.id as string)
       fetchRelatedPuzzles(params.id as string)
+      fetchBrowseSimilarData(params.id as string)
     }
   }, [params.id])
 
@@ -215,6 +238,29 @@ export default function PuzzleDetailPage() {
       setRelatedPuzzlesError('Failed to load related puzzles')
     } finally {
       setRelatedPuzzlesLoading(false)
+    }
+  }
+
+  // Fetch browse similar data 
+  const fetchBrowseSimilarData = async (id: string) => {
+    try {
+      setBrowseSimilarLoading(true)
+      setBrowseSimilarError(null)
+      const response = await fetch(`/api/puzzles/browse-similar?puzzleId=${id}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Browse similar API error:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch browse similar data`)
+      }
+      
+      const data = await response.json()
+      setBrowseSimilarData(data)
+    } catch (error) {
+      console.error('Error fetching browse similar data:', error)
+      setBrowseSimilarError(error instanceof Error ? error.message : 'Failed to load browse similar data')
+    } finally {
+      setBrowseSimilarLoading(false)
     }
   }
 
@@ -581,33 +627,43 @@ export default function PuzzleDetailPage() {
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Difficulty</span>
-                          <span className="font-medium text-slate-800">{puzzle.difficulty || 'Intermediate'}</span>
+                          <span className="font-medium text-slate-800">{puzzle.difficulty || '-'}</span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Material</span>
-                          <span className="font-medium text-slate-800">{puzzle.material || 'Premium Cardboard'}</span>
+                          <span className="font-medium text-slate-800">{puzzle.material || '-'}</span>
                         </div>
                       </div>
                       <div className="space-y-3">
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Finished Size</span>
-                          <span className="font-medium text-slate-800">27" × 20"</span>
+                          <span className="font-medium text-slate-800">
+                            {puzzle.finished_size_width && puzzle.finished_size_height 
+                              ? `${puzzle.finished_size_width}" × ${puzzle.finished_size_height}"`
+                              : '-'
+                            }
+                          </span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Age Range</span>
-                          <span className="font-medium text-slate-800">14+ years</span>
+                          <span className="font-medium text-slate-800">
+                            {puzzle.age_range_min && puzzle.age_range_max 
+                              ? `${puzzle.age_range_min}+ years`
+                              : '-'
+                            }
+                          </span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Surface Finish</span>
-                          <span className="font-medium text-slate-800">Anti-glare Matte</span>
+                          <span className="font-medium text-slate-800">{puzzle.surface_finish || '-'}</span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">Average Time</span>
-                          <span className="font-medium text-slate-800">{puzzle.estimated_time || 8}h</span>
+                          <span className="font-medium text-slate-800">{puzzle.estimated_time ? `${puzzle.estimated_time}h` : '-'}</span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-slate-100">
                           <span className="text-slate-600">SKU</span>
-                          <span className="font-medium text-slate-800">#{puzzle.id.slice(0, 12)}</span>
+                          <span className="font-medium text-slate-800">{puzzle.sku || '-'}</span>
                         </div>
                       </div>
                     </div>
@@ -617,34 +673,35 @@ export default function PuzzleDetailPage() {
                   <div>
                     <h3 className="text-base font-medium text-slate-700 mb-3">What's Included</h3>
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">{puzzle.piece_count} premium puzzle pieces</span>
+                      {puzzle.included_items && puzzle.included_items.length > 0 ? (
+                        <>
+                          <div className="space-y-2">
+                            {puzzle.included_items.slice(0, Math.ceil(puzzle.included_items.length / 2)).map((item: string, index: number) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                                <span className="text-sm text-slate-700">
+                                  {item.includes('pieces') ? `${puzzle.piece_count} ${item.toLowerCase()}` : item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-2">
+                            {puzzle.included_items.slice(Math.ceil(puzzle.included_items.length / 2)).map((item: string, index: number) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                                <span className="text-sm text-slate-700">
+                                  {item.includes('pieces') ? `${puzzle.piece_count} ${item.toLowerCase()}` : item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        // No included items data available
+                        <div className="col-span-2 text-center text-slate-500 py-8">
+                          <span className="text-lg">-</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">Full-color reference poster</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">Resealable storage bag</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">Sturdy storage box</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">Manufacturer warranty</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm text-slate-700">Assembly instructions</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -652,21 +709,31 @@ export default function PuzzleDetailPage() {
                   <div>
                     <h3 className="text-base font-medium text-slate-700 mb-3">Key Features</h3>
                     <div className="grid md:grid-cols-3 gap-4">
-                      <div className="glass-card border-white/40 p-4 text-center">
-                        <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">Precision Cut</h4>
-                        <p className="text-sm text-slate-600">Perfect interlocking pieces with no false fits</p>
-                      </div>
-                      <div className="glass-card border-white/40 p-4 text-center">
-                        <Eye className="w-8 h-8 text-violet-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">HD Imaging</h4>
-                        <p className="text-sm text-slate-600">Crystal clear reproduction with vibrant colors</p>
-                      </div>
-                      <div className="glass-card border-white/40 p-4 text-center">
-                        <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                        <h4 className="font-medium text-slate-700 mb-2">Dust-Free</h4>
-                        <p className="text-sm text-slate-600">Clean cutting process with smooth edges</p>
-                      </div>
+                      {puzzle.key_features && puzzle.key_features.length > 0 ? (
+                        puzzle.key_features.map((feature: any, index: number) => {
+                          // Icon mapping
+                          const IconComponent = feature.icon === 'precision' ? CheckCircle :
+                                              feature.icon === 'image' ? Eye :
+                                              feature.icon === 'clean' ? Shield : CheckCircle
+                          
+                          const iconColor = feature.icon === 'precision' ? 'text-emerald-600' :
+                                           feature.icon === 'image' ? 'text-violet-600' :
+                                           feature.icon === 'clean' ? 'text-blue-600' : 'text-emerald-600'
+                          
+                          return (
+                            <div key={index} className="glass-card border-white/40 p-4 text-center">
+                              <IconComponent className={`w-8 h-8 ${iconColor} mx-auto mb-3`} />
+                              <h4 className="font-medium text-slate-700 mb-2">{feature.title}</h4>
+                              <p className="text-sm text-slate-600">{feature.description}</p>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        // No key features data available
+                        <div className="col-span-3 text-center text-slate-500 py-8">
+                          <span className="text-lg">-</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
@@ -681,23 +748,23 @@ export default function PuzzleDetailPage() {
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Piece Count</span>
-                            <span className="text-slate-800">{puzzle.piece_count || 'Not specified'}</span>
+                            <span className="text-slate-800">{puzzle.piece_count || '-'}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Brand</span>
-                            <span className="text-slate-800">{puzzle.brand?.name || 'Unknown'}</span>
+                            <span className="text-slate-800">{puzzle.brand?.name || '-'}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Theme</span>
-                            <span className="text-slate-800">{puzzle.theme || 'Not specified'}</span>
+                            <span className="text-slate-800">{puzzle.theme || '-'}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Material</span>
-                            <span className="text-slate-800">{puzzle.material || 'Premium Cardboard'}</span>
+                            <span className="text-slate-800">{puzzle.material || '-'}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Year Published</span>
-                            <span className="text-slate-800">{puzzle.year_published || 'Not specified'}</span>
+                            <span className="text-slate-800">{puzzle.year_published || '-'}</span>
                           </div>
                         </div>
                       </div>
@@ -707,12 +774,12 @@ export default function PuzzleDetailPage() {
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Difficulty Level</span>
-                            <span className="text-slate-800">{puzzle.difficulty || 'Not rated'}</span>
+                            <span className="text-slate-800">{puzzle.difficulty || '-'}</span>
                           </div>
                           <div className="flex justify-between py-1">
                             <span className="text-slate-600">Estimated Time</span>
                             <span className="text-slate-800">
-                              {puzzle.estimated_time ? `${puzzle.estimated_time} hours` : 'Varies by skill level'}
+                              {puzzle.estimated_time ? `${puzzle.estimated_time} hours` : '-'}
                             </span>
                           </div>
                           <div className="flex justify-between py-1">
@@ -720,7 +787,7 @@ export default function PuzzleDetailPage() {
                             <span className="text-slate-800">
                               {communityStats.communityDifficulty > 0 
                                 ? `${communityStats.communityDifficulty}/10`
-                                : 'Not yet rated'
+                                : '-'
                               }
                             </span>
                           </div>
@@ -729,7 +796,7 @@ export default function PuzzleDetailPage() {
                             <span className="text-slate-800">
                               {communityStats.averageTime > 0 
                                 ? `${communityStats.averageTime} hours`
-                                : 'No data yet'
+                                : '-'
                               }
                             </span>
                           </div>
@@ -738,7 +805,7 @@ export default function PuzzleDetailPage() {
                             <span className="text-slate-800">
                               {communityStats.successRate > 0 
                                 ? `${communityStats.successRate}%`
-                                : 'No data yet'
+                                : '-'
                               }
                             </span>
                           </div>
@@ -1465,43 +1532,88 @@ export default function PuzzleDetailPage() {
                   )}
                 </div>
 
-                {/* Suggestion Categories */}
+                {/* Browse Similar Categories */}
                 <div>
                   <h3 className="text-lg font-medium text-slate-700 mb-3">Browse Similar</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      {
-                        title: "Same Difficulty",
-                        description: "7-8/10 difficulty puzzles",
-                        count: 24,
-                        icon: Target,
-                        color: "from-violet-500 to-violet-600"
-                      },
-                      {
-                        title: "Same Piece Count",
-                        description: "1000-piece puzzles",
-                        count: 156,
-                        icon: Layers,
-                        color: "from-emerald-500 to-emerald-600"
-                      },
-                      {
-                        title: "Animal Theme",
-                        description: "More animal puzzles",
-                        count: 89,
-                        icon: Heart,
-                        color: "from-rose-500 to-rose-600"
-                      }
-                    ].map((category, index) => (
-                      <div key={index} className="glass-card hover-lift border border-white/40 p-4 text-center cursor-pointer group transition-all duration-200">
-                        <div className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-r ${category.color} flex items-center justify-center shadow-lg mb-3`}>
-                          <category.icon className="w-6 h-6 text-white" />
+                  
+                  {browseSimilarLoading ? (
+                    // Loading state
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[1, 2, 3].map((index) => (
+                        <div key={index} className="glass-card border border-white/40 p-4 text-center">
+                          <div className="w-12 h-12 mx-auto rounded-xl bg-slate-200 animate-pulse mb-3" />
+                          <div className="h-5 bg-slate-200 rounded animate-pulse mb-2" />
+                          <div className="h-4 bg-slate-200 rounded animate-pulse mb-2" />
+                          <div className="h-4 bg-slate-200 rounded animate-pulse w-20 mx-auto" />
                         </div>
-                        <h4 className="font-medium text-slate-800 mb-2 group-hover:text-violet-600 transition-colors">{category.title}</h4>
-                        <p className="text-sm text-slate-600 mb-2">{category.description}</p>
-                        <span className="text-sm text-violet-600 font-medium">{category.count} puzzles</span>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : browseSimilarError ? (
+                    // Error state
+                    <div className="text-center py-4">
+                      <p className="text-slate-500 mb-2 text-sm">{browseSimilarError}</p>
+                      <button
+                        onClick={() => fetchBrowseSimilarData(params.id as string)}
+                        className="text-violet-600 hover:text-violet-700 font-medium text-sm"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : browseSimilarData?.similarities ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {browseSimilarData.similarities.map((similarity: any, index: number) => {
+                        // Define icon and color based on type
+                        const iconMap = {
+                          material: Target,
+                          piece_count: Layers,
+                          theme: Heart
+                        }
+                        const colorMap = {
+                          material: "from-violet-500 to-violet-600",
+                          piece_count: "from-emerald-500 to-emerald-600", 
+                          theme: "from-rose-500 to-rose-600"
+                        }
+                        
+                        const IconComponent = iconMap[similarity.type as keyof typeof iconMap] || Target
+                        const colorClass = colorMap[similarity.type as keyof typeof colorMap] || "from-slate-500 to-slate-600"
+                        
+                        // Generate browse URL with filter
+                        const browseUrl = similarity.enabled && similarity.filterValue ? 
+                          `/puzzles/browse?${similarity.filterKey}=${encodeURIComponent(similarity.filterValue)}` : 
+                          '/puzzles/browse'
+                        
+                        return (
+                          <Link
+                            key={index}
+                            href={browseUrl}
+                            className={`glass-card hover-lift border border-white/40 p-4 text-center group transition-all duration-200 ${
+                              similarity.enabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            <div className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-r ${colorClass} flex items-center justify-center shadow-lg mb-3`}>
+                              <IconComponent className="w-6 h-6 text-white" />
+                            </div>
+                            <h4 className={`font-medium text-slate-800 mb-2 transition-colors ${
+                              similarity.enabled ? 'group-hover:text-violet-600' : ''
+                            }`}>
+                              {similarity.label}
+                            </h4>
+                            <p className="text-sm text-slate-600 mb-2">{similarity.description}</p>
+                            <span className={`text-sm font-medium ${
+                              similarity.enabled && similarity.count > 0 ? 'text-violet-600' : 'text-slate-500'
+                            }`}>
+                              {similarity.count > 0 ? `${similarity.count} puzzles` : 'No similar puzzles'}
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    // Empty state
+                    <div className="text-center py-4">
+                      <p className="text-slate-500 text-sm">No similar puzzles data available</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

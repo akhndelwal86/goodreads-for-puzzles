@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const supabase = createServiceClient()
 
-    // Fetch puzzle details with related data
+    // Fetch puzzle details with related data including new specification fields
     const { data: puzzle, error: puzzleError } = await supabase
       .from('puzzles')
       .select(`

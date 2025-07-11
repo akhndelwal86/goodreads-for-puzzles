@@ -537,26 +537,41 @@ function BrowsePuzzlesPageContent() {
     const category = searchParams.get('category')
     const search = searchParams.get('search')
     const brands = searchParams.get('brands')
+    const material = searchParams.get('material')
+    const pieceCount = searchParams.get('piece_count')
+    const theme = searchParams.get('theme')
     
-    if (category || search || brands) {
-      console.log('Applying URL filters:', { category, search, brands })
+    if (category || search || brands || material || pieceCount || theme) {
+      console.log('Applying URL filters:', { category, search, brands, material, pieceCount, theme })
       
       // Update state based on URL parameters
       if (search) setSearch(search)
       if (brands) setSelectedBrands(brands.split(','))
       
+      // Handle piece count filtering
+      let pieceMin = 0
+      let pieceMax = 5000
+      if (pieceCount) {
+        const pc = parseInt(pieceCount)
+        if (!isNaN(pc)) {
+          // Set range around the specific piece count (±50 pieces for flexibility)
+          pieceMin = Math.max(0, pc - 50)
+          pieceMax = pc + 50
+        }
+      }
+      
       // Create filters with URL parameters
       const urlFilters: FilterState = {
         search: search || '',
-        pieceMin: 0,
-        pieceMax: 5000,
+        pieceMin,
+        pieceMax,
         ratingMin: 0,
         brands: brands ? brands.split(',') : [],
         status: '',
         sortBy: 'recent',
         sortOrder: 'desc',
-        difficulties: [],
-        themes: [],
+        difficulties: material ? [material] : [],
+        themes: theme ? [theme] : [],
         categories: category ? [category] : [],
         priceRange: [0, 100],
         minRating: 0,

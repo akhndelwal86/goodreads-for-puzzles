@@ -8,9 +8,10 @@ import { SmartListsSection } from '@/components/home/smart-lists-section'
 
 import { CategoryBrowser } from '@/components/home/category-browser'
 import { PopularBrandsCarousel } from '@/components/home/popular-brands-carousel'
-import { ActivityFeed } from '@/components/home/activity-feed'
+import CommunityActivityFeed from '@/components/home/ActivityFeed'
 import { Leaderboard } from '@/components/home/Leaderboard'
 import { useUserSync } from '@/lib/auth-utils'
+import { FollowProvider } from '@/contexts/follow-context'
 
 export default function HomePage() {
   const router = useRouter()
@@ -58,7 +59,12 @@ export default function HomePage() {
 
         {/* Activity Feed and Leaderboard Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ActivityFeed />
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800 mb-4">Trending Activity</h2>
+            <FollowProvider>
+              <CommunityActivityFeed showHeader={false} limit={4} />
+            </FollowProvider>
+          </div>
           <Leaderboard />
         </div>
 
