@@ -169,8 +169,8 @@ export async function GET(request: NextRequest) {
 
           // Sort by most recent activity
           allLists.sort((a, b) => {
-            const dateA = a.collection_source === 'followed' ? new Date(a.followed_at) : new Date(a.created_at)
-            const dateB = b.collection_source === 'followed' ? new Date(b.followed_at) : new Date(b.created_at)
+            const dateA = a.collection_source === 'followed' ? new Date((a as any).followed_at) : new Date(a.created_at)
+            const dateB = b.collection_source === 'followed' ? new Date((b as any).followed_at) : new Date(b.created_at)
             return dateB.getTime() - dateA.getTime()
           })
 
