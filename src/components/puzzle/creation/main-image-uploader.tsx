@@ -9,15 +9,33 @@ interface MainImageUploaderProps {
   image: File | null
   onChange: (image: File | null) => void
   className?: string
+  onError?: (error: string) => void
 }
 
 export function MainImageUploader({ 
   image, 
   onChange, 
-  className 
+  className,
+  onError 
 }: MainImageUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+
+  // File validation
+  const validateFile = (file: File): string | null => {
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    
+    if (!allowedTypes.includes(file.type)) {
+      return 'Please upload a JPG, PNG, or WebP image.'
+    }
+    
+    if (file.size > maxSize) {
+      return 'Image size must be less than 10MB.'
+    }
+    
+    return null
+  }
 
   // Generate preview URL when image changes
   useEffect(() => {
@@ -39,9 +57,15 @@ export function MainImageUploader({
     )
     
     if (files.length > 0) {
-      onChange(files[0]) // Only take the first image
+      const file = files[0]
+      const error = validateFile(file)
+      if (error) {
+        onError?.(error)
+      } else {
+        onChange(file)
+      }
     }
-  }, [onChange])
+  }, [onChange, onError, validateFile])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -56,9 +80,16 @@ export function MainImageUploader({
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      onChange(file)
+      const error = validateFile(file)
+      if (error) {
+        onError?.(error)
+      } else {
+        onChange(file)
+      }
     }
-  }, [onChange])
+    // Reset input value to allow selecting the same file again
+    e.target.value = ''
+  }, [onChange, onError, validateFile])
 
   const handleRemove = useCallback(() => {
     onChange(null)

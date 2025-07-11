@@ -1,144 +1,261 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Search, Upload, ArrowRight, Sparkles, Users, Database } from 'lucide-react'
-import Link from 'next/link'
+'use client'
 
-export default function PuzzleWorkflowPage() {
+import { useState } from 'react'
+import Link from 'next/link'
+import { useUser } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { 
+  Search, Plus, Database, BookOpen, ArrowRight, 
+  CheckCircle, Users, Sparkles, PuzzleIcon as Puzzle 
+} from 'lucide-react'
+
+export default function AddPuzzlePage() {
+  const { user, isLoaded } = useUser()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+
+  const handleSearch = async (term: string) => {
+    if (!term.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setSearchLoading(true)
+    try {
+      const response = await fetch(`/api/puzzles?search=${encodeURIComponent(term)}&limit=5`)
+      const data = await response.json()
+      setSearchResults(data.puzzles || [])
+    } catch (error) {
+      console.error('Error searching puzzles:', error)
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  // Show loading state
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Puzzle className="w-8 h-8 text-violet-600" />
+            </div>
+            <CardTitle>Sign in to Add Puzzles</CardTitle>
+            <CardDescription>
+              You need to be signed in to contribute puzzles to our community database.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/sign-in">
+              <Button className="w-full">Sign In</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="max-w-4xl mx-auto px-4 py-16">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-blue-200/50 rounded-full px-6 py-2 mb-6 shadow-lg">
-            <Sparkles className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Puzzle Workflow
-            </span>
+          <div className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 px-4 py-2 rounded-full font-medium mb-6">
+            <Sparkles className="w-4 h-4" />
+            Contribute to Community
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-            What would you like to do?
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet-600 via-purple-600 to-violet-800 bg-clip-text text-transparent">
+            Add a Puzzle
           </h1>
           
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Choose your path: contribute a new puzzle to our community database or log your progress on an existing puzzle
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+            Help fellow puzzlers discover new favorites or log your personal puzzle journey.
           </p>
         </div>
 
-        {/* Two Options */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Add New Puzzle */}
-          <Card className="group relative overflow-hidden border-2 border-blue-200/50 hover:border-blue-400/50 transition-all duration-300 hover:shadow-xl hover:scale-105">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/50 to-purple-50/50"></div>
-            <div className="absolute top-4 right-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Database className="w-6 h-6 text-blue-600" />
-              </div>
+        {/* Search First */}
+        <Card className="mb-8 border-2 border-dashed border-violet-200 bg-violet-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5 text-violet-600" />
+              Search First - Is this puzzle already in our database?
+            </CardTitle>
+            <CardDescription>
+              Before adding a new puzzle, check if it already exists to avoid duplicates.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <Input
+                placeholder="Search for puzzle title, brand, or theme..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  handleSearch(e.target.value)
+                }}
+                className="pl-10"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
-            
-            <CardHeader className="relative">
-              <CardTitle className="text-2xl font-bold text-blue-700 mb-2 flex items-center gap-2">
-                <Plus className="w-6 h-6" />
-                Add New Puzzle
-              </CardTitle>
-              <CardDescription className="text-base text-gray-600">
-                Contribute a puzzle that's not yet in our database. Help other puzzlers discover new favorites!
+
+            {/* Search Results */}
+            {searchLoading && (
+              <div className="mt-4 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-violet-600 mx-auto"></div>
+                <p className="mt-2">Searching...</p>
+              </div>
+            )}
+
+            {searchResults.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-medium text-gray-700">Found existing puzzles:</p>
+                {searchResults.map((puzzle: any) => (
+                  <div key={puzzle.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                    <img 
+                      src={puzzle.imageUrl || '/placeholder-puzzle.svg'} 
+                      alt={puzzle.title}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{puzzle.title}</h4>
+                      <p className="text-sm text-gray-500">
+                        {puzzle.brand?.name} • {puzzle.pieceCount} pieces
+                      </p>
+                    </div>
+                    <Link href={`/puzzles/${puzzle.id}`}>
+                      <Button size="sm" variant="outline">
+                        View Details
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {searchTerm && !searchLoading && searchResults.length === 0 && (
+              <div className="mt-4 text-center text-gray-500">
+                <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <p>Great! This puzzle doesn't exist yet. You can add it below.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Action Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Add New Puzzle */}
+          <Card className="border-2 hover:border-violet-300 transition-colors group">
+            <CardHeader>
+              <div className="w-12 h-12 bg-violet-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
+                <Plus className="w-6 h-6 text-violet-600" />
+              </div>
+              <CardTitle className="text-xl">Add New Puzzle to Database</CardTitle>
+              <CardDescription>
+                Contribute a puzzle to our community database for everyone to discover and log.
               </CardDescription>
             </CardHeader>
-            
-            <CardContent className="relative">
+            <CardContent>
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  Upload official product photo
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Helps other puzzlers discover new favorites</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  Add puzzle details (brand, pieces, etc.)
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Builds our community puzzle library</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  Optional: Log your first progress entry
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>You can log it to your collection afterward</span>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg mb-6">
-                <Users className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-blue-700 font-medium">Contributing to Platform</span>
-              </div>
-              
-              <Button 
-                asChild 
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-6 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-200"
-              >
-                <Link href="/puzzles/create" className="flex items-center justify-center gap-2">
-                  Start Contributing
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </Button>
+              <Link href="/puzzles/create">
+                <Button className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white">
+                  <Database className="w-4 h-4 mr-2" />
+                  Add to Community Database
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
           {/* Log Existing Puzzle */}
-          <Card className="group relative overflow-hidden border-2 border-emerald-200/50 hover:border-emerald-400/50 transition-all duration-300 hover:shadow-xl hover:scale-105">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-white/50 to-teal-50/50"></div>
-            <div className="absolute top-4 right-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Upload className="w-6 h-6 text-emerald-600" />
+          <Card className="border-2 hover:border-emerald-300 transition-colors group">
+            <CardHeader>
+              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
+                <BookOpen className="w-6 h-6 text-emerald-600" />
               </div>
-            </div>
-            
-            <CardHeader className="relative">
-              <CardTitle className="text-2xl font-bold text-emerald-700 mb-2 flex items-center gap-2">
-                <Search className="w-6 h-6" />
-                Log Existing Puzzle
-              </CardTitle>
-              <CardDescription className="text-base text-gray-600">
-                Find a puzzle from our database and log your personal progress, photos, and experience.
+              <CardTitle className="text-xl">Log Existing Puzzle</CardTitle>
+              <CardDescription>
+                Track your progress on a puzzle that's already in our database.
               </CardDescription>
             </CardHeader>
-            
-            <CardContent className="relative">
+            <CardContent>
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Search our puzzle database
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Add to your personal collection</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Upload your progress photos
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Track completion progress</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Rate difficulty and quality
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Add photos and notes</span>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg mb-6">
-                <Upload className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm text-emerald-700 font-medium">Personal Collection</span>
-              </div>
-              
-              <Button 
-                asChild 
-                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-6 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-200"
-              >
-                <Link href="/puzzles/browse" className="flex items-center justify-center gap-2">
-                  Browse Puzzles
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </Button>
+              <Link href="/puzzles/browse">
+                <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                  <Search className="w-4 h-4 mr-2" />
+                  Browse & Log Puzzles
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
 
-        {/* Help Text */}
-        <div className="text-center mt-12 p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50">
-          <p className="text-gray-600">
-            <strong>New to puzzles?</strong> Start by browsing our database to discover popular puzzles and see what the community recommends.
-          </p>
+        {/* Help Section */}
+        <div className="mt-12 text-center">
+          <Card className="bg-gray-50/50 border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-800">Community Guidelines</h3>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
+                <div>
+                  <strong>Quality Images:</strong> Use clear, well-lit photos of the puzzle box and completed image.
+                </div>
+                <div>
+                  <strong>Accurate Info:</strong> Double-check piece count, brand name, and title spelling.
+                </div>
+                <div>
+                  <strong>No Duplicates:</strong> Always search first to avoid adding puzzles that already exist.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   )
-} 
+}

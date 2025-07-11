@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, Database, Users } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Database, Users, BookOpen, Plus, Eye, Search, Share2, LogIn } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PuzzleCreationForm } from '@/components/puzzle/creation'
@@ -21,11 +21,23 @@ export default function CreatePuzzlePage() {
     setIsSubmitting(false)
   }
 
+  const handleShare = async () => {
+    if (createdPuzzleId) {
+      const url = `${window.location.origin}/puzzles/${createdPuzzleId}`
+      try {
+        await navigator.clipboard.writeText(url)
+        // Could add a toast notification here
+      } catch (err) {
+        console.error('Failed to copy:', err)
+      }
+    }
+  }
+
   if (createdPuzzleId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           
@@ -34,38 +46,64 @@ export default function CreatePuzzlePage() {
           </h1>
           
           <p className="text-gray-600 mb-8">
-            Your puzzle has been added to our database and is now available for the community to discover and log.
+            Your puzzle has been added to our community database! Ready to start tracking your progress with this puzzle?
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Primary CTA - Log This Puzzle */}
             <Button 
               asChild 
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl"
+              className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
             >
               <Link href={`/puzzles/${createdPuzzleId}/log`}>
-                Log This Puzzle Myself
+                <LogIn className="w-5 h-5 mr-3" />
+                Log This Puzzle to My Collection
               </Link>
             </Button>
             
+            {/* Secondary CTA */}
             <Button 
               asChild 
               variant="outline"
-              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 rounded-xl"
+              className="w-full border-2 border-violet-200 text-violet-700 hover:bg-violet-50 font-medium py-3 rounded-xl"
             >
               <Link href="/puzzles/add">
+                <Plus className="w-4 h-4 mr-2" />
                 Add Another Puzzle
               </Link>
             </Button>
             
-            <Button 
-              asChild 
-              variant="ghost"
-              className="w-full text-gray-500 hover:text-gray-700 font-medium py-3"
-            >
-              <Link href="/">
-                Back to Home
-              </Link>
-            </Button>
+            {/* Tertiary Options */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Button 
+                onClick={handleShare}
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share Puzzle
+              </Button>
+              
+              <Button 
+                asChild 
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              >
+                <Link href={`/puzzles/${createdPuzzleId}`}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </Link>
+              </Button>
+            </div>
+
+            {/* Help Text */}
+            <div className="text-center pt-4">
+              <p className="text-sm text-gray-500">
+                Thanks for contributing to our puzzle community! 🧩
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -85,7 +123,7 @@ export default function CreatePuzzlePage() {
             >
               <Link href="/puzzles/add" className="flex items-center gap-2">
                 <ArrowLeft className="w-4 h-4" />
-                Back to Workflow
+                Back to Add Puzzle
               </Link>
             </Button>
             

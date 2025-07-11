@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
 
     // Parse the multipart form data
     const formData = await request.formData()
-    const folder = formData.get('folder') as string || 'puzzle-logs'
+    const requestedFolder = formData.get('folder') as string || 'puzzle-logs'
+    
+    // Map folder names to storage buckets
+    const folder = requestedFolder.includes('puzzle') ? 'puzzles' : 'profiles'
     
     // Extract files from form data
     const files: File[] = []
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
     logger.info(`📸 Uploading ${files.length} files for user ${userId}`)
 
     // Upload files using server-side storage utilities
-    const uploadResults = await uploadMultipleFiles(files, folder)
+    const uploadResults = await uploadMultipleFiles(files, userId, folder)
     
     // Extract public URLs from results
     const urls = uploadResults.map(result => result.publicUrl)

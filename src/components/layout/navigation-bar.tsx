@@ -30,8 +30,7 @@ export function NavigationBar() {
 
   const browseDropdownItems = [
     { href: '/puzzles/browse', label: 'All Puzzles', icon: Grid3X3 },
-    { href: '/lists', label: 'Lists (don\'t open)', icon: List, disabled: true },
-    { href: '/collections', label: 'Collections (don\'t open)', icon: FolderOpen, disabled: true },
+    { href: '/collections', label: 'Collections', icon: FolderOpen },
   ]
 
   return (
@@ -110,7 +109,7 @@ export function NavigationBar() {
           <div className="flex items-center space-x-4">
             {/* Add Puzzle Button (Desktop) */}
             {isLoaded && user && (
-              <Link href="/puzzles/create" className="hidden md:block">
+              <Link href="/puzzles/add" className="hidden md:block">
                 <Button className="bg-gradient-to-r from-violet-500 to-emerald-500 hover:from-violet-600 hover:to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Puzzle
@@ -195,7 +194,7 @@ export function NavigationBar() {
                   {/* Mobile Add Puzzle Button */}
                   {isLoaded && user && (
                     <Link
-                      href="/puzzles/create"
+                      href="/puzzles/add"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="mt-4"
                     >

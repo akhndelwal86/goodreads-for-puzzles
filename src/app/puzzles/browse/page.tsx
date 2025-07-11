@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { BrowsePuzzleCard } from '@/components/puzzle/browse-puzzle-card'
 import { BrowseFilterSidebar } from '@/components/puzzle/browse-filter-sidebar'
 import { PremiumSearchBar } from '@/components/puzzle/premium-search-bar'
-import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye, Star } from 'lucide-react'
+import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye, Star, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { 
   DropdownMenu, 
@@ -346,6 +346,8 @@ function BrowsePuzzlesPageContent() {
   const [loading, setLoading] = useState(true)
   const [availableBrands, setAvailableBrands] = useState([])
   const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null)
+  const [collectionId, setCollectionId] = useState<string | null>(null)
+  const [collectionInfo, setCollectionInfo] = useState<any>(null)
 
   // Individual filter states
   const [search, setSearch] = useState('')
@@ -395,7 +397,7 @@ function BrowsePuzzlesPageContent() {
   }
 
   // Fetch puzzles with filters
-  const fetchPuzzles = useCallback(async (currentFilters: FilterState) => {
+  const fetchPuzzles = useCallback(async (currentFilters: FilterState, overrideCollectionId?: string) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -415,6 +417,12 @@ function BrowsePuzzlesPageContent() {
       params.set('sortBy', currentFilters.sortBy)
       params.set('sortOrder', currentFilters.sortOrder)
       
+      // Add collection filter if specified (use override or state)
+      const activeCollectionId = overrideCollectionId || collectionId
+      if (activeCollectionId) {
+        params.set('collection', activeCollectionId)
+      }
+      
       const response = await fetch(`/api/puzzles?${params.toString()}`)
       const data = await response.json()
       
@@ -427,7 +435,7 @@ function BrowsePuzzlesPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [collectionId])
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -540,9 +548,10 @@ function BrowsePuzzlesPageContent() {
     const material = searchParams.get('material')
     const pieceCount = searchParams.get('piece_count')
     const theme = searchParams.get('theme')
+    const collection = searchParams.get('collection')
     
-    if (category || search || brands || material || pieceCount || theme) {
-      console.log('Applying URL filters:', { category, search, brands, material, pieceCount, theme })
+    if (category || search || brands || material || pieceCount || theme || collection) {
+      console.log('Applying URL filters:', { category, search, brands, material, pieceCount, theme, collection })
       
       // Update state based on URL parameters
       if (search) setSearch(search)
@@ -578,10 +587,29 @@ function BrowsePuzzlesPageContent() {
         yearRange: [2020, 2024],
       }
       
+      // Handle collection filter
+      if (collection) {
+        setCollectionId(collection)
+        fetchCollectionInfo(collection)
+      }
+      
       setCurrentFilters(urlFilters)
-      fetchPuzzles(urlFilters)
+      fetchPuzzles(urlFilters, collection || undefined)
     }
   }, [searchParams, fetchPuzzles]) // Add dependency on searchParams
+  
+  // Fetch collection info when collection ID is set
+  const fetchCollectionInfo = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/collections?id=${id}`)
+      const data = await response.json()
+      if (data.collections && data.collections.length > 0) {
+        setCollectionInfo(data.collections[0])
+      }
+    } catch (error) {
+      console.error('Failed to fetch collection info:', error)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
@@ -636,6 +664,39 @@ function BrowsePuzzlesPageContent() {
 
           {/* Results Section */}
           <div className="flex-1">
+            {/* Collection Context Bar */}
+            {collectionInfo && (
+              <div className="mb-6">
+                <div className="glass-card border border-white/40 p-6 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-violet-200 via-purple-100 to-violet-300 rounded-lg flex items-center justify-center">
+                        <span className="text-2xl">🧩</span>
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-semibold text-slate-800">{collectionInfo.name}</h2>
+                        <p className="text-slate-600">{collectionInfo.description || 'A curated collection of puzzles'}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-sm text-slate-500">
+                            {collectionInfo.puzzle_count} puzzles
+                          </span>
+                          <span className="text-sm text-slate-500">
+                            Avg. {collectionInfo.average_rating?.toFixed(1) || '4.5'} ★
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/collections">
+                      <Button variant="outline" size="sm">
+                        <ChevronRight className="w-4 h-4 mr-1" />
+                        Browse Collections
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Clean Controls Bar - Redesigned */}
             <div className="flex items-center justify-between mb-6 py-4">
               {/* Left: Results Count */}
@@ -643,6 +704,8 @@ function BrowsePuzzlesPageContent() {
                 <h2 className="text-2xl font-semibold text-slate-700">
                   {loading ? (
                     <div className="h-8 w-32 bg-slate-200 rounded animate-pulse" />
+                  ) : collectionInfo ? (
+                    `${puzzles.length} of ${collectionInfo.puzzle_count} Puzzles`
                   ) : (
                     `${puzzles.length} Puzzle${puzzles.length !== 1 ? 's' : ''}`
                   )}

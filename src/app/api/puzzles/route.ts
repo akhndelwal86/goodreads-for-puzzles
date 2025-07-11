@@ -171,6 +171,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const collection = searchParams.get('collection')
 
     const supabase = createServiceClient()
 
@@ -186,27 +187,37 @@ export async function GET(request: NextRequest) {
     }
 
     // Build the main query - always include puzzle_aggregates for sorting and filtering
+    let selectClause = `
+      *,
+      brand:brands(id, name),
+      puzzle_aggregates(avg_rating, review_count)
+    `
+    
+    // Add user logs if needed
+    if (userInternalId && (status.length > 0 || status.includes('not-added'))) {
+      selectClause += `,
+      user_logs:puzzle_logs!left(id, status, user_id)`
+    }
+    
+    // Add collection filtering if needed
+    if (collection) {
+      selectClause += `,
+      list_items!inner(list_id)`
+    }
+
     let baseQuery = supabase
       .from('puzzles')
-      .select(`
-        *,
-        brand:brands(id, name),
-        puzzle_aggregates(avg_rating, review_count)
-      `)
+      .select(selectClause)
       .eq('approval_status', 'approved')
 
-    // Add user log join if user is authenticated and status filtering is needed
+    // Apply user log filter if needed
     if (userInternalId && (status.length > 0 || status.includes('not-added'))) {
-      baseQuery = supabase
-        .from('puzzles')
-        .select(`
-          *,
-          brand:brands(id, name),
-          puzzle_aggregates(avg_rating, review_count),
-          user_logs:puzzle_logs!left(id, status, user_id)
-        `)
-        .eq('approval_status', 'approved')
-        .eq('user_logs.user_id', userInternalId)
+      baseQuery = baseQuery.eq('user_logs.user_id', userInternalId)
+    }
+    
+    // Apply collection filter
+    if (collection) {
+      baseQuery = baseQuery.eq('list_items.list_id', collection)
     }
 
     // Apply search filter
