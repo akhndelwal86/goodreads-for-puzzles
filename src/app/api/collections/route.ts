@@ -2,6 +2,77 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase'
 
+// TypeScript interfaces for proper type safety
+interface BaseListData {
+  id: string
+  name: string
+  description: string
+  type: string
+  user_id: string
+  created_at: string
+  slug: string
+  list_items: { count: number }[]
+  collection_follows: { count: number }[]
+}
+
+interface CreatedCollection extends BaseListData {
+  collection_source: 'created'
+}
+
+interface FollowedCollectionData {
+  list_id: string
+  followed_at: string
+  lists: BaseListData
+}
+
+interface ProcessedCollection {
+  id: string
+  name: string
+  description: string
+  collection_type: string
+  collection_source: 'created' | 'followed'
+  theme: string
+  visibility: string
+  cover_image_url: string | null
+  puzzle_count: number
+  average_rating: number
+  follower_count: number
+  likes_count: number
+  completion_rate: number
+  created_at: string
+  followed_at?: string
+}
+
+// Helper function to transform collection data with proper typing
+function transformToProcessedCollection(
+  list: BaseListData, 
+  source: 'created' | 'followed', 
+  currentUserId: string,
+  followedAt?: string
+): ProcessedCollection {
+  const puzzleCount = list.list_items?.[0]?.count || 0
+  const followerCount = list.collection_follows?.[0]?.count || 0
+  const averageRating = puzzleCount > 0 ? (4.2 + Math.random() * 0.6) : 0
+  
+  return {
+    id: list.id,
+    name: list.name,
+    description: list.description,
+    collection_type: list.user_id && list.user_id !== currentUserId ? 'user-created' : 'official',
+    collection_source: source,
+    theme: getThemeFromName(list.name),
+    visibility: 'public',
+    cover_image_url: null,
+    puzzle_count: puzzleCount,
+    average_rating: averageRating,
+    follower_count: followerCount,
+    likes_count: Math.floor(Math.random() * 150) + 10,
+    completion_rate: Math.floor(Math.random() * 40) + 60,
+    created_at: list.created_at,
+    ...(followedAt && { followed_at: followedAt })
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -147,71 +218,47 @@ export async function GET(request: NextRequest) {
             .eq('user_id', userData.id)
             .order('followed_at', { ascending: false })
 
-          // Combine and transform the results
-          const allLists = []
-          
-          // Add created collections
-          if (createdLists) {
-            allLists.push(...createdLists.map(list => ({
-              ...list,
-              collection_source: 'created'
-            })))
-          }
-          
-          // Add followed collections
-          if (followedLists) {
-            allLists.push(...followedLists.map(follow => ({
-              ...follow.lists,
-              collection_source: 'followed',
-              followed_at: follow.followed_at
-            })))
-          }
+          // Process created collections with proper typing
+          const processedCreated: ProcessedCollection[] = createdLists?.map(list => 
+            transformToProcessedCollection(list, 'created', userData.id)
+          ) || []
 
-          // Sort by most recent activity
-          allLists.sort((a, b) => {
-            const dateA = a.collection_source === 'followed' ? new Date((a as any).followed_at) : new Date((a as any).created_at)
-            const dateB = b.collection_source === 'followed' ? new Date((b as any).followed_at) : new Date((b as any).created_at)
+          // Process followed collections with proper typing
+          const processedFollowed: ProcessedCollection[] = followedLists?.map((follow: any) => 
+            transformToProcessedCollection(follow.lists, 'followed', userData.id, follow.followed_at)
+          ) || []
+
+          // Combine with proper typing
+          const allProcessedCollections: ProcessedCollection[] = [
+            ...processedCreated,
+            ...processedFollowed
+          ]
+
+          // Sort by most recent activity with type safety
+          allProcessedCollections.sort((a, b) => {
+            const dateA = a.collection_source === 'followed' ? new Date(a.followed_at!) : new Date(a.created_at)
+            const dateB = b.collection_source === 'followed' ? new Date(b.followed_at!) : new Date(b.created_at)
             return dateB.getTime() - dateA.getTime()
           })
 
           // Apply pagination
-          const paginatedLists = allLists.slice(offset, offset + limit)
+          const paginatedCollections = allProcessedCollections.slice(offset, offset + limit)
           
-          // Transform to match expected format
-          const collections = paginatedLists.map(list => {
-            const puzzleCount = list.list_items?.[0]?.count || 0
-            const followerCount = list.collection_follows?.[0]?.count || 0
-            const averageRating = puzzleCount > 0 ? (4.2 + Math.random() * 0.6) : 0
-            
-            return {
-              id: list.id,
-              name: list.name,
-              description: list.description,
-              collection_type: list.user_id && list.user_id !== userData.id ? 'user-created' : 
-                               list.user_id ? 'user-created' : 'official',
-              collection_source: list.collection_source,
-              theme: getThemeFromName(list.name),
-              visibility: 'public',
-              cover_image_url: null,
-              puzzle_count: puzzleCount,
-              average_rating: averageRating,
-              follower_count: followerCount,
-              likes_count: Math.floor(Math.random() * 150) + 10,
-              is_featured: !list.user_id,
-              creator_username: null,
-              creator_avatar: null,
-              created_at: list.created_at,
-              followed_at: list.followed_at
-            }
-          })
+          // Collections are already in the expected format, just add missing fields
+          const collections = paginatedCollections.map(collection => ({
+            ...collection,
+            is_featured: collection.collection_type === 'official',
+            creator_username: null,
+            creator_avatar: null
+          }))
 
           return NextResponse.json({
             collections,
             pagination: {
               page,
               limit,
-              total: allLists.length,
-              totalPages: Math.ceil(allLists.length / limit)
+              total: allProcessedCollections.length,
+              totalPages: Math.ceil(allProcessedCollections.length / limit)
             }
           })
         }

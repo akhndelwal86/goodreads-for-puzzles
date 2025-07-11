@@ -55,7 +55,7 @@ export function PuzzleShare({ puzzle, className }: PuzzleShareProps) {
       
       {/* Social Media Buttons */}
       <div className="flex flex-wrap gap-3">
-        <FacebookShareButton url={shareUrl} quote={shareTitle}>
+        <FacebookShareButton url={shareUrl}>
           <FacebookIcon size={40} round />
         </FacebookShareButton>
         
