@@ -550,6 +550,11 @@ export default function PuzzleDetailPage() {
                           <Check className="w-4 h-4 mr-2" />
                           Mark as Completed
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleStatusChange('abandoned')}>
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Abandon Puzzle
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
 

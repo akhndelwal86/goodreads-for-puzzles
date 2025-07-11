@@ -14,13 +14,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 3. **Wait for approval**: Before you begin working, check in with me and I will verify the plan. Do not start coding until I approve.
 
-4. **Execute the plan**: Begin working on the todo items one by one, marking them as complete `- [x]` as you go by updating the `./tasks/todo.md` file.
+4. **Dual Todo System**: Use BOTH systems for optimal workflow:
+   - **TodoWrite Tool**: Initialize with same tasks for real-time progress tracking (gives me live visibility)
+   - **`./tasks/todo.md` File**: Maintain detailed documentation for historical reference
+   - Update TodoWrite throughout execution for immediate progress visibility
+   - Update `./tasks/todo.md` with final review when complete
 
-5. **Progress updates**: For every step, give me a high-level explanation of what changes you made without showing code unless I ask.
+5. **Execute the plan**: Begin working on the todo items one by one, marking them as complete in both systems as you go.
 
-6. **Simplicity principle**: Make every task and code change as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+6. **Progress updates**: For every step, give me a high-level explanation of what changes you made without showing code unless I ask.
 
-7. **Final review**: Add a review section to the `./tasks/todo.md` file with:
+7. **Simplicity principle**: Make every task and code change as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+
+8. **Final review**: Add a review section to the `./tasks/todo.md` file with:
    - Summary of changes made
    - Files modified
    - Any issues encountered
@@ -59,12 +65,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Next Steps**: 
 ```
 
+## Dual Todo System Workflow
+
+### Planning Phase
+1. Create detailed plan in `./tasks/todo.md` with problem summary and task list
+2. Initialize TodoWrite with same tasks for real-time tracking
+3. Wait for user approval before starting work
+
+### Execution Phase  
+1. Use TodoWrite to mark tasks as in_progress/completed (gives user live visibility)
+2. Provide progress updates without showing code unless requested
+3. Follow simplicity principle - minimal changes, maximum impact
+
+### Completion Phase
+1. Update `./tasks/todo.md` with final review section
+2. Keep TodoWrite final state for session reference
+3. Document files modified, issues, and next steps
+
 ## Workflow Enforcement
 
 1. If you don't see a `./tasks/todo.md` file, create it first
 2. If the file exists but is empty, populate it with the plan
 3. If the file has content, append new tasks or update existing ones
 4. Always use relative path `./tasks/todo.md` not absolute paths
+5. **ALWAYS** use both TodoWrite AND todo.md - they serve different purposes
 
 ## Common Commands
 
