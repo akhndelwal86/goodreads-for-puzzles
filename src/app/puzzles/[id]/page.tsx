@@ -57,7 +57,13 @@ import {
 } from 'lucide-react'
 import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
 import { PurchaseLinks } from '@/components/puzzle/purchase-links'
-import { PuzzleShare } from '@/components/puzzle/puzzle-share'
+import dynamic from 'next/dynamic'
+
+// Dynamically import heavy components that include third-party libraries
+const PuzzleShare = dynamic(() => import('@/components/puzzle/puzzle-share').then(mod => ({ default: mod.PuzzleShare })), {
+  loading: () => <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />,
+  ssr: false, // Social sharing doesn't need SSR
+})
 
 interface PuzzleDetail {
   puzzle: {

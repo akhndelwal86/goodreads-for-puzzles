@@ -42,7 +42,7 @@ export function PuzzleShare({ puzzle, className }: PuzzleShareProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      // Copy failed silently
     }
   }
 

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Star, Clock, Users, Plus, Heart, ChevronDown, BookOpen, Check } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
@@ -182,11 +183,14 @@ export function PuzzleOfTheDay() {
         <CardContent className="p-0">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Image Section */}
-            <div className="relative">
-              <img
+            <div className="relative h-80 md:h-full">
+              <Image
                 src={puzzleOfTheDay.image || "/placeholder-puzzle.svg"}
                 alt={puzzleOfTheDay.title}
-                className="w-full h-80 md:h-full object-cover transition-transform duration-300 hover:scale-105"
+                fill
+                priority
+                className="object-cover transition-transform duration-300 hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
               <Badge className="absolute top-4 left-4 bg-amber-500 text-white border-0 shadow-lg">

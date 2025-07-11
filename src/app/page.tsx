@@ -7,11 +7,27 @@ import { PuzzleOfTheDay } from '@/components/home/puzzle-of-the-day'
 import { SmartListsSection } from '@/components/home/smart-lists-section'
 
 import { CategoryBrowser } from '@/components/home/category-browser'
-import { PopularBrandsCarousel } from '@/components/home/popular-brands-carousel'
-import CommunityActivityFeed from '@/components/home/ActivityFeed'
-import { Leaderboard } from '@/components/home/Leaderboard'
+import dynamic from 'next/dynamic'
 import { useUserSync } from '@/lib/auth-utils'
 import { FollowProvider } from '@/contexts/follow-context'
+import { Suspense } from 'react'
+import { ActivityFeedSkeleton, LeaderboardSkeleton } from '@/components/ui/loading-skeleton'
+
+// Dynamically import heavy components below the fold
+const CommunityActivityFeed = dynamic(() => import('@/components/home/ActivityFeed'), {
+  loading: () => <ActivityFeedSkeleton />,
+  ssr: false, // These components don't need SSR since they're below the fold
+})
+
+const Leaderboard = dynamic(() => import('@/components/home/Leaderboard').then(mod => ({ default: mod.Leaderboard })), {
+  loading: () => <LeaderboardSkeleton />,
+  ssr: false,
+})
+
+const PopularBrandsCarousel = dynamic(() => import('@/components/home/popular-brands-carousel').then(mod => ({ default: mod.PopularBrandsCarousel })), {
+  loading: () => <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />,
+  ssr: true, // Keep SSR for better SEO
+})
 
 export default function HomePage() {
   const router = useRouter()
@@ -20,13 +36,11 @@ export default function HomePage() {
   useUserSync()
 
   const handlePuzzleClick = (puzzleId: string) => {
-    console.log('Navigating to puzzle:', puzzleId)
     router.push(`/puzzles/${puzzleId}`)
   }
 
   const handleViewAll = (listType: 'trending' | 'most-completed' | 'recently-added' | 'top-rated') => {
     // TODO: Navigate to dedicated list page
-    console.log('View all:', listType)
   }
 
   return (

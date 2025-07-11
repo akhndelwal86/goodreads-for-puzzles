@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { NavigationBar } from '@/components/layout/navigation-bar'
+import { QueryProvider } from '@/components/providers/query-provider'
+import { ErrorBoundary } from '@/components/error-boundary'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -23,10 +25,16 @@ export default function RootLayout({
         className={inter.className}
         suppressHydrationWarning={true}
       >
-        <NavigationBar />
-        <main>
-          {children}
-        </main>
+        <QueryProvider>
+          <ErrorBoundary>
+            <NavigationBar />
+          </ErrorBoundary>
+          <main>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </QueryProvider>
       </body>
     </html>
   </ClerkProvider>

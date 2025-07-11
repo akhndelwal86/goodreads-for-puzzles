@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Users, Puzzle, MessageCircle, Calendar, Clock } from 'lucide-react'
+import { queryKeys } from '@/lib/react-query'
 
 interface HomepageStats {
   totalPuzzles: number
@@ -19,17 +20,6 @@ interface StatItemProps {
 }
 
 function StatItem({ icon: Icon, label, value, isLoading }: StatItemProps) {
-  const [displayValue, setDisplayValue] = useState(0)
-
-  useEffect(() => {
-    if (isLoading) {
-      setDisplayValue(0)
-      return
-    }
-
-    // Simple animation - just set the value directly for now
-    setDisplayValue(value)
-  }, [value, isLoading])
 
   return (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-6 text-center group">
@@ -43,7 +33,7 @@ function StatItem({ icon: Icon, label, value, isLoading }: StatItemProps) {
             <div className="w-16 h-8 bg-gray-200 rounded animate-pulse mx-auto" />
           ) : (
             <div className="text-2xl font-bold text-gray-900">
-              {displayValue.toLocaleString()}
+              {value.toLocaleString()}
             </div>
           )}
           
@@ -56,62 +46,36 @@ function StatItem({ icon: Icon, label, value, isLoading }: StatItemProps) {
   )
 }
 
+// Fetch function for React Query
+async function fetchHomepageStats(): Promise<HomepageStats> {
+  const response = await fetch('/api/homepage-stats')
+  if (!response.ok) {
+    throw new Error('Failed to fetch homepage stats')
+  }
+  return response.json()
+}
+
 export function StatsStrip() {
-  const [stats, setStats] = useState<HomepageStats>({
-    totalPuzzles: 0,
-    totalUsers: 0,
-    totalReviews: 0,
-    solvedToday: 0,
-    activeNow: 0
+  const { 
+    data: stats, 
+    isLoading, 
+    error 
+  } = useQuery({
+    queryKey: queryKeys.homepageStats,
+    queryFn: fetchHomepageStats,
+    // Use fallback data if the query fails
+    placeholderData: {
+      totalPuzzles: 17,
+      totalUsers: 9,
+      totalReviews: 10,
+      solvedToday: 3,
+      activeNow: 0
+    },
+    // Stats don't change very often, so we can cache them longer
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   })
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    console.log('🔍 Render - Current state:', { stats, isLoading, error })
-  }, [stats, isLoading, error])
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        console.log('🔄 StatsStrip component mounted, starting fetch...')
-        console.log('📊 About to fetch from /api/homepage-stats...')
-        
-        const response = await fetch('/api/homepage-stats')
-        console.log('📡 Raw response:', response)
-        
-        const responseText = await response.text()
-        console.log('📄 Response text:', responseText)
-        
-        const data = JSON.parse(responseText)
-        console.log('📈 Parsed stats data:', data)
-        
-        setStats(data)
-        setIsLoading(false)
-        console.log('✅ Stats updated successfully')
-      } catch (err) {
-        console.error('❌ Error fetching stats:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch stats')
-        setIsLoading(false)
-        
-        // Fallback to known working data from API
-        console.log('📋 Using fallback data...')
-        setStats({
-          totalPuzzles: 17,
-          totalUsers: 9,
-          totalReviews: 10,
-          solvedToday: 3,
-          activeNow: 0
-        })
-      }
-    }
-
-    fetchStats()
-  }, [])
-
-  useEffect(() => {
-    console.log('🔍 Current state:', { stats, isLoading, error })
-  }, [stats, isLoading, error])
 
   return (
     <section className="pt-12 pb-8">
@@ -120,31 +84,31 @@ export function StatsStrip() {
           <StatItem
             icon={Puzzle}
             label="Puzzles"
-            value={stats.totalPuzzles}
+            value={stats?.totalPuzzles || 0}
             isLoading={isLoading}
           />
           <StatItem
             icon={Users}
             label="Community"
-            value={stats.totalUsers}
+            value={stats?.totalUsers || 0}
             isLoading={isLoading}
           />
           <StatItem
             icon={MessageCircle}
             label="Reviews"
-            value={stats.totalReviews}
+            value={stats?.totalReviews || 0}
             isLoading={isLoading}
           />
           <StatItem
             icon={Calendar}
             label="Solved Today"
-            value={stats.solvedToday}
+            value={stats?.solvedToday || 0}
             isLoading={isLoading}
           />
           <StatItem
             icon={Clock}
             label="Active Now"
-            value={stats.activeNow}
+            value={stats?.activeNow || 0}
             isLoading={isLoading}
           />
         </div>

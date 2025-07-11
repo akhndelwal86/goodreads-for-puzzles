@@ -108,7 +108,6 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error) {
-        console.error('Error fetching collection:', error)
         return NextResponse.json({ error: 'Collection not found' }, { status: 404 })
       }
 
@@ -272,7 +271,6 @@ export async function GET(request: NextRequest) {
     const { data: lists, error } = await query
 
     if (error) {
-      console.error('Error fetching collections:', error)
       return NextResponse.json({ error: 'Failed to fetch collections' }, { status: 500 })
     }
 
@@ -325,7 +323,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in collections API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -389,7 +386,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (collectionError) {
-      console.error('Error creating collection:', collectionError)
       return NextResponse.json({ error: 'Failed to create collection' }, { status: 500 })
     }
 
@@ -406,15 +402,13 @@ export async function POST(request: NextRequest) {
         .insert(collectionItems)
 
       if (itemsError) {
-        console.error('Error adding puzzles to collection:', itemsError)
-        // Don't fail the whole request, just log the error
+        // Don't fail the whole request, just ignore the error
       }
     }
 
     return NextResponse.json({ success: true, collection }, { status: 201 })
 
   } catch (error) {
-    console.error('Error creating collection:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
