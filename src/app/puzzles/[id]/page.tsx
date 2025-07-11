@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
+import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ import {
 } from 'lucide-react'
 import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
 import { PurchaseLinks } from '@/components/puzzle/purchase-links'
+import { PuzzleShare } from '@/components/puzzle/puzzle-share'
 
 interface PuzzleDetail {
   puzzle: {
@@ -381,8 +383,41 @@ export default function PuzzleDetailPage() {
 
   const { puzzle } = puzzleData
 
+  // Generate meta tags for social sharing
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/puzzles/${puzzle.id}`
+  const shareTitle = `${puzzle.title} - ${puzzle.piece_count} Piece Puzzle by ${puzzle.brand?.name || 'Unknown Brand'}`
+  const shareDescription = puzzle.description || `Discover this amazing ${puzzle.piece_count}-piece jigsaw puzzle from ${puzzle.brand?.name || 'Unknown Brand'} on Puzzlr! Check out reviews, ratings, and community insights.`
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
+    <>
+      <Head>
+        <title>{shareTitle} | Puzzlr</title>
+        <meta name="description" content={shareDescription} />
+        
+        {/* OpenGraph tags */}
+        <meta property="og:title" content={shareTitle} />
+        <meta property="og:description" content={shareDescription} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Puzzlr" />
+        {puzzle.image_url && (
+          <meta property="og:image" content={puzzle.image_url} />
+        )}
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={shareTitle} />
+        <meta name="twitter:description" content={shareDescription} />
+        {puzzle.image_url && (
+          <meta name="twitter:image" content={puzzle.image_url} />
+        )}
+        
+        {/* Additional meta tags */}
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={shareUrl} />
+      </Head>
+      
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/20 to-violet-50/20">
       <div className="max-w-7xl mx-auto p-4 space-y-6">
         
         {/* Back Navigation */}
@@ -1686,6 +1721,20 @@ export default function PuzzleDetailPage() {
               </div>
             </div>
 
+            {/* Share This Puzzle */}
+            <div className="glass-card border-white/30 rounded-2xl p-5">
+              <PuzzleShare 
+                puzzle={{
+                  id: puzzle.id,
+                  title: puzzle.title,
+                  brand: puzzle.brand?.name || 'Unknown Brand',
+                  piece_count: puzzle.piece_count,
+                  description: puzzle.description,
+                  image_url: puzzle.image_url
+                }}
+              />
+            </div>
+
             {/* Recent Activity */}
             <div className="glass-card border-white/30 rounded-2xl p-5">
               <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
@@ -1772,6 +1821,7 @@ export default function PuzzleDetailPage() {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   )
 } 

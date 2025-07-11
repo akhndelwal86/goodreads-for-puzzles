@@ -6,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase'
 // Follow a collection
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -14,7 +14,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const collectionId = params.id
+    const resolvedParams = await params
+    const collectionId = resolvedParams.id
     if (!collectionId) {
       return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
     }
@@ -81,7 +82,7 @@ export async function POST(
 // Unfollow a collection
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -89,7 +90,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const collectionId = params.id
+    const resolvedParams = await params
+    const collectionId = resolvedParams.id
     if (!collectionId) {
       return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
     }
@@ -134,7 +136,7 @@ export async function DELETE(
 // Check if user is following a collection
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId: clerkUserId } = await auth()
@@ -142,7 +144,8 @@ export async function GET(
       return NextResponse.json({ isFollowing: false })
     }
 
-    const collectionId = params.id
+    const resolvedParams = await params
+    const collectionId = resolvedParams.id
     if (!collectionId) {
       return NextResponse.json({ error: 'Collection ID is required' }, { status: 400 })
     }

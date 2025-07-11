@@ -7,7 +7,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'PuzzleBase - Goodreads for Jigsaw Puzzles',
+  title: 'Puzzlr - Discover & Track Jigsaw Puzzles',
   description: 'A social platform for puzzle enthusiasts to discover, track, and share their jigsaw puzzle journey',
 }
 

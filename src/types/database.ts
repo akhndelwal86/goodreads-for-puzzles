@@ -1,4 +1,4 @@
-// Database Types for Goodreads for Jigsaw Puzzles
+// Database Types for Puzzlr
 
 export type PuzzleStatus = 'wishlist' | 'library' | 'in-progress' | 'completed' | 'abandoned';
 

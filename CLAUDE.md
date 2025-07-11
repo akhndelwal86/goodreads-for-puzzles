@@ -101,7 +101,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 
-This is a **Next.js 14 App Router** application for jigsaw puzzle enthusiasts - a "Goodreads for Puzzles" platform.
+This is a **Next.js 14 App Router** application for jigsaw puzzle enthusiasts - the "Puzzlr" platform.
 
 ### Tech Stack
 - **Framework**: Next.js 14 with App Router and TypeScript

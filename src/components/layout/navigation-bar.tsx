@@ -43,7 +43,7 @@ export function NavigationBar() {
               <span className="text-white font-bold text-sm">🧩</span>
             </div>
             <span className="font-bold text-xl text-gray-900 hidden sm:block">
-              Puzzle Tracker
+              PUZZLR
             </span>
           </Link>
 

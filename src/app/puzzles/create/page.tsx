@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, Database, Users, BookOpen, Plus, Eye, Search, Share2, LogIn } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Database, Users, BookOpen, Plus, Eye, Search, LogIn } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PuzzleCreationForm } from '@/components/puzzle/creation'
@@ -21,17 +21,6 @@ export default function CreatePuzzlePage() {
     setIsSubmitting(false)
   }
 
-  const handleShare = async () => {
-    if (createdPuzzleId) {
-      const url = `${window.location.origin}/puzzles/${createdPuzzleId}`
-      try {
-        await navigator.clipboard.writeText(url)
-        // Could add a toast notification here
-      } catch (err) {
-        console.error('Failed to copy:', err)
-      }
-    }
-  }
 
   if (createdPuzzleId) {
     return (
@@ -73,18 +62,8 @@ export default function CreatePuzzlePage() {
               </Link>
             </Button>
             
-            {/* Tertiary Options */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Button 
-                onClick={handleShare}
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Puzzle
-              </Button>
-              
+            {/* Tertiary Option */}
+            <div className="flex justify-center pt-2">
               <Button 
                 asChild 
                 variant="ghost"
