@@ -54,6 +54,12 @@ const nextConfig = {
         hostname: 'supabase.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ravensburger.cloud',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
