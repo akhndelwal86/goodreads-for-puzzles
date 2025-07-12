@@ -20,40 +20,27 @@ import {
   Star, 
   ArrowLeft, 
   Heart, 
-  Share2, 
-  ShoppingCart, 
-  Clock, 
-  Users, 
   Archive,
-  MessageCircle,
-  ThumbsUp,
+  Users, 
+  Clock, 
   Sparkles,
-  TrendingUp,
   Eye,
   Play,
-  Edit3,
   Target,
   Award,
-  Calendar,
-  MapPin,
-  Zap,
   Trophy,
   Activity,
   BarChart3,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Layers,
   Image as ImageIcon,
   Package,
-  Ruler,
-  Palette,
   Shield,
   ChevronDown,
   BookOpen,
   Check,
-  Loader2
+  Loader2,
+  XCircle,
+  CheckCircle
 } from 'lucide-react'
 import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
 import { PurchaseLinks } from '@/components/puzzle/purchase-links'
@@ -116,6 +103,31 @@ interface PuzzleDetail {
   }
 }
 
+// Add this component after imports
+const TruncatedDescription = ({ text, maxLength = 200 }: { text: string; maxLength?: number }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  if (!text || text.length <= maxLength) {
+    return <p className="text-slate-600 leading-relaxed mb-4 text-base">{text}</p>
+  }
+  
+  const displayText = isExpanded ? text : text.slice(0, maxLength) + '...'
+  
+  return (
+    <div className="mb-4">
+      <p className="text-slate-600 leading-relaxed text-base">
+        {displayText}
+      </p>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="text-violet-600 hover:text-violet-700 font-medium text-sm mt-2 transition-colors"
+      >
+        {isExpanded ? 'Show less' : 'Read more'}
+      </button>
+    </div>
+  )
+}
+
 export default function PuzzleDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -131,22 +143,22 @@ export default function PuzzleDetailPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   
   // Activity feed state
-  const [activityData, setActivityData] = useState<any[]>([])
+  const [activityData, setActivityData] = useState<unknown[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
   const [activityError, setActivityError] = useState<string | null>(null)
   
   // Reviews state
-  const [reviewsData, setReviewsData] = useState<any>(null)
+  const [reviewsData, setReviewsData] = useState<unknown>(null)
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [reviewsError, setReviewsError] = useState<string | null>(null)
   
   // Related puzzles state
-  const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<any>(null)
+  const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<unknown>(null)
   const [relatedPuzzlesLoading, setRelatedPuzzlesLoading] = useState(true)
   const [relatedPuzzlesError, setRelatedPuzzlesError] = useState<string | null>(null)
   
   // Browse similar state
-  const [browseSimilarData, setBrowseSimilarData] = useState<any>(null)
+  const [browseSimilarData, setBrowseSimilarData] = useState<unknown>(null)
   const [browseSimilarLoading, setBrowseSimilarLoading] = useState(true)
   const [browseSimilarError, setBrowseSimilarError] = useState<string | null>(null)
 
@@ -508,9 +520,10 @@ export default function PuzzleDetailPage() {
 
                   {/* Description */}
                   <div>
-                    <p className="text-slate-600 leading-relaxed mb-4 text-base">
-                      {puzzle.description || 'A beautiful jigsaw puzzle featuring stunning artwork and premium quality pieces. Perfect for puzzle enthusiasts looking for their next challenge with excellent image quality and precise piece cutting.'}
-                    </p>
+                    <TruncatedDescription 
+                      text={puzzle.description || 'A beautiful jigsaw puzzle featuring stunning artwork and premium quality pieces. Perfect for puzzle enthusiasts looking for their next challenge with excellent image quality and precise piece cutting.'} 
+                      maxLength={200}
+                    />
                   </div>
 
                   {/* Essential Specs as Labels */}

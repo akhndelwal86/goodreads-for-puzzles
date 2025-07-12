@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useUser } from '@clerk/nextjs'
+import { getOptimizedImageUrl, getBlurPlaceholder, RESPONSIVE_SIZES } from '@/lib/image-utils'
+import { ImageSkeleton } from '@/components/ui/image-skeleton'
 import { 
   Star, 
   ChevronDown, 
@@ -53,6 +55,8 @@ interface Puzzle {
 interface BrowsePuzzleCardProps {
   puzzle: Puzzle
   viewMode?: 'grid' | 'list'
+  priority?: boolean
+  index?: number
 }
 
 interface PuzzleStatus {
@@ -60,7 +64,12 @@ interface PuzzleStatus {
   status?: string
 }
 
-export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCardProps) {
+export function BrowsePuzzleCard({ 
+  puzzle, 
+  viewMode = 'grid', 
+  priority = false,
+  index = 0 
+}: BrowsePuzzleCardProps) {
   const { user } = useUser()
   const { requireAuth, SignInPrompt } = useAuthPrompt()
   const [puzzleStatus, setPuzzleStatus] = useState<PuzzleStatus>({ hasLog: false })
@@ -68,6 +77,8 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [completionTime, setCompletionTime] = useState('')
   const [showRatingModal, setShowRatingModal] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
   
   // Debug: Log when modal state changes
   useEffect(() => {
@@ -235,13 +246,27 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
           <div className="flex">
             {/* Image Container */}
             <div className="relative w-48 h-36 flex-shrink-0 overflow-hidden bg-gray-50">
-              {puzzle.imageUrl ? (
+              {imageLoading && (
+                <ImageSkeleton variant="list" className="absolute inset-0" />
+              )}
+              {puzzle.imageUrl && !imageError ? (
                 <Image
-                  src={puzzle.imageUrl}
+                  src={getOptimizedImageUrl(puzzle.imageUrl, 'card', 80)}
                   alt={puzzle.title}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  sizes="192px"
+                  className={`object-cover group-hover:scale-105 transition-all duration-300 ${
+                    imageLoading ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  sizes={RESPONSIVE_SIZES.list}
+                  quality={80}
+                  priority={priority && index < 3}
+                  placeholder="blur"
+                  blurDataURL={getBlurPlaceholder(puzzle.imageUrl)}
+                  onLoadingComplete={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageError(true)
+                    setImageLoading(false)
+                  }}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full bg-gray-100">
@@ -475,15 +500,29 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
         <div className="p-5">
           {/* Image Container - Fixed Height with Enhanced Hover Effects */}
           <div className="relative overflow-hidden rounded-xl mb-4">
-            {puzzle.imageUrl ? (
+            {imageLoading && (
+              <ImageSkeleton variant="card" className="absolute inset-0" />
+            )}
+            {puzzle.imageUrl && !imageError ? (
               <>
                 <Image
-                  src={puzzle.imageUrl}
+                  src={getOptimizedImageUrl(puzzle.imageUrl, 'card', 80)}
                   alt={puzzle.title}
                   width={400}
                   height={400}
-                  className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className={`w-full h-48 object-cover transition-all duration-300 group-hover:scale-105 ${
+                    imageLoading ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  sizes={RESPONSIVE_SIZES.grid}
+                  quality={80}
+                  priority={priority && index < 6}
+                  placeholder="blur"
+                  blurDataURL={getBlurPlaceholder(puzzle.imageUrl)}
+                  onLoadingComplete={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageError(true)
+                    setImageLoading(false)
+                  }}
                 />
                 {/* Gradient Overlay on Hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

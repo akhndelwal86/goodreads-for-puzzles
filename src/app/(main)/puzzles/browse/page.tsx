@@ -1,13 +1,15 @@
 'use client'
 
-import React, { Suspense, useState, useEffect, useCallback } from 'react'
+import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { BrowsePuzzleCard } from '@/components/puzzle/browse-puzzle-card'
 import { BrowseFilterSidebar } from '@/components/puzzle/browse-filter-sidebar'
 import { PremiumSearchBar } from '@/components/puzzle/premium-search-bar'
-import { Search, ChevronDown, Grid, List, Sparkles, Plus, Heart, BookOpen, Clock, Check, Eye, Star, ChevronRight } from 'lucide-react'
+import { getOptimizedImageUrl, getBlurPlaceholder, RESPONSIVE_SIZES } from '@/lib/image-utils'
+import { PuzzleGridSkeleton, PuzzleListLoadingSkeleton, ImageSkeleton } from '@/components/ui/image-skeleton'
+import { Search, ChevronDown, Grid, List, Plus, Heart, BookOpen, Clock, Check, Eye, Star, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { 
   DropdownMenu, 
@@ -60,8 +62,20 @@ interface Puzzle {
   difficulty_level?: number
 }
 
+interface CollectionInfo {
+  id: string
+  name: string
+  description?: string
+  puzzle_count: number
+  average_rating?: number
+}
+
 // List view component for puzzles - Clean horizontal design matching reference
-const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
+const PuzzleListItem = ({ puzzle, priority = false, index = 0 }: { 
+  puzzle: Puzzle
+  priority?: boolean
+  index?: number
+}) => {
   const router = useRouter()
   const { user } = useUser()
   
@@ -69,6 +83,8 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
   const [puzzleStatus, setPuzzleStatus] = useState<{hasLog: boolean, status?: string}>({ hasLog: false })
   const [isUpdating, setIsUpdating] = useState(false)
   const [showRatingModal, setShowRatingModal] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
   
   const getDifficultyInfo = (pieceCount: number) => {
     if (pieceCount <= 300) return { level: 'Easy', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
@@ -149,12 +165,28 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
     <div className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden group">
       <div className="flex items-center gap-4 p-4">
         {/* Compact Square Image */}
-        <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100">
-          <img
-            src={puzzle.imageUrl || '/placeholder-puzzle.svg'}
-            alt={puzzle.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          />
+        <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 relative">
+          {imageLoading && (
+            <ImageSkeleton variant="thumbnail" className="absolute inset-0" />
+          )}
+          {puzzle.imageUrl && !imageError ? (
+            <img
+              src={getOptimizedImageUrl(puzzle.imageUrl, 'thumbnail', 80)}
+              alt={puzzle.title}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-200 ${
+                imageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageError(true)
+                setImageLoading(false)
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-200">
+              <div className="w-6 h-6 bg-slate-300 rounded" />
+            </div>
+          )}
         </div>
         
         {/* Content Section */}
@@ -334,8 +366,6 @@ const PuzzleListItem = ({ puzzle }: { puzzle: Puzzle }) => {
 }
 
 function BrowsePuzzlesPageContent() {
-  const { user } = useUser()
-  const router = useRouter()
   const searchParams = useSearchParams()
   
   // View state
@@ -347,7 +377,12 @@ function BrowsePuzzlesPageContent() {
   const [availableBrands, setAvailableBrands] = useState([])
   const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null)
   const [collectionId, setCollectionId] = useState<string | null>(null)
-  const [collectionInfo, setCollectionInfo] = useState<any>(null)
+  const [collectionInfo, setCollectionInfo] = useState<CollectionInfo | null>(null)
+  const [totalCount, setTotalCount] = useState<number>(0)
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const limit = 30
+  const loaderRef = useRef<HTMLDivElement | null>(null)
 
   // Individual filter states
   const [search, setSearch] = useState('')
@@ -358,6 +393,10 @@ function BrowsePuzzlesPageContent() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rating'>('recent')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  // Add missing state for difficulties, themes, and categories
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   const filters: FilterState = {
     search,
@@ -368,40 +407,48 @@ function BrowsePuzzlesPageContent() {
     status: statusFilter,
     sortBy,
     sortOrder,
-    difficulties: [],
-    themes: [],
-    categories: [],
+    difficulties: selectedDifficulties, // Use the state variable
+    themes: selectedThemes,
+    categories: selectedCategories,
     priceRange: [0, 100],
     minRating: ratingMin,
     yearRange: [2020, 2024],
   }
 
   // Transform API puzzle data to match component expectations
-  const transformPuzzleData = (puzzle: any): Puzzle => {
+  const transformPuzzleData = (puzzle: Record<string, unknown>): Puzzle => {
     return {
-      ...puzzle,
-      // API returns imageUrl, component expects both imageUrl and main_image_urls for compatibility
-      imageUrl: puzzle.imageUrl,
-      main_image_urls: puzzle.imageUrl ? [puzzle.imageUrl] : [],
-      // API returns pieceCount, ensure component gets both versions
-      pieceCount: puzzle.pieceCount || 0,
-      piece_count: puzzle.pieceCount || 0,
-      // Ensure required fields have defaults
-      createdAt: puzzle.createdAt || new Date().toISOString(),
-      updatedAt: puzzle.updatedAt || new Date().toISOString(),
-      brand: puzzle.brand || { id: 'unknown', name: 'Unknown Brand' },
-      theme: puzzle.theme || '',
-      avgRating: puzzle.avgRating || 0,
-      reviewCount: puzzle.reviewCount || 0,
+      id: typeof puzzle.id === 'string' ? puzzle.id : 'unknown',
+      title: typeof puzzle.title === 'string' ? puzzle.title : 'Untitled Puzzle',
+      imageUrl: typeof puzzle.imageUrl === 'string' ? puzzle.imageUrl : undefined,
+      main_image_urls: typeof puzzle.imageUrl === 'string' ? [puzzle.imageUrl] : [],
+      pieceCount: typeof puzzle.pieceCount === 'number' ? puzzle.pieceCount : 0,
+      piece_count: typeof puzzle.pieceCount === 'number' ? puzzle.pieceCount : 0,
+      createdAt: typeof puzzle.createdAt === 'string' ? puzzle.createdAt : new Date().toISOString(),
+      updatedAt: typeof puzzle.updatedAt === 'string' ? puzzle.updatedAt : new Date().toISOString(),
+      brand: typeof puzzle.brand === 'object' && puzzle.brand !== null && 'id' in puzzle.brand && 'name' in puzzle.brand
+        ? (puzzle.brand as { id: string; name: string })
+        : { id: 'unknown', name: 'Unknown Brand' },
+      theme: typeof puzzle.theme === 'string' ? puzzle.theme : '',
+      avgRating: typeof puzzle.avgRating === 'number' ? puzzle.avgRating : 0,
+      reviewCount: typeof puzzle.reviewCount === 'number' ? puzzle.reviewCount : 0,
+      material: typeof puzzle.material === 'string' ? puzzle.material : undefined,
+      description: typeof puzzle.description === 'string' ? puzzle.description : undefined,
+      year: typeof puzzle.year === 'number' ? puzzle.year : undefined,
+      difficulty_level: typeof puzzle.difficulty_level === 'number' ? puzzle.difficulty_level : undefined,
     }
   }
 
-  // Fetch puzzles with filters
-  const fetchPuzzles = useCallback(async (currentFilters: FilterState, overrideCollectionId?: string) => {
-    setLoading(true)
+  // Fetch puzzles with filters and pagination
+  const fetchPuzzles = useCallback(async (
+    currentFilters: FilterState,
+    overrideCollectionId?: string,
+    fetchOffset = 0,
+    append = false
+  ) => {
+    if (fetchOffset === 0) setLoading(true)
     try {
       const params = new URLSearchParams()
-      
       // Add all filter parameters
       if (currentFilters.search) params.set('search', currentFilters.search)
       if (currentFilters.brands.length > 0) params.set('brands', currentFilters.brands.join(','))
@@ -412,23 +459,34 @@ function BrowsePuzzlesPageContent() {
       if (currentFilters.difficulties.length > 0) params.set('difficulties', currentFilters.difficulties.join(','))
       if (currentFilters.themes.length > 0) params.set('themes', currentFilters.themes.join(','))
       if (currentFilters.categories.length > 0) params.set('categories', currentFilters.categories.join(','))
-      
       // Add sorting
       params.set('sortBy', currentFilters.sortBy)
       params.set('sortOrder', currentFilters.sortOrder)
-      
+      // Pagination
+      params.set('limit', limit.toString())
+      params.set('offset', fetchOffset.toString())
       // Add collection filter if specified (use override or state)
       const activeCollectionId = overrideCollectionId || collectionId
       if (activeCollectionId) {
         params.set('collection', activeCollectionId)
       }
-      
       const response = await fetch(`/api/puzzles?${params.toString()}`)
       const data = await response.json()
-      
       if (data.puzzles) {
-        setPuzzles(data.puzzles.map(transformPuzzleData))
+        const transformedPuzzles = data.puzzles.map(transformPuzzleData)
+        setPuzzles(prev => {
+          if (append) {
+            // Remove duplicates when appending
+            const existingIds = new Set(prev.map(p => p.id))
+            const newPuzzles = transformedPuzzles.filter(p => !existingIds.has(p.id))
+            return [...prev, ...newPuzzles]
+          } else {
+            return transformedPuzzles
+          }
+        })
         setAvailableBrands(data.brands || [])
+        setTotalCount(data.total || data.puzzles.length)
+        setHasMore((fetchOffset + (data.puzzles.length || 0)) < (data.total || 0))
       }
     } catch (error) {
       console.error('Failed to fetch puzzles:', error)
@@ -436,6 +494,27 @@ function BrowsePuzzlesPageContent() {
       setLoading(false)
     }
   }, [collectionId])
+
+  // Infinite scroll: observe loaderRef
+  useEffect(() => {
+    if (!hasMore || loading) return
+    const observer = new window.IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setOffset(prev => {
+            const nextOffset = prev + limit
+            fetchPuzzles(currentFilters || filters, undefined, nextOffset, true)
+            return nextOffset
+          })
+        }
+      },
+      { threshold: 1 }
+    )
+    if (loaderRef.current) observer.observe(loaderRef.current)
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current)
+    }
+  }, [hasMore, loading, currentFilters, fetchPuzzles])
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -447,9 +526,15 @@ function BrowsePuzzlesPageContent() {
     setStatusFilter(newFilters.status)
     setSortBy(newFilters.sortBy as 'recent' | 'popular' | 'rating')
     setSortOrder(newFilters.sortOrder as 'asc' | 'desc')
+    // Add missing state updates
+    setSelectedDifficulties(newFilters.difficulties)
+    setSelectedThemes(newFilters.themes)
+    setSelectedCategories(newFilters.categories)
     
     setCurrentFilters(newFilters)
-    fetchPuzzles(newFilters)
+    setOffset(0)
+    setHasMore(true)
+    fetchPuzzles(newFilters, undefined, 0, false)
   }, [fetchPuzzles])
 
   // Handle sort changes
@@ -472,6 +557,10 @@ function BrowsePuzzlesPageContent() {
     setStatusFilter('')
     setSortBy('recent')
     setSortOrder('desc')
+    // Add missing state clears
+    setSelectedDifficulties([])
+    setSelectedThemes([])
+    setSelectedCategories([])
     
     const clearedFilters: FilterState = {
       search: '',
@@ -491,7 +580,9 @@ function BrowsePuzzlesPageContent() {
     }
     
     setCurrentFilters(clearedFilters)
-    fetchPuzzles(clearedFilters)
+    setOffset(0)
+    setHasMore(true)
+    fetchPuzzles(clearedFilters, undefined, 0, false)
   }, [fetchPuzzles])
 
   // Load initial data
@@ -514,30 +605,9 @@ function BrowsePuzzlesPageContent() {
       yearRange: [2020, 2024],
     }
     setCurrentFilters(initialFilters)
-    
-    // Call fetchPuzzles directly to avoid dependency issues
-    const loadInitialPuzzles = async () => {
-      setLoading(true)
-      try {
-        const params = new URLSearchParams()
-        params.set('sortBy', 'recent')
-        params.set('sortOrder', 'desc')
-        
-        const response = await fetch(`/api/puzzles?${params.toString()}`)
-          const data = await response.json()
-        
-        if (data.puzzles) {
-          setPuzzles(data.puzzles.map(transformPuzzleData))
-          setAvailableBrands(data.brands || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch initial puzzles:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadInitialPuzzles()
+    setOffset(0)
+    setHasMore(true)
+    fetchPuzzles(initialFilters, undefined, 0, false)
   }, []) // Empty dependency array to run only once
 
   // Read and apply URL parameters
@@ -594,7 +664,9 @@ function BrowsePuzzlesPageContent() {
       }
       
       setCurrentFilters(urlFilters)
-      fetchPuzzles(urlFilters, collection || undefined)
+      setOffset(0)
+      setHasMore(true)
+      fetchPuzzles(urlFilters, collection || undefined, 0, false)
     }
   }, [searchParams, fetchPuzzles]) // Add dependency on searchParams
   
@@ -604,7 +676,7 @@ function BrowsePuzzlesPageContent() {
       const response = await fetch(`/api/collections?id=${id}`)
       const data = await response.json()
       if (data.collections && data.collections.length > 0) {
-        setCollectionInfo(data.collections[0])
+        setCollectionInfo(data.collections[0] as CollectionInfo)
       }
     } catch (error) {
       console.error('Failed to fetch collection info:', error)
@@ -702,12 +774,12 @@ function BrowsePuzzlesPageContent() {
               {/* Left: Results Count */}
               <div className="flex items-center gap-4">
                 <h2 className="text-xl sm:text-2xl font-semibold text-slate-700">
-                  {loading ? (
+                  {loading && offset === 0 ? (
                     <div className="h-8 w-32 bg-slate-200 rounded animate-pulse" />
                   ) : collectionInfo ? (
                     `${puzzles.length} of ${collectionInfo.puzzle_count} Puzzles`
                   ) : (
-                    `${puzzles.length} Puzzle${puzzles.length !== 1 ? 's' : ''}`
+                    `${totalCount} Puzzle${totalCount !== 1 ? 's' : ''}`
                   )}
                 </h2>
                   </div>
@@ -772,13 +844,12 @@ function BrowsePuzzlesPageContent() {
                     </div>
 
             {/* Puzzle Results */}
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
-                  <p className="text-slate-600">Loading puzzles...</p>
-                </div>
-              </div>
+            {loading && offset === 0 ? (
+              viewMode === 'grid' ? (
+                <PuzzleGridSkeleton count={6} />
+              ) : (
+                <PuzzleListLoadingSkeleton count={6} />
+              )
             ) : puzzles.length === 0 ? (
               <div className="text-center py-12 glass-card">
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No puzzles found</h3>
@@ -793,13 +864,29 @@ function BrowsePuzzlesPageContent() {
                   ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
                   : "grid grid-cols-1 gap-4"
               }>
-                {puzzles.map((puzzle) => (
+                {puzzles.map((puzzle, index) => (
                   viewMode === 'grid' ? (
-                    <BrowsePuzzleCard key={puzzle.id} puzzle={puzzle} />
+                    <BrowsePuzzleCard 
+                      key={puzzle.id} 
+                      puzzle={puzzle} 
+                      priority={index < 6}
+                      index={index}
+                    />
                   ) : (
-                    <PuzzleListItem key={puzzle.id} puzzle={puzzle} />
+                    <PuzzleListItem 
+                      key={puzzle.id} 
+                      puzzle={puzzle} 
+                      priority={index < 3}
+                      index={index}
+                    />
                   )
-          ))}
+                ))}
+        {/* Infinite scroll loader sentinel */}
+        {hasMore && !loading && (
+          <div ref={loaderRef} className="h-12 flex items-center justify-center col-span-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-400" />
+          </div>
+        )}
         </div>
             )}
           </div>

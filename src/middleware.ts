@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { adminMiddleware } from '@/lib/admin-middleware'
 
 // Define which routes are protected (require authentication)
 const isProtectedRoute = createRouteMatcher([
@@ -28,6 +29,16 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
+  // Handle admin routes first (separate authentication system)
+  const { pathname } = req.nextUrl
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    const adminResponse = await adminMiddleware(req)
+    if (adminResponse) {
+      return adminResponse
+    }
+    // If adminMiddleware returns null, continue to regular Clerk auth
+  }
+
   // Protect routes that require authentication
   if (isProtectedRoute(req)) {
     await auth.protect()
