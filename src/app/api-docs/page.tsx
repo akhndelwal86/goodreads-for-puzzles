@@ -3,16 +3,14 @@ import {
   Code, 
   Database, 
   Key, 
-  Globe, 
   BookOpen, 
   Shield,
   Zap,
   Users,
   Star,
   Camera,
-  ExternalLink,
-  Copy,
-  CheckCircle
+  ArrowRight,
+  Clock
 } from 'lucide-react'
 
 export const metadata: Metadata = {
