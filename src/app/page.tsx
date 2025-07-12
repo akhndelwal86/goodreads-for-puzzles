@@ -40,7 +40,8 @@ export default function HomePage() {
   }
 
   const handleViewAll = (listType: 'trending' | 'most-completed' | 'recently-added' | 'top-rated') => {
-    // TODO: Navigate to dedicated list page
+    // Navigate to collections page - these smart lists will be shown as official collections
+    router.push('/collections')
   }
 
   return (

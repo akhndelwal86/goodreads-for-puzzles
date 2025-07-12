@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import { QuickRatingModal } from '@/components/puzzle/quick-rating-modal'
+import { useAuthPrompt } from '@/components/auth/auth-guard'
 
 interface Puzzle {
   id: string
@@ -61,6 +62,7 @@ interface PuzzleStatus {
 
 export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCardProps) {
   const { user } = useUser()
+  const { requireAuth, SignInPrompt } = useAuthPrompt()
   const [puzzleStatus, setPuzzleStatus] = useState<PuzzleStatus>({ hasLog: false })
   const [isUpdating, setIsUpdating] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
@@ -160,6 +162,11 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
 
   const handleStatusChange = async (newStatus: string, event: React.MouseEvent) => {
     event.stopPropagation()
+    
+    // Check authentication before allowing status changes
+    if (!requireAuth('track your puzzle progress', `/puzzles/${puzzle.id}`)) {
+      return
+    }
     
     if (newStatus === 'completed') {
       setShowCompletionModal(true)
@@ -719,6 +726,9 @@ export function BrowsePuzzleCard({ puzzle, viewMode = 'grid' }: BrowsePuzzleCard
           pieceCount: puzzle.pieceCount
         }}
       />
+
+      {/* Auth Prompt Modal */}
+      <SignInPrompt />
     </>
   )
-} 
+}

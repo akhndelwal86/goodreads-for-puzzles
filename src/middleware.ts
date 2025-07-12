@@ -8,7 +8,10 @@ const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/settings(.*)',
   '/lists/create(.*)',
-  '/lists/edit(.*)'
+  '/lists/edit(.*)',
+  '/puzzles/add(.*)',
+  '/puzzles/create(.*)',
+  '/collections/create(.*)'
 ])
 
 // Define which routes are public (accessible to unauthenticated users)
@@ -25,10 +28,10 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
-  // Temporarily disable auth protection for testing
-  // if (isProtectedRoute(req)) {
-  //   await auth.protect()
-  // }
+  // Protect routes that require authentication
+  if (isProtectedRoute(req)) {
+    await auth.protect()
+  }
 })
 
 export const config = {

@@ -35,7 +35,7 @@ export function HeroSection() {
             size="lg" 
             className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
-            <Link href="/discover" className="flex items-center gap-2">
+            <Link href="/puzzles/browse" className="flex items-center gap-2">
               <Search className="w-5 h-5" />
               Find Your Next Puzzle
             </Link>

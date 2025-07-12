@@ -14,6 +14,7 @@ import { PostCreationBox } from '@/components/community/post-creation-box'
 import { SidebarStats } from '@/components/community/sidebar-stats'
 import { SidebarLeaderboards } from '@/components/community/sidebar-leaderboards'
 import { FollowProvider } from '@/contexts/follow-context'
+import { AuthGuard, useAuthPrompt } from '@/components/auth/auth-guard'
 
 // Activity interface
 interface Activity {
@@ -58,6 +59,7 @@ function CommunityPageContent() {
   const { user } = useUser()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { isSignedIn, requireAuth, SignInPrompt } = useAuthPrompt()
   const [activities, setActivities] = useState<Activity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<FeedTab>('all')
@@ -149,6 +151,11 @@ function CommunityPageContent() {
 
   // Handle tab change
   const handleTabChange = (tab: FeedTab) => {
+    // Check if authentication is required for this tab
+    if ((tab === 'following' || tab === 'personal') && !requireAuth(`view your ${tab} feed`, '/community')) {
+      return
+    }
+    
     setActiveTab(tab)
     setIsLoading(true)
     
@@ -237,11 +244,29 @@ function CommunityPageContent() {
           <div className="lg:col-span-2 animate-in slide-in-from-left-5 duration-700 delay-100">
             {/* Post Creation Box */}
             <div className="animate-in fade-in-0 duration-500 delay-300">
-              <PostCreationBox 
-                onOptimisticPost={handleNewPost}
-                onPostCreated={handlePostCreated}
-                onPostError={handlePostError}
-              />
+              <AuthGuard 
+                feature="create posts and share your puzzle updates"
+                redirectTo="/community"
+                fallback={
+                  <div className="glass-card border border-white/40 rounded-2xl p-6 text-center bg-gradient-to-r from-violet-50 to-purple-50">
+                    <div className="mb-4">
+                      <MessageSquare className="w-12 h-12 text-violet-600 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Share Your Puzzle Journey
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        Join the community to post updates, share completions, and connect with fellow puzzle enthusiasts.
+                      </p>
+                    </div>
+                  </div>
+                }
+              >
+                <PostCreationBox 
+                  onOptimisticPost={handleNewPost}
+                  onPostCreated={handlePostCreated}
+                  onPostError={handlePostError}
+                />
+              </AuthGuard>
             </div>
 
             {/* Feed Tabs */}
@@ -381,6 +406,9 @@ function CommunityPageContent() {
         </div>
       </div>
       </div>
+
+      {/* Auth Prompt Modal */}
+      <SignInPrompt />
     </FollowProvider>
   )
 }

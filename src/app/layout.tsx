@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { NavigationBar } from '@/components/layout/navigation-bar'
+import { Footer } from '@/components/layout/footer'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { ErrorBoundary } from '@/components/error-boundary'
 import './globals.css'
@@ -34,6 +35,9 @@ export default function RootLayout({
               {children}
             </ErrorBoundary>
           </main>
+          <ErrorBoundary>
+            <Footer />
+          </ErrorBoundary>
         </QueryProvider>
       </body>
     </html>

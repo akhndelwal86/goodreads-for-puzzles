@@ -651,9 +651,9 @@ function BrowsePuzzlesPageContent() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="flex gap-6">
-          {/* Advanced Filter Sidebar */}
-          <div className="w-64 flex-shrink-0">
+        <div className="lg:flex lg:gap-6">
+          {/* Advanced Filter Sidebar - Hidden on mobile, shown on large screens */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
             <BrowseFilterSidebar
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -667,8 +667,8 @@ function BrowsePuzzlesPageContent() {
             {/* Collection Context Bar */}
             {collectionInfo && (
               <div className="mb-6">
-                <div className="glass-card border border-white/40 p-6 rounded-xl">
-                  <div className="flex items-center justify-between">
+                <div className="glass-card border border-white/40 p-4 sm:p-6 rounded-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-16 bg-gradient-to-br from-violet-200 via-purple-100 to-violet-300 rounded-lg flex items-center justify-center">
                         <span className="text-2xl">🧩</span>
@@ -697,11 +697,11 @@ function BrowsePuzzlesPageContent() {
               </div>
             )}
 
-            {/* Clean Controls Bar - Redesigned */}
-            <div className="flex items-center justify-between mb-6 py-4">
+            {/* Clean Controls Bar - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 py-4">
               {/* Left: Results Count */}
               <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-semibold text-slate-700">
+                <h2 className="text-xl sm:text-2xl font-semibold text-slate-700">
                   {loading ? (
                     <div className="h-8 w-32 bg-slate-200 rounded animate-pulse" />
                   ) : collectionInfo ? (
@@ -713,11 +713,11 @@ function BrowsePuzzlesPageContent() {
                   </div>
 
               {/* Right: Sort and View Controls */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 {/* Sort Dropdown */}
                 <div className="flex items-center gap-2">
                   <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-40 h-9 bg-white border-slate-200 text-sm">
+                    <SelectTrigger className="w-32 sm:w-40 h-9 bg-white border-slate-200 text-sm">
                       <SelectValue placeholder="Sort: Trending" />
                     </SelectTrigger>
                     <SelectContent>
@@ -729,11 +729,11 @@ function BrowsePuzzlesPageContent() {
                   </Select>
                     </div>
 
-                {/* Filters Button */}
+                {/* Filters Button - More prominent on mobile */}
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="h-9 px-3 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  className="h-9 px-3 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 lg:hidden"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
