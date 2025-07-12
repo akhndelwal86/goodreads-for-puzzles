@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       message: 'Admin tables exist',
       tablesExist: true,
-      sessionCount: data?.[0]?.count || 0
+      sessionCount: Array.isArray(data) && data[0] ? (data[0] as any).count || 0 : 0
     })
 
   } catch (error) {

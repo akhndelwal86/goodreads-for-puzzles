@@ -45,6 +45,16 @@ import {
 import { AdvancedRatingModal } from '@/components/puzzle/advanced-rating-modal'
 import { PurchaseLinks } from '@/components/puzzle/purchase-links'
 import dynamic from 'next/dynamic'
+import {
+  ReviewsData,
+  ActivityItem,
+  RelatedPuzzlesData,
+  BrowseSimilarData,
+  isValidReviewsData,
+  isValidActivityData,
+  isValidRelatedPuzzlesData,
+  isValidBrowseSimilarData
+} from '@/types/puzzle-detail'
 
 // Dynamically import heavy components that include third-party libraries
 const PuzzleShare = dynamic(() => import('@/components/puzzle/puzzle-share').then(mod => ({ default: mod.PuzzleShare })), {
@@ -143,22 +153,22 @@ export default function PuzzleDetailPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   
   // Activity feed state
-  const [activityData, setActivityData] = useState<unknown[]>([])
+  const [activityData, setActivityData] = useState<ActivityItem[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
   const [activityError, setActivityError] = useState<string | null>(null)
   
   // Reviews state
-  const [reviewsData, setReviewsData] = useState<unknown>(null)
+  const [reviewsData, setReviewsData] = useState<ReviewsData | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [reviewsError, setReviewsError] = useState<string | null>(null)
   
   // Related puzzles state
-  const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<unknown>(null)
+  const [relatedPuzzlesData, setRelatedPuzzlesData] = useState<RelatedPuzzlesData | null>(null)
   const [relatedPuzzlesLoading, setRelatedPuzzlesLoading] = useState(true)
   const [relatedPuzzlesError, setRelatedPuzzlesError] = useState<string | null>(null)
   
   // Browse similar state
-  const [browseSimilarData, setBrowseSimilarData] = useState<unknown>(null)
+  const [browseSimilarData, setBrowseSimilarData] = useState<BrowseSimilarData | null>(null)
   const [browseSimilarLoading, setBrowseSimilarLoading] = useState(true)
   const [browseSimilarError, setBrowseSimilarError] = useState<string | null>(null)
 
@@ -210,7 +220,11 @@ export default function PuzzleDetailPage() {
       }
       
       const data = await response.json()
-      setActivityData(data.activities || [])
+      if (isValidActivityData(data.activities)) {
+        setActivityData(data.activities)
+      } else {
+        setActivityData([])
+      }
     } catch (error) {
       console.error('Error fetching activity:', error)
       setActivityError('Failed to load recent activity')
@@ -231,7 +245,11 @@ export default function PuzzleDetailPage() {
       }
       
       const data = await response.json()
-      setReviewsData(data)
+      if (isValidReviewsData(data)) {
+        setReviewsData(data)
+      } else {
+        throw new Error('Invalid reviews data format')
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error)
       setReviewsError('Failed to load reviews')
@@ -252,7 +270,11 @@ export default function PuzzleDetailPage() {
       }
       
       const data = await response.json()
-      setRelatedPuzzlesData(data)
+      if (isValidRelatedPuzzlesData(data)) {
+        setRelatedPuzzlesData(data)
+      } else {
+        throw new Error('Invalid related puzzles data format')
+      }
     } catch (error) {
       console.error('Error fetching related puzzles:', error)
       setRelatedPuzzlesError('Failed to load related puzzles')
@@ -275,7 +297,11 @@ export default function PuzzleDetailPage() {
       }
       
       const data = await response.json()
-      setBrowseSimilarData(data)
+      if (isValidBrowseSimilarData(data)) {
+        setBrowseSimilarData(data)
+      } else {
+        throw new Error('Invalid browse similar data format')
+      }
     } catch (error) {
       console.error('Error fetching browse similar data:', error)
       setBrowseSimilarError(error instanceof Error ? error.message : 'Failed to load browse similar data')
@@ -1055,7 +1081,7 @@ export default function PuzzleDetailPage() {
                         Try again
                       </button>
                     </div>
-                  ) : !reviewsData || reviewsData.summary.totalReviews === 0 ? (
+                  ) : (reviewsData?.summary?.totalReviews || 0) === 0 ? (
                     // Empty state
                     <div className="text-center py-8">
                       <div className="mb-4">
@@ -1079,14 +1105,14 @@ export default function PuzzleDetailPage() {
                           <h3 className="text-base font-medium text-slate-700 mb-3">Overall Rating</h3>
                           <div className="text-center p-4 glass-card border-white/40 rounded-xl">
                             <div className="text-3xl font-bold text-slate-800 mb-3">
-                              {reviewsData.summary.averageRating.toFixed(1)}
+                              {reviewsData?.summary?.averageRating?.toFixed(1) || '0.0'}
                             </div>
                             <div className="flex justify-center mb-3">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
                                   className={`w-5 h-5 ${
-                                    i < Math.floor(reviewsData.summary.averageRating)
+                                    i < Math.floor(reviewsData?.summary?.averageRating || 0)
                                       ? 'fill-amber-400 text-amber-400'
                                       : 'text-slate-300'
                                   }`}
@@ -1094,7 +1120,7 @@ export default function PuzzleDetailPage() {
                               ))}
                             </div>
                             <div className="text-sm text-slate-600 font-medium">
-                              {reviewsData.summary.totalReviews} total review{reviewsData.summary.totalReviews !== 1 ? 's' : ''}
+                              {reviewsData?.summary?.totalReviews || 0} total review{(reviewsData?.summary?.totalReviews || 0) !== 1 ? 's' : ''}
                             </div>
                           </div>
                         </div>
@@ -1102,7 +1128,7 @@ export default function PuzzleDetailPage() {
                         <div className="md:col-span-2">
                           <h3 className="text-base font-medium text-slate-700 mb-3">Rating Breakdown</h3>
                           <div className="space-y-2">
-                            {reviewsData.summary.ratingBreakdown.map((item: any) => (
+                            {(reviewsData?.summary?.ratingBreakdown || []).map((item) => (
                               <div key={item.stars} className="flex items-center gap-4">
                                 <div className="flex items-center gap-1 w-16">
                                   <span className="text-sm font-medium text-slate-700">{item.stars}</span>
@@ -1137,7 +1163,7 @@ export default function PuzzleDetailPage() {
                                   <Star
                                     key={i}
                                     className={`w-4 h-4 ${
-                                      i < Math.floor(reviewsData.summary.qualityBreakdown.imageQuality)
+                                      i < Math.floor(reviewsData?.summary?.qualityBreakdown?.imageQuality || 0)
                                         ? 'fill-amber-400 text-amber-400'
                                         : 'text-slate-300'
                                     }`}
@@ -1145,7 +1171,7 @@ export default function PuzzleDetailPage() {
                                 ))}
                               </div>
                               <span className="text-sm font-bold text-slate-700">
-                                {reviewsData.summary.qualityBreakdown.imageQuality}
+                                {reviewsData?.summary?.qualityBreakdown?.imageQuality?.toFixed(1) || '0.0'}
                               </span>
                             </div>
                           </div>
@@ -1160,7 +1186,7 @@ export default function PuzzleDetailPage() {
                                   <Star
                                     key={i}
                                     className={`w-4 h-4 ${
-                                      i < Math.floor(reviewsData.summary.qualityBreakdown.pieceFit)
+                                      i < Math.floor(reviewsData?.summary?.qualityBreakdown?.pieceFit || 0)
                                         ? 'fill-amber-400 text-amber-400'
                                         : 'text-slate-300'
                                     }`}
@@ -1168,7 +1194,7 @@ export default function PuzzleDetailPage() {
                                 ))}
                               </div>
                               <span className="text-sm font-bold text-slate-700">
-                                {reviewsData.summary.qualityBreakdown.pieceFit}
+                                {reviewsData?.summary?.qualityBreakdown?.pieceFit?.toFixed(1) || '0.0'}
                               </span>
                             </div>
                           </div>
@@ -1183,7 +1209,7 @@ export default function PuzzleDetailPage() {
                                   <Star
                                     key={i}
                                     className={`w-4 h-4 ${
-                                      i < Math.floor(reviewsData.summary.qualityBreakdown.durability)
+                                      i < Math.floor(reviewsData?.summary?.qualityBreakdown?.durability || 0)
                                         ? 'fill-amber-400 text-amber-400'
                                         : 'text-slate-300'
                                     }`}
@@ -1191,7 +1217,7 @@ export default function PuzzleDetailPage() {
                                 ))}
                               </div>
                               <span className="text-sm font-bold text-slate-700">
-                                {reviewsData.summary.qualityBreakdown.durability}
+                                {reviewsData?.summary?.qualityBreakdown?.durability?.toFixed(1) || '0.0'}
                               </span>
                             </div>
                           </div>
@@ -1206,7 +1232,7 @@ export default function PuzzleDetailPage() {
                                   <Star
                                     key={i}
                                     className={`w-4 h-4 ${
-                                      i < Math.floor(reviewsData.summary.qualityBreakdown.overallExperience)
+                                      i < Math.floor(reviewsData?.summary?.qualityBreakdown?.overallExperience || 0)
                                         ? 'fill-amber-400 text-amber-400'
                                         : 'text-slate-300'
                                     }`}
@@ -1214,7 +1240,7 @@ export default function PuzzleDetailPage() {
                                 ))}
                               </div>
                               <span className="text-sm font-bold text-slate-700">
-                                {reviewsData.summary.qualityBreakdown.overallExperience}
+                                {reviewsData?.summary?.qualityBreakdown?.overallExperience?.toFixed(1) || '0.0'}
                               </span>
                             </div>
                           </div>
@@ -1225,7 +1251,7 @@ export default function PuzzleDetailPage() {
                       <div>
                         <h3 className="text-base font-medium text-slate-700 mb-3">Customer Reviews</h3>
                         <div className="space-y-4">
-                          {reviewsData.reviews.map((review: any) => (
+                          {reviewsData?.reviews?.map((review) => (
                             <div key={review.id} className="p-4 glass-card border-white/40 rounded-lg">
                               <div className="flex items-start gap-3">
                                 <img
@@ -1381,7 +1407,7 @@ export default function PuzzleDetailPage() {
                           Try again
                         </button>
                       </div>
-                    ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData.relatedPuzzles.length === 0 ? (
+                    ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData?.relatedPuzzles?.length === 0 ? (
                       // Empty state
                       <div className="text-center py-6">
                         <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -1393,16 +1419,16 @@ export default function PuzzleDetailPage() {
                     ) : (
                       // Related puzzles list
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {relatedPuzzlesData.relatedPuzzles.map((related: any) => (
+                        {relatedPuzzlesData?.relatedPuzzles?.map((related) => (
                           <Link
                             key={related.id}
                             href={`/puzzles/${related.id}`}
                             className="glass-card hover-lift border border-white/40 p-3 group rounded-xl"
                           >
                             <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-2 relative">
-                              {related.image ? (
+                              {related.imageUrl ? (
                                 <img
-                                  src={related.image}
+                                  src={related.imageUrl}
                                   alt={related.title}
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
@@ -1417,22 +1443,22 @@ export default function PuzzleDetailPage() {
                                 {related.title}
                               </h4>
                               <p className="text-xs text-slate-600 mb-2">
-                                {related.pieces} pieces
+                                {related.pieceCount} pieces
                               </p>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1">
-                                  {related.rating ? (
+                                  {related.avgRating ? (
                                     <>
                                       <Star className="w-3 h-3 text-amber-400 fill-current" />
-                                      <span className="text-xs font-normal text-slate-800">{related.rating}</span>
+                                      <span className="text-xs font-normal text-slate-800">{related.avgRating}</span>
                                     </>
                                   ) : (
                                     <span className="text-xs text-slate-500">No rating</span>
                                   )}
                                 </div>
-                                {related.timesCompleted > 0 && (
+                                {(related.timesCompleted || 0) > 0 && (
                                   <span className="text-xs text-emerald-600 font-normal">
-                                    {related.timesCompleted} done
+                                    {related.timesCompleted || 0} done
                                   </span>
                                 )}
                               </div>
@@ -1526,7 +1552,7 @@ export default function PuzzleDetailPage() {
                         Try again
                       </button>
                     </div>
-                  ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData.relatedPuzzles.length === 0 ? (
+                  ) : !relatedPuzzlesData?.relatedPuzzles || relatedPuzzlesData?.relatedPuzzles?.length === 0 ? (
                     // Empty state
                     <div className="text-center py-8">
                       <div className="mb-4">
@@ -1540,16 +1566,16 @@ export default function PuzzleDetailPage() {
                   ) : (
                     // Related puzzles list
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {relatedPuzzlesData.relatedPuzzles.map((related: any) => (
+                      {relatedPuzzlesData?.relatedPuzzles?.map((related) => (
                         <Link
                           key={related.id}
                           href={`/puzzles/${related.id}`}
                           className="glass-card hover-lift border border-white/40 p-4 group rounded-xl transition-all duration-200"
                         >
                           <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 mb-3 relative">
-                            {related.image ? (
+                            {related.imageUrl ? (
                               <img
-                                src={related.image}
+                                src={related.imageUrl}
                                 alt={related.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
@@ -1564,23 +1590,23 @@ export default function PuzzleDetailPage() {
                               {related.title}
                             </h4>
                             <p className="text-sm text-slate-600 mb-3">
-                              {related.pieces} pieces
+                              {related.pieceCount} pieces
                             </p>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1">
-                                {related.rating ? (
+                                {related.avgRating ? (
                                   <>
                                     <Star className="w-4 h-4 text-amber-400 fill-current" />
-                                    <span className="text-sm font-medium text-slate-800">{related.rating}</span>
+                                    <span className="text-sm font-medium text-slate-800">{related.avgRating}</span>
                                     <span className="text-xs text-slate-500">({related.reviewCount})</span>
                                   </>
                                 ) : (
                                   <span className="text-sm text-slate-500">No rating yet</span>
                                 )}
                               </div>
-                              {related.timesCompleted > 0 && (
+                              {(related.timesCompleted || 0) > 0 && (
                                 <span className="text-xs text-emerald-600 font-medium">
-                                  {related.timesCompleted} completed
+                                  {related.timesCompleted || 0} completed
                                 </span>
                               )}
                             </div>
@@ -1620,7 +1646,7 @@ export default function PuzzleDetailPage() {
                     </div>
                   ) : browseSimilarData?.similarities ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {browseSimilarData.similarities.map((similarity: any, index: number) => {
+                      {browseSimilarData?.similarities.map((similarity, index: number) => {
                         // Define icon and color based on type
                         const iconMap = {
                           material: Target,
@@ -1659,9 +1685,9 @@ export default function PuzzleDetailPage() {
                             </h4>
                             <p className="text-sm text-slate-600 mb-2">{similarity.description}</p>
                             <span className={`text-sm font-medium ${
-                              similarity.enabled && similarity.count > 0 ? 'text-violet-600' : 'text-slate-500'
+                              similarity.enabled && (similarity.count || 0) > 0 ? 'text-violet-600' : 'text-slate-500'
                             }`}>
-                              {similarity.count > 0 ? `${similarity.count} puzzles` : 'No similar puzzles'}
+                              {(similarity.count || 0) > 0 ? `${similarity.count || 0} puzzles` : 'No similar puzzles'}
                             </span>
                           </Link>
                         )

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return authResult
     }
 
-    const { adminUsername, sessionId } = getAdminContext(request)
+    const { adminUsername, sessionId } = authResult
     const { id, status, adminNotes, resolutionNotes, assignedTo, duplicateOf } = await request.json()
 
     if (!id || !status) {

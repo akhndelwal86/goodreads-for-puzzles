@@ -477,8 +477,8 @@ function BrowsePuzzlesPageContent() {
         setPuzzles(prev => {
           if (append) {
             // Remove duplicates when appending
-            const existingIds = new Set(prev.map(p => p.id))
-            const newPuzzles = transformedPuzzles.filter(p => !existingIds.has(p.id))
+            const existingIds = new Set(prev.map((p: Puzzle) => p.id))
+            const newPuzzles = transformedPuzzles.filter((p: Puzzle) => !existingIds.has(p.id))
             return [...prev, ...newPuzzles]
           } else {
             return transformedPuzzles

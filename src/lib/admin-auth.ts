@@ -1,6 +1,5 @@
 import { createServiceClient } from './supabase'
 import { NextRequest } from 'next/server'
-import crypto from 'crypto'
 
 // Admin authentication configuration
 const ADMIN_CONFIG = {
@@ -139,7 +138,7 @@ export class AdminAuth {
         return { isValid: false, error: 'Session validation failed' }
       }
 
-      if (!data || data.length === 0) {
+      if (!data || !Array.isArray(data) || data.length === 0) {
         return { isValid: false, error: 'Session not found' }
       }
 
@@ -360,10 +359,20 @@ export class AdminAuth {
   }
 
   /**
-   * Generate secure session token
+   * Generate secure session token using Web Crypto API (Edge Runtime compatible)
    */
   private generateSessionToken(): string {
-    return crypto.randomBytes(32).toString('hex')
+    // Use Web Crypto API for Edge Runtime compatibility
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      // Browser/Edge Runtime environment
+      const array = new Uint8Array(32)
+      crypto.getRandomValues(array)
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+    } else {
+      // Fallback for Node.js environment (development/server)
+      const nodeCrypto = require('crypto')
+      return nodeCrypto.randomBytes(32).toString('hex')
+    }
   }
 
   /**
